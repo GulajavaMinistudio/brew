@@ -753,13 +753,14 @@ module Homebrew
       def check_git_version
         # https://help.github.com/articles/https-cloning-errors
         return unless Utils.git_available?
-        return unless Version.create(Utils.git_version) < Version.create("1.7.10")
+        return unless Version.create(Utils.git_version) < Version.create("1.8.5")
 
         git = Formula["git"]
         git_upgrade_cmd = git.any_version_installed? ? "upgrade" : "install"
         <<-EOS.undent
           An outdated version (#{Utils.git_version}) of Git was detected in your PATH.
-          Git 1.7.10 or newer is required to perform checkouts over HTTPS from GitHub.
+          Git 1.8.5 or newer is required to perform checkouts over HTTPS from GitHub and
+          to support the 'git -C <path>' option.
           Please upgrade:
             brew #{git_upgrade_cmd} git
         EOS
@@ -794,31 +795,59 @@ module Homebrew
         EOS
       end
 
-      def check_git_origin
+      def check_brew_git_origin
         return if !Utils.git_available? || !(HOMEBREW_REPOSITORY/".git").exist?
 
         origin = HOMEBREW_REPOSITORY.git_origin
 
         if origin.nil?
           <<-EOS.undent
-            Missing git origin remote.
+            Missing Homebrew/brew git origin remote.
 
             Without a correctly configured origin, Homebrew won't update
             properly. You can solve this by adding the Homebrew remote:
-              cd #{HOMEBREW_REPOSITORY}
-              git remote add origin #{Formatter.url("https://github.com/Homebrew/brew.git")}
+              git -C "#{HOMEBREW_REPOSITORY}" remote add origin #{Formatter.url("https://github.com/Homebrew/brew.git")}
           EOS
-        elsif origin !~ %r{Homebrew/brew(\.git)?$}
+        elsif origin !~ %r{Homebrew/brew(\.git|/)?$}
           <<-EOS.undent
-            Suspicious git origin remote found.
+            Suspicious Homebrew/brew git origin remote found.
 
             With a non-standard origin, Homebrew won't pull updates from
             the main repository. The current git origin is:
               #{origin}
 
             Unless you have compelling reasons, consider setting the
-            origin remote to point at the main repository, located at:
-              #{Formatter.url("https://github.com/Homebrew/brew.git")}
+            origin remote to point at the main repository by running:
+              git -C "#{HOMEBREW_REPOSITORY}" remote add origin #{Formatter.url("https://github.com/Homebrew/brew.git")}
+          EOS
+        end
+      end
+
+      def check_coretap_git_origin
+        coretap_path = CoreTap.instance.path
+        return if !Utils.git_available? || !(coretap_path/".git").exist?
+
+        origin = coretap_path.git_origin
+
+        if origin.nil?
+          <<-EOS.undent
+            Missing #{CoreTap.instance} git origin remote.
+
+            Without a correctly configured origin, Homebrew won't update
+            properly. You can solve this by adding the Homebrew remote:
+              git -C "#{coretap_path}" remote add origin #{Formatter.url("https://github.com/Homebrew/homebrew-core.git")}
+          EOS
+        elsif origin !~ %r{Homebrew/homebrew-core(\.git|/)?$}
+          <<-EOS.undent
+            Suspicious #{CoreTap.instance} git origin remote found.
+
+            With a non-standard origin, Homebrew won't pull updates from
+            the main repository. The current git origin is:
+              #{origin}
+
+            Unless you have compelling reasons, consider setting the
+            origin remote to point at the main repository by running:
+              git -C "#{coretap_path}" remote add origin #{Formatter.url("https://github.com/Homebrew/homebrew-core.git")}
           EOS
         end
       end
