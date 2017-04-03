@@ -10,7 +10,7 @@
 #:    be linked or which would be deleted by `brew link --overwrite`, but will not
 #:    actually link or delete any files.
 #:
-#:    If `--force` is passed, Homebrew will allow keg-only formulae to be linked.
+#:    If `--force` (or `-f`) is passed, Homebrew will allow keg-only formulae to be linked.
 
 require "ostruct"
 
@@ -86,8 +86,8 @@ module Homebrew
 
     opt = HOMEBREW_PREFIX/"opt/#{keg.name}"
     puts "\nIf you need to have this software first in your PATH instead consider running:"
-    puts "  #{Utils::Shell.prepend_path_in_shell_profile(opt)}/bin"  if bin.directory?
-    puts "  #{Utils::Shell.prepend_path_in_shell_profile(opt)}/sbin" if sbin.directory?
+    puts "  #{Utils::Shell.prepend_path_in_shell_profile(opt/"bin")}"  if bin.directory?
+    puts "  #{Utils::Shell.prepend_path_in_shell_profile(opt/"sbin")}" if sbin.directory?
   end
 
   def keg_only?(rack)
