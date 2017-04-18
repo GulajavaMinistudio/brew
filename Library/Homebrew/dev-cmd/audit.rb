@@ -1021,6 +1021,10 @@ class FormulaAuditor
       problem ":tex is deprecated."
     end
 
+    if line =~ /depends_on\s+['"].+['"]\s+=>\s+:(lua|perl|python|ruby)(\d*)/
+      problem "Formulae should vendor #{$1} modules rather than use `depends_on ... => :#{$1}#{$2}`."
+    end
+
     # Commented-out depends_on
     problem "Commented-out dep #{$1}" if line =~ /#\s*depends_on\s+(.+)\s*$/
 
@@ -1047,6 +1051,14 @@ class FormulaAuditor
 
     if line =~ /system\s+['"](env|export)(\s+|['"])/
       problem "Use ENV instead of invoking '#{$1}' to modify the environment"
+    end
+
+    if formula.name != "wine" && line =~ /ENV\.universal_binary/
+      problem "macOS has been 64-bit only since 10.6 so ENV.universal_binary is deprecated."
+    end
+
+    if line =~ /build\.universal\?/
+      problem "macOS has been 64-bit only so build.universal? is deprecated."
     end
 
     if line =~ /version == ['"]HEAD['"]/
