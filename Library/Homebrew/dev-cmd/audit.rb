@@ -336,7 +336,18 @@ class FormulaAuditor
     problem "File should end with a newline" unless text.trailing_newline?
 
     if formula.versioned_formula?
-      unversioned_formula = Pathname.new formula.path.to_s.gsub(/@.*\.rb$/, ".rb")
+      unversioned_formula = begin
+        # build this ourselves as we want e.g. homebrew/core to be present
+        full_name = if formula.tap
+          "#{formula.tap}/#{formula.name}"
+        else
+          formula.name
+        end
+        Formulary.factory(full_name.gsub(/@.*$/, "")).path
+      rescue FormulaUnavailableError, TapFormulaAmbiguityError,
+             TapFormulaWithOldnameAmbiguityError
+        Pathname.new formula.path.to_s.gsub(/@.*\.rb$/, ".rb")
+      end
       unless unversioned_formula.exist?
         unversioned_name = unversioned_formula.basename(".rb")
         problem "#{formula} is versioned but no #{unversioned_name} formula exists"
@@ -732,7 +743,10 @@ class FormulaAuditor
         }
       end
 
+      next if spec.patches.empty?
       spec.patches.each { |p| patch_problems(p) if p.external? }
+      next unless @new_formula
+      problem "New formulae should not require patches to build. Patches should be submitted and accepted upstream first."
     end
 
     %w[Stable Devel].each do |name|
@@ -1028,11 +1042,15 @@ class FormulaAuditor
     end
 
     if line =~ /depends_on :tex/
-      problem ":tex is deprecated."
+      problem ":tex is deprecated"
     end
 
-    if line =~ /depends_on\s+['"].+['"]\s+=>\s+:(lua|perl|python|ruby)(\d*)/
-      problem "Formulae should vendor #{$1} modules rather than use `depends_on ... => :#{$1}#{$2}`."
+    if line =~ /depends_on\s+['"](.+)['"]\s+=>\s+:(lua|perl|python|ruby)(\d*)/
+      problem "#{$2} modules should be vendored rather than use deprecated `depends_on \"#{$1}\" => :#{$2}#{$3}`"
+    end
+
+    if line =~ /depends_on\s+['"](.+)['"]\s+=>\s+.*['"](.+)['"]/
+      problem "Dependency #{$1} should not use option #{$2}"
     end
 
     # Commented-out depends_on
@@ -1410,8 +1428,8 @@ class ResourceAuditor
 
   def audit_urls
     # Check GNU urls; doesn't apply to mirrors
-    if url =~ %r{^(?:https?|ftp)://(?!alpha).+/gnu/}
-      problem "Please use \"https://ftpmirror.gnu.org\" instead of #{url}."
+    if url =~ %r{^(?:https?|ftp)://ftpmirror.gnu.org/(.*)}
+      problem "Please use \"https://ftp.gnu.org/gnu/#{$1}\" instead of #{url}."
     end
 
     if mirrors.include?(url)
