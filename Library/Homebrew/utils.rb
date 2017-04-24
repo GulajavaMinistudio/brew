@@ -406,8 +406,8 @@ def nostdout
   end
 end
 
-def paths
-  @paths ||= ENV["PATH"].split(File::PATH_SEPARATOR).collect do |p|
+def paths(env_path = ENV["PATH"])
+  @paths ||= env_path.split(File::PATH_SEPARATOR).collect do |p|
     begin
       File.expand_path(p).chomp("/")
     rescue ArgumentError
@@ -517,3 +517,19 @@ def migrate_legacy_keg_symlinks_if_necessary
   end
   FileUtils.rm_rf legacy_pinned_kegs
 end
+
+def puts_hash(hash, indent: 0)
+  return hash unless hash.is_a? Hash
+  hash.each do |key, value|
+    indent_spaces = " " * (indent * 2)
+    printf "#{indent_spaces}#{key}:"
+    if value.is_a? Hash
+      puts
+      puts_hash(value, indent: indent+1)
+    else
+      puts " #{value}"
+    end
+  end
+  hash
+end
+alias ph puts_hash
