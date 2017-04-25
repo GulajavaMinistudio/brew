@@ -191,7 +191,7 @@ describe "globally-scoped helper methods" do
     ENV["HOMEBREW_EDITOR"] = "vemate"
     ENV["HOMEBREW_PATH"] = dir
 
-    editor = dir/"vemate"
+    editor = "#{dir}/vemate"
     FileUtils.touch editor
     FileUtils.chmod 0755, editor
 
@@ -268,14 +268,6 @@ describe "globally-scoped helper methods" do
           disable: true
         )
       }.to raise_error(MethodDeprecatedError, %r{method.*replacement.*homebrew/homebrew-core.*homebrew/core}m)
-    end
-  end
-
-  describe "#puts_hash" do
-    it "outputs a hash" do
-      expect {
-        puts_hash(a: 1, b: 2, c: [3, { "d"=>4 }])
-      }.to output("a: 1\nb: 2\nc: [3, {\"d\"=>4}]\n").to_stdout
     end
   end
 end
