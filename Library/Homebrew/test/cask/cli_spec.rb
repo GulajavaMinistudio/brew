@@ -13,6 +13,13 @@ describe Hbc::CLI, :cask do
                           ])
   end
 
+  context "when no option is specified" do
+    it "--binaries is true by default" do
+      command = Hbc::CLI::Install.new("some-cask")
+      expect(command.binaries?).to be true
+    end
+  end
+
   context "::run" do
     let(:noop_command) { double("CLI::Noop") }
 
@@ -44,13 +51,6 @@ describe Hbc::CLI, :cask do
       allow(ENV).to receive(:[])
       allow(ENV).to receive(:[]).with("HOMEBREW_CASK_OPTS").and_return("--appdir=/custom/appdir")
       expect(Hbc).to receive(:appdir=).with(Pathname.new("/custom/appdir"))
-      described_class.run("noop")
-    end
-
-    it "respects the env variable when choosing a non-default Caskroom location" do
-      allow(ENV).to receive(:[])
-      allow(ENV).to receive(:[]).with("HOMEBREW_CASK_OPTS").and_return("--caskroom=/custom/caskdir")
-      expect(Hbc).to receive(:caskroom=).with(Pathname.new("/custom/caskdir"))
       described_class.run("noop")
     end
 
