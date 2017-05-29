@@ -218,7 +218,7 @@ class FormulaInstaller
     # relink the active keg if possible (because it is slow).
     if formula.linked_keg.directory?
       message = <<-EOS.undent
-        #{formula.name} #{formula.linked_keg.resolved_path.basename} is already installed
+        #{formula.name} #{formula.linked_version} is already installed
       EOS
       message += if formula.outdated? && !formula.head?
         <<-EOS.undent
@@ -472,7 +472,7 @@ class FormulaInstaller
 
   def effective_build_options_for(dependent, inherited_options = [])
     args  = dependent.build.used_options
-    args |= dependent == formula ? options : inherited_options
+    args |= (dependent == formula) ? options : inherited_options
     args |= Tab.for_formula(dependent).used_options
     args &= dependent.options
     BuildOptions.new(args, dependent.options)
@@ -680,7 +680,6 @@ class FormulaInstaller
     if !formula.prefix.directory? || Keg.new(formula.prefix).empty_installation?
       raise "Empty installation"
     end
-
   rescue Exception
     ignore_interrupts do
       # any exceptions must leave us with nothing installed

@@ -1,6 +1,6 @@
 require "extend/pathname"
 require "keg_relocate"
-require "formula_lock"
+require "lock_file"
 require "ostruct"
 
 class Keg
@@ -367,7 +367,7 @@ class Keg
           dep_formula = Formulary.factory(dep["full_name"])
           dep_formula == to_formula
         rescue FormulaUnavailableError
-          next "#{tap}/#{name}" == dep["full_name"]
+          next dep["full_name"] == "#{tap}/#{name}"
         end
       end
     end

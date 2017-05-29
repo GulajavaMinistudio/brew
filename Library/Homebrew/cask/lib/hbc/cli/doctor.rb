@@ -17,17 +17,17 @@ module Hbc
         ohai "Contents of $LOAD_PATH", self.class.render_load_path($LOAD_PATH)
         ohai "Environment Variables"
 
-        environment_variables = [
-          "RUBYLIB",
-          "RUBYOPT",
-          "RUBYPATH",
-          "RBENV_VERSION",
-          "CHRUBY_VERSION",
-          "GEM_HOME",
-          "GEM_PATH",
-          "BUNDLE_PATH",
-          "PATH",
-          "SHELL",
+        environment_variables = %w[
+          RUBYLIB
+          RUBYOPT
+          RUBYPATH
+          RBENV_VERSION
+          CHRUBY_VERSION
+          GEM_HOME
+          GEM_PATH
+          BUNDLE_PATH
+          PATH
+          SHELL
         ]
 
         (self.class.locale_variables + environment_variables).sort.each(&self.class.method(:render_env_var))
@@ -55,8 +55,7 @@ module Hbc
       end
 
       def self.cask_count_for_tap(tap)
-        count = tap.cask_files.count
-        "#{count} #{count == 1 ? "cask" : "casks"}"
+        Formatter.pluralize(tap.cask_files.count, "cask")
       rescue StandardError
         "0 #{error_string "error reading #{tap.path}"}"
       end
