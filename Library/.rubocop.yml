@@ -1,14 +1,15 @@
 AllCops:
   TargetRubyVersion: 2.0
   Exclude:
-    - '**/Rakefile'
-    - '**/.*'
     - '**/Casks/**/*'
     - '**/vendor/**/*'
 
 require: ./Homebrew/rubocops.rb
 
 FormulaAudit/Text:
+  Enabled: true
+
+FormulaAudit/Caveats:
   Enabled: true
 
 FormulaAuditStrict/BottleBlock:

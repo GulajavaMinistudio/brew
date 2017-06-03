@@ -868,7 +868,7 @@ class FormulaAuditor
 
   def audit_lines
     text.without_patch.split("\n").each_with_index do |line, lineno|
-      line_problems(line, lineno+1)
+      line_problems(line, lineno + 1)
     end
   end
 
@@ -1146,11 +1146,6 @@ class FormulaAuditor
 
     return unless line =~ %r{share(\s*[/+]\s*)(['"])#{Regexp.escape(formula.name)}(?:\2|/)}
     problem "Use pkgshare instead of (share#{$1}\"#{formula.name}\")"
-  end
-
-  def audit_caveats
-    return unless formula.caveats.to_s.include?("setuid")
-    problem "Don't recommend setuid in the caveats, suggest sudo instead."
   end
 
   def audit_reverse_migration
