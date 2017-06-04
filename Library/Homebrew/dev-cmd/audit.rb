@@ -959,6 +959,7 @@ class FormulaAuditor
     if line =~ /depends_on\s+['"](.+)['"]\s+=>\s+(.*)/
       dep = $1
       $2.split(" ").map do |o|
+        break if ["if", "unless"].include?(o)
         next unless o =~ /^\[?['"](.*)['"]/
         problem "Dependency #{dep} should not use option #{$1}"
       end
@@ -1494,6 +1495,14 @@ class ResourceAuditor
     urls.each do |u|
       next unless u =~ %r{https?://(?:central|repo\d+)\.maven\.org/maven2/(.+)$}
       problem "#{u} should be `https://search.maven.org/remotecontent?filepath=#{$1}`"
+    end
+
+    # Check pypi urls
+    if @strict
+      urls.each do |p|
+        next unless p =~ %r{^https?://pypi.python.org/(.*)}
+        problem "#{p} should be `https://files.pythonhosted.org/#{$1}`"
+      end
     end
 
     return unless @online
