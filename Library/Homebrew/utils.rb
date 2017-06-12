@@ -76,7 +76,7 @@ def odeprecated(method, replacement = nil, disable: false, disable_on: nil, call
   tap_message = nil
   caller_message = backtrace.detect do |line|
     next unless line =~ %r{^#{Regexp.escape(HOMEBREW_LIBRARY)}/Taps/([^/]+/[^/]+)/}
-    tap = Tap.fetch $1
+    tap = Tap.fetch Regexp.last_match(1)
     tap_message = "\nPlease report this to the #{tap} tap!"
     true
   end
@@ -151,9 +151,9 @@ def interactive_shell(f = nil)
 
   Process.wait fork { exec ENV["SHELL"] }
 
-  return if $?.success?
-  raise "Aborted due to non-zero exit status (#{$?.exitstatus})" if $?.exited?
-  raise $?.inspect
+  return if $CHILD_STATUS.success?
+  raise "Aborted due to non-zero exit status (#{$CHILD_STATUS.exitstatus})" if $CHILD_STATUS.exited?
+  raise $CHILD_STATUS.inspect
 end
 
 module Homebrew
@@ -171,7 +171,7 @@ module Homebrew
       exit! 1 # never gets here unless exec failed
     end
     Process.wait(pid)
-    $?.success?
+    $CHILD_STATUS.success?
   end
 
   def system(cmd, *args)
