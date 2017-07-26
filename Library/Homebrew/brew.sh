@@ -1,3 +1,24 @@
+# Force UTF-8 to avoid encoding issues for users with broken locale settings.
+if [[ "$(locale charmap 2>/dev/null)" != "UTF-8" ]]
+then
+  export LC_ALL="en_US.UTF-8"
+fi
+
+# Where we store built products; a Cellar in HOMEBREW_PREFIX (often /usr/local
+# for bottles) unless there's already a Cellar in HOMEBREW_REPOSITORY.
+if [[ -d "$HOMEBREW_REPOSITORY/Cellar" ]]
+then
+  HOMEBREW_CELLAR="$HOMEBREW_REPOSITORY/Cellar"
+else
+  HOMEBREW_CELLAR="$HOMEBREW_PREFIX/Cellar"
+fi
+
+case "$*" in
+  --prefix)            echo "$HOMEBREW_PREFIX"; exit 0 ;;
+  --cellar)            echo "$HOMEBREW_CELLAR"; exit 0 ;;
+  --repository|--repo) echo "$HOMEBREW_REPOSITORY"; exit 0 ;;
+esac
+
 HOMEBREW_VERSION="$(git -C "$HOMEBREW_REPOSITORY" describe --tags --dirty --abbrev=7 2>/dev/null)"
 HOMEBREW_USER_AGENT_VERSION="$HOMEBREW_VERSION"
 if [[ -z "$HOMEBREW_VERSION" ]]
@@ -41,27 +62,6 @@ brew() {
 git() {
   "$HOMEBREW_LIBRARY/Homebrew/shims/scm/git" "$@"
 }
-
-# Force UTF-8 to avoid encoding issues for users with broken locale settings.
-if [[ "$(locale charmap 2>/dev/null)" != "UTF-8" ]]
-then
-  export LC_ALL="en_US.UTF-8"
-fi
-
-# Where we store built products; a Cellar in HOMEBREW_PREFIX (often /usr/local
-# for bottles) unless there's already a Cellar in HOMEBREW_REPOSITORY.
-if [[ -d "$HOMEBREW_REPOSITORY/Cellar" ]]
-then
-  HOMEBREW_CELLAR="$HOMEBREW_REPOSITORY/Cellar"
-else
-  HOMEBREW_CELLAR="$HOMEBREW_PREFIX/Cellar"
-fi
-
-case "$*" in
-  --prefix)            echo "$HOMEBREW_PREFIX"; exit 0 ;;
-  --cellar)            echo "$HOMEBREW_CELLAR"; exit 0 ;;
-  --repository|--repo) echo "$HOMEBREW_REPOSITORY"; exit 0 ;;
-esac
 
 if [[ "$HOMEBREW_PREFIX" = "/" || "$HOMEBREW_PREFIX" = "/usr" ]]
 then
@@ -110,21 +110,31 @@ then
   then
     HOMEBREW_CURL="$HOMEBREW_PREFIX/opt/curl/bin/curl"
   fi
+
+  if [[ -z "$HOMEBREW_CACHE" ]]
+  then
+    HOMEBREW_CACHE="$HOME/Library/Caches/Homebrew"
+  fi
 else
   HOMEBREW_PROCESSOR="$(uname -m)"
   HOMEBREW_PRODUCT="${HOMEBREW_SYSTEM}brew"
   [[ -n "$HOMEBREW_LINUX" ]] && HOMEBREW_OS_VERSION="$(lsb_release -sd 2>/dev/null)"
   : "${HOMEBREW_OS_VERSION:=$(uname -r)}"
   HOMEBREW_OS_USER_AGENT_VERSION="$HOMEBREW_OS_VERSION"
+
+  if [[ -z "$HOMEBREW_CACHE" ]]
+  then
+    if [[ -n "$XDG_CACHE_HOME" ]]
+    then
+      HOMEBREW_CACHE="$XDG_CACHE_HOME/Homebrew"
+    else
+      HOMEBREW_CACHE="$HOME/.cache/Homebrew"
+    fi
+  fi
 fi
 HOMEBREW_USER_AGENT="$HOMEBREW_PRODUCT/$HOMEBREW_USER_AGENT_VERSION ($HOMEBREW_SYSTEM; $HOMEBREW_PROCESSOR $HOMEBREW_OS_USER_AGENT_VERSION)"
 HOMEBREW_CURL_VERSION="$("$HOMEBREW_CURL" --version 2>/dev/null | head -n1 | /usr/bin/awk '{print $1"/"$2}')"
 HOMEBREW_USER_AGENT_CURL="$HOMEBREW_USER_AGENT $HOMEBREW_CURL_VERSION"
-
-if [[ -z "$HOMEBREW_CACHE" ]]
-then
-  HOMEBREW_CACHE="$HOME/Library/Caches/Homebrew"
-fi
 
 # Declared in bin/brew
 export HOMEBREW_BREW_FILE
