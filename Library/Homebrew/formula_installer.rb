@@ -37,21 +37,22 @@ class FormulaInstaller
   mode_attr_accessor :show_summary_heading, :show_header
   mode_attr_accessor :build_from_source, :force_bottle
   mode_attr_accessor :ignore_deps, :only_deps, :interactive, :git
-  mode_attr_accessor :verbose, :debug, :quieter
+  mode_attr_accessor :verbose, :debug, :quieter, :link_keg
 
   def initialize(formula)
     @formula = formula
+    @link_keg = !formula.keg_only?
     @show_header = false
     @ignore_deps = false
     @only_deps = false
-    @build_from_source = false
-    @build_bottle = false
-    @force_bottle = false
+    @build_from_source = ARGV.build_from_source? || ARGV.build_all_from_source?
+    @build_bottle = ARGV.build_bottle?
+    @force_bottle = ARGV.force_bottle?
     @interactive = false
     @git = false
-    @verbose = false
-    @quieter = false
-    @debug = false
+    @verbose = ARGV.verbose?
+    @quieter = ARGV.quieter?
+    @debug = ARGV.debug?
     @installed_as_dependency = false
     @installed_on_request = true
     @options = Options.new
@@ -402,14 +403,13 @@ class FormulaInstaller
     raise UnsatisfiedRequirements, fatals
   end
 
-  def install_requirement_formula?(req, dependent, build)
-    req_dependency = req.to_dependency
+  def install_requirement_formula?(req_dependency, req, install_bottle_for_dependent)
     return false unless req_dependency
     return true unless req.satisfied?
     return false if req.run?
     return true if build_bottle?
     return true if req.satisfied_by_formula?
-    install_bottle_for?(dependent, build)
+    install_bottle_for_dependent
   end
 
   def runtime_requirements(formula)
@@ -429,19 +429,21 @@ class FormulaInstaller
       runtime_requirements = runtime_requirements(f)
       f.recursive_requirements do |dependent, req|
         build = effective_build_options_for(dependent)
+        install_bottle_for_dependent = install_bottle_for?(dependent, build)
+        use_default_formula = install_bottle_for_dependent || build_bottle?
+        req_dependency = req.to_dependency(use_default_formula: use_default_formula)
 
         if (req.optional? || req.recommended?) && build.without?(req)
           Requirement.prune
-        elsif req.build? && install_bottle_for?(dependent, build)
+        elsif req.build? && install_bottle_for_dependent
           Requirement.prune
-        elsif install_requirement_formula?(req, dependent, build)
-          dep = req.to_dependency
-          deps.unshift(dep)
-          formulae.unshift(dep.to_formula)
+        elsif install_requirement_formula?(req_dependency, req, install_bottle_for_dependent)
+          deps.unshift(req_dependency)
+          formulae.unshift(req_dependency.to_formula)
           Requirement.prune
         elsif req.satisfied?
           Requirement.prune
-        elsif !runtime_requirements.include?(req) && install_bottle_for?(dependent, build)
+        elsif !runtime_requirements.include?(req) && install_bottle_for_dependent
           Requirement.prune
         else
           unsatisfied_reqs[dependent] << req
@@ -524,6 +526,8 @@ class FormulaInstaller
 
     if df.linked_keg.directory?
       linked_keg = Keg.new(df.linked_keg.resolved_path)
+      keg_had_linked_keg = true
+      keg_was_linked = linked_keg.linked?
       linked_keg.unlink
     end
 
@@ -539,8 +543,10 @@ class FormulaInstaller
     fi.options           |= inherited_options
     fi.options           &= df.options
     fi.build_from_source  = ARGV.build_formula_from_source?(df)
-    fi.verbose            = verbose? && !quieter?
+    fi.verbose            = verbose?
+    fi.quieter            = quieter?
     fi.debug              = debug?
+    fi.link_keg           = keg_was_linked if keg_had_linked_keg
     fi.installed_as_dependency = true
     fi.installed_on_request = false
     fi.prelude
@@ -550,7 +556,7 @@ class FormulaInstaller
   rescue Exception
     ignore_interrupts do
       tmp_keg.rename(installed_keg) if tmp_keg && !installed_keg.directory?
-      linked_keg.link if linked_keg
+      linked_keg.link if keg_was_linked
     end
     raise
   else
@@ -711,7 +717,7 @@ class FormulaInstaller
   end
 
   def link(keg)
-    if formula.keg_only?
+    unless link_keg
       begin
         keg.optlink
       rescue Keg::LinkError => e
@@ -865,6 +871,7 @@ class FormulaInstaller
     tab.source["path"] = formula.specified_path.to_s
     tab.installed_as_dependency = installed_as_dependency
     tab.installed_on_request = installed_on_request
+    tab.aliases = formula.aliases
     tab.write
   end
 
