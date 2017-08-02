@@ -94,7 +94,7 @@ module Homebrew
     elsif !except_cops.empty?
       options[:except_cops] = except_cops
     elsif !strict
-      options[:except_cops] = [:FormulaAuditStrict, :NewFormulaAudit]
+      options[:only_cops] = [:FormulaAudit]
     end
 
     # Check style in a single batch run up front for performance
@@ -909,16 +909,6 @@ class FormulaAuditor
       problem "\"#{Regexp.last_match(1)}\" should be \"\#{#{Regexp.last_match(2)}}\""
     end
 
-    if line =~ /depends_on :(automake|autoconf|libtool)/
-      problem ":#{Regexp.last_match(1)} is deprecated. Usage should be \"#{Regexp.last_match(1)}\""
-    end
-
-    if line =~ /depends_on :apr/
-      problem ":apr is deprecated. Usage should be \"apr-util\""
-    end
-
-    problem ":tex is deprecated" if line =~ /depends_on :tex/
-
     if line =~ /depends_on\s+['"](.+)['"]\s+=>\s+:(lua|perl|python|ruby)(\d*)/
       problem "#{Regexp.last_match(2)} modules should be vendored rather than use deprecated `depends_on \"#{Regexp.last_match(1)}\" => :#{Regexp.last_match(2)}#{Regexp.last_match(3)}`"
     end
@@ -1286,14 +1276,6 @@ class ResourceAuditor
 
     if name == "curl" && !urls.find { |u| u.start_with?("http://") }
       problem "should always include at least one HTTP url"
-    end
-
-    # Check pypi urls
-    if @strict
-      urls.each do |p|
-        next unless p =~ %r{^https?://pypi.python.org/(.*)}
-        problem "#{p} should be `https://files.pythonhosted.org/#{Regexp.last_match(1)}`"
-      end
     end
 
     return unless @online
