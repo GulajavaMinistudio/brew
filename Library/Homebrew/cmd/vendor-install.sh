@@ -13,16 +13,16 @@ if [[ -n "$HOMEBREW_MACOS" ]]
 then
   if [[ "$HOMEBREW_PROCESSOR" = "Intel" ]]
   then
-    ruby_URL="https://homebrew.bintray.com/bottles-portable/portable-ruby-2.0.0-p648.leopard_64.bottle.tar.gz"
-    ruby_SHA="5c1240abe4be91c9774a0089c2a38a8ccfff87c009e8e5786730c659d5e633f7"
+    ruby_URL="https://homebrew.bintray.com/bottles-portable/portable-ruby-2.3.3.leopard_64.bottle.tar.gz"
+    ruby_SHA="9060cdddbc5b5a0cc7188a251c40b2845e9d8b8ce346c83c585a965a111cab54"
   else
     ruby_URL=""
     ruby_SHA=""
   fi
 elif [[ -n "$HOMEBREW_LINUX" ]]
 then
-  ruby_URL="https://homebrew.bintray.com/bottles-portable/portable-ruby-2.0.0-p648.x86_64_linux.bottle.tar.gz"
-  ruby_SHA="dbb5118a22a6a75cc77e62544a3d8786d383fab1bdaf8c154951268807357bf0"
+  ruby_URL="https://homebrew.bintray.com/bottles-portable/portable-ruby-2.3.3.x86_64_linux.bottle.tar.gz"
+  ruby_SHA="543c18bd33a300e6c16671437b1e0f17b03bb64e6a485fc15ff7de1eb1a0bc2a"
 fi
 
 fetch() {
