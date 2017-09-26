@@ -13,8 +13,8 @@ if [[ -n "$HOMEBREW_MACOS" ]]
 then
   if [[ "$HOMEBREW_PROCESSOR" = "Intel" ]]
   then
-    ruby_URL="https://homebrew.bintray.com/bottles-portable/portable-ruby-2.3.3.leopard_64.bottle.tar.gz"
-    ruby_SHA="9060cdddbc5b5a0cc7188a251c40b2845e9d8b8ce346c83c585a965a111cab54"
+    ruby_URL="https://homebrew.bintray.com/bottles-portable/portable-ruby-2.3.3.leopard_64.bottle.1.tar.gz"
+    ruby_SHA="34ce9e4c9c1be28db564d744165aa29291426f8a3d2ef806ba4f0b9175aedb2b"
   else
     ruby_URL=""
     ruby_SHA=""
@@ -45,20 +45,25 @@ fetch() {
     curl_args[${#curl_args[*]}]="--progress-bar"
   fi
 
+  if [[ "$HOMEBREW_MACOS_VERSION_NUMERIC" -lt "100600" ]]
+  then
+    curl_args[${#curl_args[*]}]="--insecure"
+  fi
+
   temporary_path="$CACHED_LOCATION.incomplete"
 
   mkdir -p "$HOMEBREW_CACHE"
-  [[ -n "$HOMEBREW_QUIET" ]] || echo "==> Downloading $VENDOR_URL"
+  [[ -n "$HOMEBREW_QUIET" ]] || echo "==> Downloading $VENDOR_URL" >&2
   if [[ -f "$CACHED_LOCATION" ]]
   then
-    [[ -n "$HOMEBREW_QUIET" ]] || echo "Already downloaded: $CACHED_LOCATION"
+    [[ -n "$HOMEBREW_QUIET" ]] || echo "Already downloaded: $CACHED_LOCATION" >&2
   else
     if [[ -f "$temporary_path" ]]
     then
       "$HOMEBREW_CURL" "${curl_args[@]}" -C - "$VENDOR_URL" -o "$temporary_path"
       if [[ $? -eq 33 ]]
       then
-        [[ -n "$HOMEBREW_QUIET" ]] || echo "Trying a full download"
+        [[ -n "$HOMEBREW_QUIET" ]] || echo "Trying a full download" >&2
         rm -f "$temporary_path"
         "$HOMEBREW_CURL" "${curl_args[@]}" "$VENDOR_URL" -o "$temporary_path"
       fi
@@ -135,7 +140,7 @@ install() {
   fi
 
   safe_cd "$VENDOR_DIR"
-  [[ -n "$HOMEBREW_QUIET" ]] || echo "==> Pouring $(basename "$VENDOR_URL")"
+  [[ -n "$HOMEBREW_QUIET" ]] || echo "==> Pouring $(basename "$VENDOR_URL")" >&2
   tar "$tar_args" "$CACHED_LOCATION"
   safe_cd "$VENDOR_DIR/portable-$VENDOR_NAME"
 
