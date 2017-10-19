@@ -115,6 +115,12 @@ class Tap
     path.git?
   end
 
+  # git branch for this {Tap}.
+  def git_branch
+    raise TapUnavailableError, name unless installed?
+    path.git_branch
+  end
+
   # git HEAD for this {Tap}.
   def git_head
     raise TapUnavailableError, name unless installed?
@@ -494,7 +500,7 @@ class Tap
 
   # an array of all installed {Tap} names.
   def self.names
-    map(&:name)
+    map(&:name).sort
   end
 
   # @private

@@ -787,6 +787,18 @@ module Homebrew
               git -C "#{coretap_path}" remote set-url origin #{Formatter.url("https://github.com/Homebrew/homebrew-core.git")}
           EOS
         end
+
+        return if ENV["CI"] || ENV["JENKINS_HOME"]
+
+        branch = coretap_path.git_branch
+        return if branch.nil? || branch =~ /master/
+
+        <<-EOS.undent
+          Homebrew/homebrew-core is not on the master branch
+
+          Check out the master branch by running:
+            git -C "$(brew --repo homebrew/core)" checkout master
+        EOS
       end
 
       def __check_linked_brew(f)
@@ -804,7 +816,7 @@ module Homebrew
       def check_for_linked_keg_only_brews
         return unless HOMEBREW_CELLAR.exist?
 
-        linked = Formula.installed.select do |f|
+        linked = Formula.installed.sort.select do |f|
           f.keg_only? && __check_linked_brew(f)
         end
         return if linked.empty?
