@@ -19,7 +19,7 @@ module Hbc
 
     PERSISTENT_METADATA_SUBDIRS = ["gpg"].freeze
 
-    def initialize(cask, command: SystemCommand, force: false, skip_cask_deps: false, binaries: true, verbose: false, require_sha: false)
+    def initialize(cask, command: SystemCommand, force: false, skip_cask_deps: false, binaries: true, verbose: false, require_sha: false, upgrade: false)
       @cask = cask
       @command = command
       @force = force
@@ -28,36 +28,19 @@ module Hbc
       @verbose = verbose
       @require_sha = require_sha
       @reinstall = false
+      @upgrade = upgrade
     end
 
-    attr_predicate :binaries?, :force?, :skip_cask_deps?, :require_sha?, :verbose?
+    attr_predicate :binaries?, :force?, :skip_cask_deps?, :require_sha?, :upgrade?, :verbose?
 
     def self.print_caveats(cask)
       odebug "Printing caveats"
-      return if cask.caveats.empty?
 
-      output = capture_output do
-        cask.caveats.each do |caveat|
-          if caveat.respond_to?(:eval_and_print)
-            caveat.eval_and_print(cask)
-          else
-            puts caveat
-          end
-        end
-      end
+      caveats = cask.caveats
+      return if caveats.empty?
 
-      return if output.empty?
       ohai "Caveats"
-      puts output
-    end
-
-    def self.capture_output(&block)
-      old_stdout = $stdout
-      $stdout = Buffer.new($stdout.tty?)
-      block.call
-      output = $stdout.string
-      $stdout = old_stdout
-      output
+      puts caveats + "\n"
     end
 
     def fetch
@@ -82,7 +65,7 @@ module Hbc
     def install
       odebug "Hbc::Installer#install"
 
-      if @cask.installed? && !force? && !@reinstall
+      if @cask.installed? && !force? && !@reinstall && !upgrade?
         raise CaskAlreadyInstalledError, @cask
       end
 
@@ -129,13 +112,13 @@ module Hbc
       installed_cask = installed_caskfile.exist? ? CaskLoader.load(installed_caskfile) : @cask
 
       # Always force uninstallation, ignore method parameter
-      Installer.new(installed_cask, binaries: binaries?, verbose: verbose?, force: true).uninstall
+      Installer.new(installed_cask, binaries: binaries?, verbose: verbose?, force: true, upgrade: upgrade?).uninstall
     end
 
     def summary
       s = ""
       s << "#{Emoji.install_badge}  " if Emoji.enabled?
-      s << "#{@cask} was successfully installed!"
+      s << "#{@cask} was successfully #{upgrade? ? "upgraded" : "installed"}!"
     end
 
     def download
@@ -367,12 +350,31 @@ module Hbc
     def uninstall
       oh1 "Uninstalling Cask #{@cask}"
       disable_accessibility_access
-      uninstall_artifacts
+      uninstall_artifacts(clear: true)
       purge_versioned_files
       purge_caskroom_path if force?
     end
 
-    def uninstall_artifacts
+    def start_upgrade
+      oh1 "Starting upgrade for Cask #{@cask}"
+
+      disable_accessibility_access
+      uninstall_artifacts
+    end
+
+    def revert_upgrade
+      opoo "Reverting upgrade for Cask #{@cask}"
+      install_artifacts
+      enable_accessibility_access
+    end
+
+    def finalize_upgrade
+      purge_versioned_files
+
+      puts summary
+    end
+
+    def uninstall_artifacts(clear: false)
       odebug "Un-installing artifacts"
       artifacts = @cask.artifacts
 
@@ -381,7 +383,7 @@ module Hbc
       artifacts.each do |artifact|
         next unless artifact.respond_to?(:uninstall_phase)
         odebug "Un-installing artifact of class #{artifact.class}"
-        artifact.uninstall_phase(command: @command, verbose: verbose?, force: force?)
+        artifact.uninstall_phase(command: @command, verbose: verbose?, skip: clear, force: force?)
       end
     end
 
@@ -405,7 +407,7 @@ module Hbc
     end
 
     def purge_versioned_files
-      odebug "Purging files for version #{@cask.version} of Cask #{@cask}"
+      ohai "Purging files for version #{@cask.version} of Cask #{@cask}"
 
       # versioned staged distribution
       gain_permissions_remove(@cask.staged_path) if !@cask.staged_path.nil? && @cask.staged_path.exist?
@@ -420,10 +422,10 @@ module Hbc
         end
       end
       @cask.metadata_versioned_path.rmdir_if_possible
-      @cask.metadata_master_container_path.rmdir_if_possible
+      @cask.metadata_master_container_path.rmdir_if_possible unless upgrade?
 
       # toplevel staged distribution
-      @cask.caskroom_path.rmdir_if_possible
+      @cask.caskroom_path.rmdir_if_possible unless upgrade?
     end
 
     def purge_caskroom_path
