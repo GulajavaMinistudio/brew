@@ -66,11 +66,6 @@ describe DependencyCollector do
       expect(dep).to be_optional
     end
 
-    specify "ant dependency", :needs_compat do
-      subject.add ant: :build
-      expect(find_dependency("ant")).to eq(Dependency.new("ant", [:build]))
-    end
-
     it "doesn't mutate the dependency spec" do
       spec = { "foo" => :optional }
       copy = spec.dup
@@ -132,6 +127,16 @@ describe DependencyCollector do
       resource = Resource.new
       resource.download_strategy = Class.new
       expect { subject.add(resource) }.to raise_error(TypeError)
+    end
+
+    it "is deprecated when called with a language module", :needs_compat do
+      expect(subject).to receive(:odeprecated)
+      subject.add("lpeg" => :lua)
+    end
+
+    it "is deprecated when called with deprecated requirements", :needs_compat do
+      expect(subject).to receive(:odeprecated)
+      subject.add(:python)
     end
   end
 end
