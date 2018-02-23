@@ -80,7 +80,7 @@ When running `brew upgrade`, you see something like this:
 $ brew upgrade
 Error: undefined method `include?' for nil:NilClass
 Please report this bug:
-    https://docs.brew.sh/Troubleshooting.html
+    https://docs.brew.sh/Troubleshooting
 /usr/local/Library/Homebrew/formula.rb:393:in `canonical_name'
 /usr/local/Library/Homebrew/formula.rb:425:in `factory'
 /usr/local/Library/Contributions/examples/brew-upgrade.rb:7
@@ -121,7 +121,7 @@ To list all files that would be deleted:
 
 Don't follow the advice here but fix by using
 `Language::Python.setup_install_args` in the formula as described in
-[Python for Formula Authors](Python-for-Formula-Authors.md).
+[Python for Formula Authors](Python-for-Formula-Authors).
 
 ### Upgrading macOS
 

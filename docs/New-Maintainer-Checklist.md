@@ -39,8 +39,8 @@ A few requests:
   own fork.
 - if still in doubt please ask for help and we'll help you out
 - please read:
-    - https://docs.brew.sh/Brew-Test-Bot-For-Core-Contributors.html
-    - https://docs.brew.sh/Maintainer-Guidelines.html
+    - https://docs.brew.sh/Brew-Test-Bot-For-Core-Contributors
+    - https://docs.brew.sh/Maintainer-Guidelines
     - anything else you haven't read on https://docs.brew.sh
 
 How does that sound?
@@ -59,6 +59,6 @@ If they accept, follow a few steps to get them set up:
 - Invite them to the [`homebrew` private maintainers 1Password](https://homebrew.1password.com/signin)
 - Invite them to [Google Analytics](https://analytics.google.com/analytics/web/?authuser=1#management/Settings/a76679469w115400090p120682403/%3Fm.page%3DAccountUsers/)
 
-After a month-long trial period with no problems make them [owners on the Homebrew GitHub organisation](https://github.com/orgs/Homebrew/people) and add them to [Homebrew's README](https://github.com/Homebrew/brew/edit/master/README.md). If there are problems, ask them to step down as a maintainer and revoke their access to the above.
+After a month-long trial period with no problems make them [owners on the Homebrew GitHub organisation](https://github.com/orgs/Homebrew/people) and add them to [Homebrew's README](https://github.com/Homebrew/brew/edit/master/README). If there are problems, ask them to step down as a maintainer and revoke their access to the above.
 
 Now sit back, relax and let the new maintainers handle more of our contributions.
