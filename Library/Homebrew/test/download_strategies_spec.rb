@@ -2,9 +2,10 @@ require "download_strategy"
 
 describe AbstractDownloadStrategy do
   subject { described_class.new(name, resource) }
+  let(:specs) { {} }
   let(:name) { "foo" }
   let(:url) { "http://example.com/foo.tar.gz" }
-  let(:resource) { double(Resource, url: url, mirrors: [], specs: {}, version: nil) }
+  let(:resource) { double(Resource, url: url, mirrors: [], specs: specs, version: nil) }
   let(:args) { %w[foo bar baz] }
 
   describe "#expand_safe_system_args" do
@@ -32,6 +33,20 @@ describe AbstractDownloadStrategy do
       FileUtils.touch "bar", mtime: Time.now - 100
       FileUtils.ln_s "not-exist", "baz"
       expect(subject.source_modified_time).to eq(File.mtime("foo"))
+    end
+  end
+
+  context "when specs[:bottle]" do
+    let(:specs) { { bottle: true } }
+
+    it "extends Pourable" do
+      expect(subject).to be_a_kind_of(AbstractDownloadStrategy::Pourable)
+    end
+  end
+
+  context "without specs[:bottle]" do
+    it "is does not extend Pourable" do
+      expect(subject).to_not be_a_kind_of(AbstractDownloadStrategy::Pourable)
     end
   end
 end
@@ -258,6 +273,14 @@ describe DownloadStrategyDetector do
     context "when given a GitHub Git URL" do
       let(:url) { "https://github.com/homebrew/brew.git" }
       it { is_expected.to eq(GitHubGitDownloadStrategy) }
+    end
+
+    context "when given an S3 URL" do
+      let(:url) { "s3://bucket/homebrew/brew.tar.gz" }
+      it "returns S3DownloadStrategy" do
+        allow(DownloadStrategyDetector).to receive(:require_aws_sdk).and_return(true)
+        is_expected.to eq(S3DownloadStrategy)
+      end
     end
 
     context "when given strategy = S3DownloadStrategy" do

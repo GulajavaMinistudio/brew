@@ -6,6 +6,13 @@ class AbstractDownloadStrategy
   extend Forwardable
   include FileUtils
 
+  module Pourable
+    def stage
+      ohai "Pouring #{cached_location.basename}"
+      super
+    end
+  end
+
   attr_reader :meta, :name, :version, :resource
   attr_reader :shutup
 
@@ -15,6 +22,7 @@ class AbstractDownloadStrategy
     @url = resource.url
     @version = resource.version
     @meta = resource.specs
+    extend Pourable if meta[:bottle]
   end
 
   # Download and cache the resource as {#cached_location}.
@@ -442,25 +450,12 @@ class NoUnzipCurlDownloadStrategy < CurlDownloadStrategy
   end
 end
 
-# This strategy extracts our binary packages.
-class CurlBottleDownloadStrategy < CurlDownloadStrategy
-  def stage
-    ohai "Pouring #{cached_location.basename}"
-    super
-  end
-end
-
 # This strategy extracts local binary packages.
 class LocalBottleDownloadStrategy < AbstractFileDownloadStrategy
   attr_reader :cached_location
 
   def initialize(path)
     @cached_location = path
-  end
-
-  def stage
-    ohai "Pouring #{cached_location.basename}"
-    super
   end
 end
 
@@ -473,7 +468,8 @@ end
 # distribution.  (It will work for public buckets as well.)
 class S3DownloadStrategy < CurlDownloadStrategy
   def _fetch
-    if @url !~ %r{^https?://([^.].*)\.s3\.amazonaws\.com/(.+)$}
+    if @url !~ %r{^https?://([^.].*)\.s3\.amazonaws\.com/(.+)$} &&
+       @url !~ %r{^s3://([^.].*?)/(.+)$}
       raise "Bad S3 URL: " + @url
     end
     bucket = Regexp.last_match(1)
@@ -1141,6 +1137,9 @@ class DownloadStrategyDetector
       SubversionDownloadStrategy
     when %r{^https?://(.+?\.)?sourceforge\.net/hgweb/}
       MercurialDownloadStrategy
+    when %r{^s3://}
+      require_aws_sdk
+      S3DownloadStrategy
     else
       CurlDownloadStrategy
     end
