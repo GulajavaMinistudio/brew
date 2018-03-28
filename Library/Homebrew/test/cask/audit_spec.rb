@@ -91,20 +91,39 @@ describe Hbc::Audit, :cask do
       end
     end
 
+    describe "pkg allow_untrusted checks" do
+      let(:error_msg) { "allow_untrusted is not permitted in official Homebrew-Cask taps" }
+
+      context "when the Cask has no pkg stanza" do
+        let(:cask_token) { "basic-cask" }
+        it { should_not warn_with(error_msg) }
+      end
+
+      context "when the Cask does not have allow_untrusted" do
+        let(:cask_token) { "with-uninstall-pkgutil" }
+        it { should_not warn_with(error_msg) }
+      end
+
+      context "when the Cask has allow_untrusted" do
+        let(:cask_token) { "with-allow-untrusted" }
+        it { is_expected.to warn_with(error_msg) }
+      end
+    end
+
     describe "preflight stanza checks" do
       let(:error_msg) { "only a single preflight stanza is allowed" }
 
-      context "when the cask has no preflight stanza" do
+      context "when the Cask has no preflight stanza" do
         let(:cask_token) { "with-zap-rmdir" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has only one preflight stanza" do
+      context "when the Cask has only one preflight stanza" do
         let(:cask_token) { "with-preflight" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has multiple preflight stanzas" do
+      context "when the Cask has multiple preflight stanzas" do
         let(:cask_token) { "with-preflight-multi" }
         it { is_expected.to warn_with(error_msg) }
       end
@@ -113,17 +132,17 @@ describe Hbc::Audit, :cask do
     describe "uninstall_postflight stanza checks" do
       let(:error_msg) { "only a single postflight stanza is allowed" }
 
-      context "when the cask has no postflight stanza" do
+      context "when the Cask has no postflight stanza" do
         let(:cask_token) { "with-zap-rmdir" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has only one postflight stanza" do
+      context "when the Cask has only one postflight stanza" do
         let(:cask_token) { "with-postflight" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has multiple postflight stanzas" do
+      context "when the Cask has multiple postflight stanzas" do
         let(:cask_token) { "with-postflight-multi" }
         it { is_expected.to warn_with(error_msg) }
       end
@@ -132,17 +151,17 @@ describe Hbc::Audit, :cask do
     describe "uninstall stanza checks" do
       let(:error_msg) { "only a single uninstall stanza is allowed" }
 
-      context "when the cask has no uninstall stanza" do
+      context "when the Cask has no uninstall stanza" do
         let(:cask_token) { "with-zap-rmdir" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has only one uninstall stanza" do
+      context "when the Cask has only one uninstall stanza" do
         let(:cask_token) { "with-uninstall-rmdir" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has multiple uninstall stanzas" do
+      context "when the Cask has multiple uninstall stanzas" do
         let(:cask_token) { "with-uninstall-multi" }
         it { is_expected.to warn_with(error_msg) }
       end
@@ -151,17 +170,17 @@ describe Hbc::Audit, :cask do
     describe "uninstall_preflight stanza checks" do
       let(:error_msg) { "only a single uninstall_preflight stanza is allowed" }
 
-      context "when the cask has no uninstall_preflight stanza" do
+      context "when the Cask has no uninstall_preflight stanza" do
         let(:cask_token) { "with-zap-rmdir" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has only one uninstall_preflight stanza" do
+      context "when the Cask has only one uninstall_preflight stanza" do
         let(:cask_token) { "with-uninstall-preflight" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has multiple uninstall_preflight stanzas" do
+      context "when the Cask has multiple uninstall_preflight stanzas" do
         let(:cask_token) { "with-uninstall-preflight-multi" }
         it { is_expected.to warn_with(error_msg) }
       end
@@ -170,17 +189,17 @@ describe Hbc::Audit, :cask do
     describe "uninstall_postflight stanza checks" do
       let(:error_msg) { "only a single uninstall_postflight stanza is allowed" }
 
-      context "when the cask has no uninstall_postflight stanza" do
+      context "when the Cask has no uninstall_postflight stanza" do
         let(:cask_token) { "with-zap-rmdir" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has only one uninstall_postflight stanza" do
+      context "when the Cask has only one uninstall_postflight stanza" do
         let(:cask_token) { "with-uninstall-postflight" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has multiple uninstall_postflight stanzas" do
+      context "when the Cask has multiple uninstall_postflight stanzas" do
         let(:cask_token) { "with-uninstall-postflight-multi" }
         it { is_expected.to warn_with(error_msg) }
       end
@@ -189,17 +208,17 @@ describe Hbc::Audit, :cask do
     describe "zap stanza checks" do
       let(:error_msg) { "only a single zap stanza is allowed" }
 
-      context "when the cask has no zap stanza" do
+      context "when the Cask has no zap stanza" do
         let(:cask_token) { "with-uninstall-rmdir" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has only one zap stanza" do
+      context "when the Cask has only one zap stanza" do
         let(:cask_token) { "with-zap-rmdir" }
         it { should_not warn_with(error_msg) }
       end
 
-      context "when the cask has multiple zap stanzas" do
+      context "when the Cask has multiple zap stanzas" do
         let(:cask_token) { "with-zap-multi" }
         it { is_expected.to warn_with(error_msg) }
       end
@@ -346,6 +365,44 @@ describe Hbc::Audit, :cask do
 
           it { is_expected.to warn_with(curl_error_msg) }
         end
+      end
+    end
+
+    describe "GitHub releases appcast check" do
+      let(:error_msg) { /Cask uses GitHub releases/ }
+
+      context "when the Cask does not use GitHub releases" do
+        let(:cask_token) { "basic-cask" }
+        it { should_not warn_with(error_msg) }
+      end
+
+      context "when the Cask uses GitHub releases and has an appcast" do
+        let(:cask_token) { "github-with-appcast" }
+        it { should_not warn_with(error_msg) }
+      end
+
+      context "when the Cask uses GitHub releases and does not have an appcast" do
+        let(:cask_token) { "github-without-appcast" }
+        it { is_expected.to warn_with(error_msg) }
+      end
+    end
+
+    describe "latest with appcast checks" do
+      let(:error_msg) { "Casks with an appcast should not use version :latest" }
+
+      context "when the Cask is :latest and does not have an appcast" do
+        let(:cask_token) { "version-latest" }
+        it { should_not warn_with(error_msg) }
+      end
+
+      context "when the Cask is versioned and has an appcast" do
+        let(:cask_token) { "with-appcast" }
+        it { should_not warn_with(error_msg) }
+      end
+
+      context "when the Cask is :latest and has an appcast" do
+        let(:cask_token) { "latest-with-appcast" }
+        it { is_expected.to warn_with(error_msg) }
       end
     end
 
