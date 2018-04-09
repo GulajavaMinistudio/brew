@@ -388,7 +388,7 @@ Rerun the post\-install steps for \fIformula\fR\.
 .
 .TP
 \fBprune\fR [\fB\-\-dry\-run\fR]
-Remove dead symlinks from the Homebrew prefix\. This is generally not needed, but can be useful when doing DIY installations\. Also remove broken app symlinks from \fB/Applications\fR and \fB~/Applications\fR that were previously created by \fBbrew linkapps\fR\.
+Remove dead symlinks from the Homebrew prefix\. This is generally not needed, but can be useful when doing DIY installations\.
 .
 .IP
 If \fB\-\-dry\-run\fR or \fB\-n\fR is passed, show what would be removed, but do not actually remove anything\.
@@ -1127,6 +1127,10 @@ If set, instructs Homebrew to use the given directory as the download cache\.
 .
 .IP
 \fIDefault:\fR \fB~/Library/Caches/Homebrew\fR\.
+.
+.TP
+\fBHOMEBREW_CURLRC\fR
+If set, Homebrew will not pass \fB\-q\fR when invoking \fBcurl\fR(1) (which disables the use of \fBcurlrc\fR)\.
 .
 .TP
 \fBHOMEBREW_CURL_VERBOSE\fR
