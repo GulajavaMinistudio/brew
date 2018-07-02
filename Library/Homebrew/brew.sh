@@ -101,7 +101,6 @@ then
   # https://github.com/blog/2507-weak-cryptographic-standards-removed
   if [[ "$HOMEBREW_MACOS_VERSION_NUMERIC" -lt "100900" ]]
   then
-    HOMEBREW_SYSTEM_GIT_TOO_OLD="1"
     HOMEBREW_FORCE_BREWED_GIT="1"
   fi
 
@@ -274,6 +273,12 @@ then
   export HOMEBREW_RUBY_WARNINGS="-W0"
 fi
 
+export HOMEBREW_BOTTLE_DEFAULT_DOMAIN="https://homebrew.bintray.com"
+if [[ -z "$HOMEBREW_BOTTLE_DOMAIN" ]]
+then
+  export HOMEBREW_BOTTLE_DOMAIN="$HOMEBREW_BOTTLE_DEFAULT_DOMAIN"
+fi
+
 if [[ -f "$HOMEBREW_LIBRARY/Homebrew/cmd/$HOMEBREW_COMMAND.sh" ]]
 then
   HOMEBREW_BASH_COMMAND="$HOMEBREW_LIBRARY/Homebrew/cmd/$HOMEBREW_COMMAND.sh"
@@ -285,11 +290,6 @@ then
     export HOMEBREW_DEV_CMD_RUN="1"
   fi
   HOMEBREW_BASH_COMMAND="$HOMEBREW_LIBRARY/Homebrew/dev-cmd/$HOMEBREW_COMMAND.sh"
-fi
-
-if [[ -n "$HOMEBREW_DEVELOPER" || -n "$HOMEBREW_DEV_CMD_RUN" ]]
-then
-  export HOMEBREW_LINKAGE_CACHE="1"
 fi
 
 check-run-command-as-root() {
