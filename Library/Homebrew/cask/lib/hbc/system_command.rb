@@ -37,7 +37,7 @@ module Hbc
       result
     end
 
-    def initialize(executable, args: [], sudo: false, input: [], print_stdout: false, print_stderr: true, must_succeed: false, path: ENV["PATH"], **options)
+    def initialize(executable, args: [], sudo: false, input: [], print_stdout: false, print_stderr: true, must_succeed: false, env: {}, **options)
       @executable = executable
       @args = args
       @sudo = sudo
@@ -47,18 +47,34 @@ module Hbc
       @must_succeed = must_succeed
       options.extend(HashValidator).assert_valid_keys(:chdir)
       @options = options
-      @path = path
+      @env = env
+
+      @env.keys.grep_v(/^[\w&&\D]\w*$/) do |name|
+        raise ArgumentError, "Invalid variable name: '#{name}'"
+      end
     end
 
     def command
-      [*sudo_prefix, executable, *args]
+      [*sudo_prefix, *env_args, executable, *args]
     end
 
     private
 
-    attr_reader :executable, :args, :input, :options, :processed_output, :processed_status, :path
+    attr_reader :executable, :args, :input, :options, :processed_output, :processed_status, :env
 
     attr_predicate :sudo?, :print_stdout?, :print_stderr?, :must_succeed?
+
+    def env_args
+      return [] if env.empty?
+
+      variables = env.map do |name, value|
+        sanitized_name = Shellwords.escape(name)
+        sanitized_value = Shellwords.escape(value)
+        "#{sanitized_name}=#{sanitized_value}"
+      end
+
+      ["env", *variables]
+    end
 
     def sudo_prefix
       return [] unless sudo?
@@ -85,7 +101,7 @@ module Hbc
       executable, *args = expanded_command
 
       raw_stdin, raw_stdout, raw_stderr, raw_wait_thr =
-        Open3.popen3({ "PATH" => path }, [executable, executable], *args, **options)
+        Open3.popen3([executable, executable], *args, **options)
 
       write_input_to(raw_stdin)
       raw_stdin.close_write
