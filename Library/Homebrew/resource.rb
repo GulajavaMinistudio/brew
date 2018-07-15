@@ -82,7 +82,7 @@ class Resource
   # Verifies download and unpacks it
   # The block may call `|resource,staging| staging.retain!` to retain the staging
   # directory. Subclasses that override stage should implement the tmp
-  # dir using FileUtils.mktemp so that works with all subtypes.
+  # dir using Resource#mktemp so that works with all subtypes.
   def stage(target = nil, &block)
     unless target || block
       raise ArgumentError, "target directory or block is required"
@@ -182,6 +182,14 @@ class Resource
     patches << p
   end
 
+  protected
+
+  def mktemp(prefix)
+    Mktemp.new(prefix).run do |staging|
+      yield staging
+    end
+  end
+
   private
 
   def detect_version(val)
@@ -193,12 +201,6 @@ class Resource
     when Version then val
     else
       raise TypeError, "version '#{val.inspect}' should be a string"
-    end
-  end
-
-  def mktemp(prefix)
-    Mktemp.new(prefix).run do |staging|
-      yield staging
     end
   end
 
