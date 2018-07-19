@@ -1,15 +1,23 @@
+require "json"
+
 module Hbc
   class CLI
     class Info < AbstractCommand
+      option "--json=VERSION", :json
+
       def initialize(*)
         super
         raise CaskUnspecifiedError if args.empty?
       end
 
       def run
-        casks.each do |cask|
-          odebug "Getting info for Cask #{cask}"
-          self.class.info(cask)
+        if json == "v1"
+          puts JSON.generate(casks.map(&:to_h))
+        else
+          casks.each do |cask|
+            odebug "Getting info for Cask #{cask}"
+            self.class.info(cask)
+          end
         end
       end
 
@@ -18,7 +26,7 @@ module Hbc
       end
 
       def self.info(cask)
-        puts "#{cask.token}: #{cask.version}"
+        title_info(cask)
         puts Formatter.url(cask.homepage) if cask.homepage
         installation_info(cask)
         repo_info(cask)
@@ -26,6 +34,12 @@ module Hbc
         language_info(cask)
         artifact_info(cask)
         Installer.print_caveats(cask)
+      end
+
+      def self.title_info(cask)
+        title = "#{cask.token}: #{cask.version}"
+        title += " (auto_updates)" if cask.auto_updates
+        puts title
       end
 
       def self.formatted_url(url)

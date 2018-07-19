@@ -21,14 +21,14 @@ module Hbc
       end
 
       def extract(command: nil, verbose: nil, **_)
-        container = Container.for_path(path, command)
+        container = Container.for_path(path)
 
         unless container
           raise CaskError, "Aw dang, could not identify nested container at '#{source}'"
         end
 
         ohai "Extracting nested container #{path.relative_path_from(cask.staged_path)}"
-        container.new(cask, path, command, verbose: verbose).extract
+        container.new(cask, path, command, verbose: verbose).extract(to: cask.staged_path)
         FileUtils.remove_entry_secure(path)
       end
     end

@@ -3,15 +3,12 @@ require "hbc/container/base"
 module Hbc
   class Container
     class Xar < Base
-      def self.me?(criteria)
-        criteria.magic_number(/^xar!/n)
+      def self.can_extract?(path:, magic_number:)
+        magic_number.match?(/\Axar!/n)
       end
 
-      def extract
-        Dir.mktmpdir do |unpack_dir|
-          @command.run!("/usr/bin/xar", args: ["-x", "-f", @path, "-C", unpack_dir])
-          @command.run!("/usr/bin/ditto", args: ["--", unpack_dir, @cask.staged_path])
-        end
+      def extract_to_dir(unpack_dir, basename:)
+        @command.run!("xar", args: ["-x", "-f", @path, "-C", unpack_dir])
       end
     end
   end

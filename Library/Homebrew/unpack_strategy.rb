@@ -6,6 +6,8 @@ class UnpackStrategy
   def self.strategies
     @strategies ||= [
       JarUnpackStrategy,
+      LuaRockUnpackStrategy,
+      MicrosoftOfficeXmlUnpackStrategy,
       ZipUnpackStrategy,
       XarUnpackStrategy,
       CompressUnpackStrategy,
@@ -65,6 +67,25 @@ class UnpackStrategy
     unpack_dir.mkpath
     extract_to_dir(unpack_dir, basename: basename)
   end
+
+  def extract_nestedly(to: nil, basename: nil)
+    Dir.mktmpdir do |tmp_unpack_dir|
+      tmp_unpack_dir = Pathname(tmp_unpack_dir)
+
+      extract(to: tmp_unpack_dir, basename: basename)
+
+      children = tmp_unpack_dir.children
+
+      if children.count == 1 && !children.first.directory?
+        s = self.class.detect(children.first)
+
+        s.extract_nestedly(to: to)
+        next
+      end
+
+      DirectoryUnpackStrategy.new(tmp_unpack_dir).extract(to: to)
+    end
+  end
 end
 
 class DirectoryUnpackStrategy < UnpackStrategy
@@ -75,15 +96,37 @@ class DirectoryUnpackStrategy < UnpackStrategy
   private
 
   def extract_to_dir(unpack_dir, basename:)
-    FileUtils.cp_r path.children, unpack_dir, preserve: true
+    FileUtils.cp_r File.join(path, "."), unpack_dir, preserve: true
   end
 end
 
 class UncompressedUnpackStrategy < UnpackStrategy
+  alias extract_nestedly extract
+
   private
 
   def extract_to_dir(unpack_dir, basename:)
     FileUtils.cp path, unpack_dir/basename, preserve: true
+  end
+end
+
+class MicrosoftOfficeXmlUnpackStrategy < UncompressedUnpackStrategy
+  def self.can_extract?(path:, magic_number:)
+    return false unless ZipUnpackStrategy.can_extract?(path: path, magic_number: magic_number)
+
+    # Check further if the ZIP is a Microsoft Office XML document.
+    magic_number.match?(/\APK\003\004/n) &&
+      magic_number.match?(%r{\A.{30}(\[Content_Types\]\.xml|_rels/\.rels)}n)
+  end
+end
+
+class LuaRockUnpackStrategy < UncompressedUnpackStrategy
+  def self.can_extract?(path:, magic_number:)
+    return false unless ZipUnpackStrategy.can_extract?(path: path, magic_number: magic_number)
+
+    # Check further if the ZIP is a LuaRocks package.
+    out, _, status = Open3.capture3("zipinfo", "-1", path)
+    status.success? && out.split("\n").any? { |line| line.match?(%r{\A[^/]+.rockspec\Z}) }
   end
 end
 
@@ -92,17 +135,8 @@ class JarUnpackStrategy < UncompressedUnpackStrategy
     return false unless ZipUnpackStrategy.can_extract?(path: path, magic_number: magic_number)
 
     # Check further if the ZIP is a JAR/WAR.
-    Open3.popen3("unzip", "-l", path) do |stdin, stdout, stderr, wait_thr|
-      stdin.close_write
-      stderr.close_read
-
-      begin
-        return stdout.each_line.any? { |l| l.match?(%r{\s+META-INF/MANIFEST.MF$}) }
-      ensure
-        stdout.close_read
-        wait_thr.kill
-      end
-    end
+    out, _, status = Open3.capture3("zipinfo", "-1", path)
+    status.success? && out.split("\n").include?("META-INF/MANIFEST.MF")
   end
 end
 
@@ -153,7 +187,7 @@ class CompressUnpackStrategy < TarUnpackStrategy
   end
 end
 
-class XzUnpackStrategy < UncompressedUnpackStrategy
+class XzUnpackStrategy < UnpackStrategy
   def self.can_extract?(path:, magic_number:)
     magic_number.match?(/\A\xFD7zXZ\x00/n)
   end
@@ -162,11 +196,11 @@ class XzUnpackStrategy < UncompressedUnpackStrategy
 
   def extract_to_dir(unpack_dir, basename:)
     super
-    safe_system Formula["xz"].opt_bin/"xz", "-d", "-q", "-T0", unpack_dir/basename
-    extract_nested_tar(unpack_dir, basename: basename)
+    safe_system Formula["xz"].opt_bin/"unxz", "-q", "-T0", unpack_dir/basename
+    extract_nested_tar(unpack_dir)
   end
 
-  def extract_nested_tar(unpack_dir, basename:)
+  def extract_nested_tar(unpack_dir)
     return unless DependencyCollector.tar_needs_xz_dependency?
     return if (children = unpack_dir.children).count != 1
     return if (tar = children.first).extname != ".tar"
@@ -174,12 +208,12 @@ class XzUnpackStrategy < UncompressedUnpackStrategy
     Dir.mktmpdir do |tmpdir|
       tmpdir = Pathname(tmpdir)
       FileUtils.mv tar, tmpdir/tar.basename
-      TarUnpackStrategy.new(tmpdir/tar.basename).extract(to: unpack_dir, basename: basename)
+      TarUnpackStrategy.new(tmpdir/tar.basename).extract(to: unpack_dir)
     end
   end
 end
 
-class Bzip2UnpackStrategy < UncompressedUnpackStrategy
+class Bzip2UnpackStrategy < UnpackStrategy
   def self.can_extract?(path:, magic_number:)
     magic_number.match?(/\ABZh/n)
   end
@@ -187,12 +221,12 @@ class Bzip2UnpackStrategy < UncompressedUnpackStrategy
   private
 
   def extract_to_dir(unpack_dir, basename:)
-    super
+    FileUtils.cp path, unpack_dir/basename, preserve: true
     safe_system "bunzip2", "-q", unpack_dir/basename
   end
 end
 
-class GzipUnpackStrategy < UncompressedUnpackStrategy
+class GzipUnpackStrategy < UnpackStrategy
   def self.can_extract?(path:, magic_number:)
     magic_number.match?(/\A\037\213/n)
   end
@@ -200,12 +234,12 @@ class GzipUnpackStrategy < UncompressedUnpackStrategy
   private
 
   def extract_to_dir(unpack_dir, basename:)
-    super
+    FileUtils.cp path, unpack_dir/basename, preserve: true
     safe_system "gunzip", "-q", "-N", unpack_dir/basename
   end
 end
 
-class LzipUnpackStrategy < UncompressedUnpackStrategy
+class LzipUnpackStrategy < UnpackStrategy
   def self.can_extract?(path:, magic_number:)
     magic_number.match?(/\ALZIP/n)
   end
@@ -213,7 +247,7 @@ class LzipUnpackStrategy < UncompressedUnpackStrategy
   private
 
   def extract_to_dir(unpack_dir, basename:)
-    super
+    FileUtils.cp path, unpack_dir/basename, preserve: true
     safe_system Formula["lzip"].opt_bin/"lzip", "-d", "-q", unpack_dir/basename
   end
 end
@@ -238,7 +272,7 @@ class RarUnpackStrategy < UnpackStrategy
   private
 
   def extract_to_dir(unpack_dir, basename:)
-    safe_system "unrar", "x", "-inul", path, unpack_dir
+    safe_system Formula["unrar"].opt_bin/"unrar", "x", "-inul", path, unpack_dir
   end
 end
 
@@ -257,12 +291,6 @@ end
 class GitUnpackStrategy < DirectoryUnpackStrategy
   def self.can_extract?(path:, magic_number:)
     super && (path/".git").directory?
-  end
-
-  private
-
-  def extract_to_dir(unpack_dir, basename:)
-    FileUtils.cp_r path.children, unpack_dir, preserve: true
   end
 end
 

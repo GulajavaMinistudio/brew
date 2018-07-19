@@ -1,14 +1,12 @@
-require "hbc/container/directory"
-
 module Hbc
   class Container
-    class SvnRepository < Directory
-      def self.me?(criteria)
-        criteria.path.join(".svn").directory?
+    class SvnRepository < Base
+      def self.can_extract?(path:, magic_number:)
+        (path/".svn").directory?
       end
 
-      def skip_path?(path)
-        path.basename.to_s == ".svn"
+      def extract_to_dir(unpack_dir, basename:)
+        @command.run!("svn", args: ["export", "--force", path, unpack_dir])
       end
     end
   end
