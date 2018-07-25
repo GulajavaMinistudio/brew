@@ -48,7 +48,8 @@ class AbstractDownloadStrategy
   # Unlike {Resource#stage}, this does not take a block.
   def stage
     UnpackStrategy.detect(cached_location, ref_type: @ref_type, ref: @ref)
-                  .extract_nestedly(basename: basename_without_params)
+                  .extract_nestedly(basename: basename_without_params,
+                                    verbose: ARGV.verbose? && !shutup)
   end
 
   # @!attribute [r] cached_location
@@ -68,7 +69,7 @@ class AbstractDownloadStrategy
   end
 
   def safe_system(*args)
-    if @shutup
+    if shutup
       return if quiet_system(*args)
       raise(ErrorDuringExecution.new(args, status: $CHILD_STATUS))
     else
@@ -328,8 +329,8 @@ end
 # Useful for installing jars.
 class NoUnzipCurlDownloadStrategy < CurlDownloadStrategy
   def stage
-    UncompressedUnpackStrategy.new(cached_location)
-                              .extract(basename: basename_without_params)
+    UnpackStrategy::Uncompressed.new(cached_location)
+                                .extract(basename: basename_without_params)
   end
 end
 
