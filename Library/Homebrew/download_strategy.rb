@@ -14,15 +14,16 @@ class AbstractDownloadStrategy
     end
   end
 
-  attr_reader :meta, :name, :version, :resource
-  attr_reader :shutup
+  attr_reader :cached_location
+  attr_reader :meta, :name, :version, :shutup
+  private :meta, :name, :version, :shutup
 
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
+    @url = url
     @name = name
-    @resource = resource
-    @url = resource.url
-    @version = resource.version
-    @meta = resource.specs
+    @version = version
+    @cache = meta.fetch(:cache, HOMEBREW_CACHE)
+    @meta = meta
     @shutup = false
     extend Pourable if meta[:bottle]
   end
@@ -47,14 +48,27 @@ class AbstractDownloadStrategy
   # chdir into the newly-unpacked directory.
   # Unlike {Resource#stage}, this does not take a block.
   def stage
-    UnpackStrategy.detect(cached_location, ref_type: @ref_type, ref: @ref)
+    UnpackStrategy.detect(cached_location,
+                          extension_only: true,
+                          ref_type: @ref_type, ref: @ref)
                   .extract_nestedly(basename: basename_without_params,
+                                    extension_only: true,
                                     verbose: ARGV.verbose? && !shutup)
+    chdir
   end
 
-  # @!attribute [r] cached_location
-  # The path to the cached file or directory associated with the resource.
-  def cached_location; end
+  def chdir
+    entries = Dir["*"]
+    case entries.length
+    when 0 then raise "Empty archive"
+    when 1 then begin
+        Dir.chdir entries.first
+      rescue
+        nil
+      end
+    end
+  end
+  private :chdir
 
   # @!attribute [r]
   # return most recent modified time for all files in the current working directory after stage.
@@ -88,11 +102,11 @@ end
 class VCSDownloadStrategy < AbstractDownloadStrategy
   REF_TYPES = [:tag, :branch, :revisions, :revision].freeze
 
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
     super
     @ref_type, @ref = extract_ref(meta)
     @revision = meta[:revision]
-    @clone = HOMEBREW_CACHE/cache_filename
+    @cached_location = @cache/"#{name}--#{cache_tag}"
   end
 
   def fetch
@@ -130,11 +144,9 @@ class VCSDownloadStrategy < AbstractDownloadStrategy
     commit != @last_commit
   end
 
-  def cached_location
-    @clone
+  def head?
+    version.respond_to?(:head?) && version.head?
   end
-
-  delegate head?: :version
 
   # Return last commit's unique identifier for the repository.
   # Return most recent modified timestamp unless overridden.
@@ -146,10 +158,6 @@ class VCSDownloadStrategy < AbstractDownloadStrategy
 
   def cache_tag
     raise NotImplementedError
-  end
-
-  def cache_filename
-    "#{name}--#{cache_tag}"
   end
 
   def repo_valid?
@@ -169,24 +177,20 @@ class VCSDownloadStrategy < AbstractDownloadStrategy
 end
 
 class AbstractFileDownloadStrategy < AbstractDownloadStrategy
+  attr_reader :temporary_path
+
+  def initialize(url, name, version, **meta)
+    super
+    @cached_location = @cache/"#{name}-#{version}#{ext}"
+    @temporary_path = Pathname.new("#{cached_location}.incomplete")
+  end
+
   def stage
     super
     chdir
   end
 
   private
-
-  def chdir
-    entries = Dir["*"]
-    case entries.length
-    when 0 then raise "Empty archive"
-    when 1 then begin
-        Dir.chdir entries.first
-      rescue
-        nil
-      end
-    end
-  end
 
   def ext
     # We need a Pathname because we've monkeypatched extname to support double
@@ -203,13 +207,11 @@ class AbstractFileDownloadStrategy < AbstractDownloadStrategy
 end
 
 class CurlDownloadStrategy < AbstractFileDownloadStrategy
-  attr_reader :mirrors, :tarball_path, :temporary_path
+  attr_reader :mirrors
 
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
     super
-    @mirrors = resource.mirrors.dup
-    @tarball_path = HOMEBREW_CACHE/"#{name}-#{version}#{ext}"
-    @temporary_path = Pathname.new("#{cached_location}.incomplete")
+    @mirrors = meta.fetch(:mirrors, [])
   end
 
   def fetch
@@ -232,10 +234,6 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
     retry
   end
 
-  def cached_location
-    tarball_path
-  end
-
   def clear_cache
     super
     rm_rf(temporary_path)
@@ -252,19 +250,36 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
       ohai "Downloading from #{url}"
     end
 
+    temporary_path.dirname.mkpath
+
     curl_download resolved_url(url), to: temporary_path
   end
 
   # Curl options to be always passed to curl,
   # with raw head calls (`curl --head`) or with actual `fetch`.
+  def _curl_args
+    args = []
+
+    if meta.key?(:cookies)
+      escape_cookie = ->(cookie) { URI.encode_www_form([cookie]) }
+      args += ["-b", meta.fetch(:cookies).map(&escape_cookie).join(";")]
+    end
+
+    args += ["-e", meta.fetch(:referer)] if meta.key?(:referer)
+
+    args += ["--user", meta.fetch(:user)] if meta.key?(:user)
+
+    args
+  end
+
   def _curl_opts
-    return ["--user", meta.fetch(:user)] if meta.key?(:user)
-    []
+    return { user_agent: meta.fetch(:user_agent) } if meta.key?(:user_agent)
+    {}
   end
 
   def resolved_url(url)
     redirect_url, _, status = curl_output(
-      *_curl_opts, "--silent", "--head",
+      "--silent", "--head",
       "--write-out", "%{redirect_url}",
       "--output", "/dev/null",
       url.to_s
@@ -283,17 +298,20 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
     redirect_url
   end
 
+  def curl_output(*args, **options)
+    super(*_curl_args, *args, **_curl_opts, **options)
+  end
+
   def curl(*args, **options)
-    args.concat _curl_opts
     args << "--connect-timeout" << "5" unless mirrors.empty?
-    super(*args, **options)
+    super(*_curl_args, *args, **_curl_opts, **options)
   end
 end
 
 # Detect and download from Apache Mirror
 class CurlApacheMirrorDownloadStrategy < CurlDownloadStrategy
   def apache_mirrors
-    mirrors, = curl_output(*_curl_opts, "--silent", "--location", "#{@url}&asjson=1")
+    mirrors, = curl_output("--silent", "--location", "#{@url}&asjson=1")
     JSON.parse(mirrors)
   end
 
@@ -317,7 +335,13 @@ end
 # Query parameters on the URL are converted into POST parameters
 class CurlPostDownloadStrategy < CurlDownloadStrategy
   def _fetch
-    base_url, data = @url.split("?")
+    base_url, data = if meta.key?(:data)
+      escape_data = ->(d) { ["-d", URI.encode_www_form([d])] }
+      [@url, meta[:data].flat_map(&escape_data)]
+    else
+      @url.split("?", 2)
+    end
+
     curl_download base_url, "--data", data, to: temporary_path
   end
 end
@@ -327,21 +351,20 @@ end
 class NoUnzipCurlDownloadStrategy < CurlDownloadStrategy
   def stage
     UnpackStrategy::Uncompressed.new(cached_location)
-                                .extract(basename: basename_without_params)
+                                .extract(basename: basename_without_params,
+                                         verbose: ARGV.verbose? && !shutup)
   end
 end
 
 # This strategy extracts local binary packages.
 class LocalBottleDownloadStrategy < AbstractFileDownloadStrategy
-  attr_reader :cached_location
-
   def initialize(path)
     @cached_location = path
   end
 end
 
 # S3DownloadStrategy downloads tarballs from AWS S3.
-# To use it, add ":using => S3DownloadStrategy" to the URL section of your
+# To use it, add `:using => :s3` to the URL section of your
 # formula.  This download strategy uses AWS access tokens (in the
 # environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY)
 # to sign the request.  This strategy is good in a corporate setting,
@@ -373,7 +396,7 @@ end
 
 # GitHubPrivateRepositoryDownloadStrategy downloads contents from GitHub
 # Private Repository. To use it, add
-# ":using => GitHubPrivateRepositoryDownloadStrategy" to the URL section of
+# `:using => :github_private_repo` to the URL section of
 # your formula. This download strategy uses GitHub access tokens (in the
 # environment variables HOMEBREW_GITHUB_API_TOKEN) to sign the request.  This
 # strategy is suitable for corporate use just like S3DownloadStrategy, because
@@ -383,7 +406,7 @@ class GitHubPrivateRepositoryDownloadStrategy < CurlDownloadStrategy
   require "utils/formatter"
   require "utils/github"
 
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
     super
     parse_url_pattern
     set_github_token
@@ -431,8 +454,7 @@ class GitHubPrivateRepositoryDownloadStrategy < CurlDownloadStrategy
 end
 
 # GitHubPrivateRepositoryReleaseDownloadStrategy downloads tarballs from GitHub
-# Release assets. To use it, add
-# ":using => GitHubPrivateRepositoryReleaseDownloadStrategy" to the URL section
+# Release assets. To use it, add `:using => :github_private_release` to the URL section
 # of your formula. This download strategy uses GitHub access tokens (in the
 # environment variables HOMEBREW_GITHUB_API_TOKEN) to sign the request.
 class GitHubPrivateRepositoryReleaseDownloadStrategy < GitHubPrivateRepositoryDownloadStrategy
@@ -476,7 +498,7 @@ class GitHubPrivateRepositoryReleaseDownloadStrategy < GitHubPrivateRepositoryDo
 end
 
 # ScpDownloadStrategy downloads files using ssh via scp. To use it, add
-# ":using => ScpDownloadStrategy" to the URL section of your formula or
+# `:using => :scp` to the URL section of your formula or
 # provide a URL starting with scp://. This strategy uses ssh credentials for
 # authentication. If a public/private keypair is configured, it will not
 # prompt for a password.
@@ -487,12 +509,8 @@ end
 #     url "scp://example.com/src/abc.1.0.tar.gz"
 #     ...
 class ScpDownloadStrategy < AbstractFileDownloadStrategy
-  attr_reader :tarball_path, :temporary_path
-
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
     super
-    @tarball_path = HOMEBREW_CACHE/"#{name}-#{version}#{ext}"
-    @temporary_path = Pathname.new("#{cached_location}.incomplete")
     parse_url_pattern
   end
 
@@ -521,10 +539,6 @@ class ScpDownloadStrategy < AbstractFileDownloadStrategy
     end
   end
 
-  def cached_location
-    tarball_path
-  end
-
   def clear_cache
     super
     rm_rf(temporary_path)
@@ -540,7 +554,7 @@ class ScpDownloadStrategy < AbstractFileDownloadStrategy
 end
 
 class SubversionDownloadStrategy < VCSDownloadStrategy
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
     super
     @url = @url.sub("svn+http://", "")
   end
@@ -578,11 +592,19 @@ class SubversionDownloadStrategy < VCSDownloadStrategy
     # This saves on bandwidth and will have a similar effect to verifying the
     # cache as it will make any changes to get the right revision.
     args = []
+
     if revision
       ohai "Checking out #{@ref}"
       args << "-r" << revision
     end
+
     args << "--ignore-externals" if ignore_externals
+
+    if meta[:trust_cert] == true
+      args << "--trust-server-cert"
+      args << "--non-interactive"
+    end
+
     if target.directory?
       system_command("svn", args: ["update", *args], chdir: target.to_s)
     else
@@ -625,7 +647,7 @@ class GitDownloadStrategy < VCSDownloadStrategy
     %r{http://llvm\.org},
   ].freeze
 
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
     super
     @ref_type ||= :branch
     @ref ||= "master"
@@ -651,13 +673,11 @@ class GitDownloadStrategy < VCSDownloadStrategy
   end
 
   def update
-    cached_location.cd do
-      config_repo
-      update_repo
-      checkout
-      reset
-      update_submodules if submodules?
-    end
+    config_repo
+    update_repo
+    checkout
+    reset
+    update_submodules if submodules?
   end
 
   def shallow_clone?
@@ -677,15 +697,20 @@ class GitDownloadStrategy < VCSDownloadStrategy
   end
 
   def ref?
-    quiet_system "git", "--git-dir", git_dir, "rev-parse", "-q", "--verify", "#{@ref}^{commit}"
+    system_command("git",
+                   args: ["--git-dir", git_dir, "rev-parse", "-q", "--verify", "#{@ref}^{commit}"],
+                   print_stderr: false)
+      .success?
   end
 
   def current_revision
-    Utils.popen_read("git", "--git-dir", git_dir, "rev-parse", "-q", "--verify", "HEAD").strip
+    system_command("git", args: ["--git-dir", git_dir, "rev-parse", "-q", "--verify", "HEAD"])
+      .stdout.strip
   end
 
   def repo_valid?
-    quiet_system "git", "--git-dir", git_dir, "status", "-s"
+    system_command("git", args: ["--git-dir", git_dir, "status", "-s"], print_stderr: false)
+      .success?
   end
 
   def submodules?
@@ -713,35 +738,44 @@ class GitDownloadStrategy < VCSDownloadStrategy
   end
 
   def config_repo
-    safe_system "git", "config", "remote.origin.url", @url
-    safe_system "git", "config", "remote.origin.fetch", refspec
+    system_command! "git",
+                    args: ["config", "remote.origin.url", @url],
+                    chdir: cached_location
+    system_command! "git",
+                    args: ["config", "remote.origin.fetch", refspec],
+                    chdir: cached_location
   end
 
   def update_repo
     return unless @ref_type == :branch || !ref?
 
     if !shallow_clone? && shallow_dir?
-      safe_system "git", "fetch", "origin", "--unshallow"
+      system_command! "git",
+                      args: ["fetch", "origin", "--unshallow"],
+                      chdir: cached_location
     else
-      safe_system "git", "fetch", "origin"
+      system_command! "git",
+                      args: ["fetch", "origin"],
+                      chdir: cached_location
     end
   end
 
   def clone_repo
-    safe_system "git", *clone_args
-    cached_location.cd do
-      safe_system "git", "config", "homebrew.cacheversion", cache_version
-      checkout
-      update_submodules if submodules?
-    end
+    system_command! "git", args: clone_args
+
+    system_command! "git",
+                    args: ["config", "homebrew.cacheversion", cache_version],
+                    chdir: cached_location
+    checkout
+    update_submodules if submodules?
   end
 
   def checkout
     ohai "Checking out #{@ref_type} #{@ref}" if @ref_type && @ref
-    safe_system "git", "checkout", "-f", @ref, "--"
+    system_command! "git", args: ["checkout", "-f", @ref, "--"], chdir: cached_location
   end
 
-  def reset_args
+  def reset
     ref = case @ref_type
     when :branch
       "origin/#{@ref}"
@@ -749,30 +783,34 @@ class GitDownloadStrategy < VCSDownloadStrategy
       @ref
     end
 
-    %W[reset --hard #{ref}]
-  end
-
-  def reset
-    safe_system "git", *reset_args
+    system_command! "git",
+                    args: ["reset", "--hard", *ref],
+                    chdir: cached_location
   end
 
   def update_submodules
-    safe_system "git", "submodule", "foreach", "--recursive", "git submodule sync"
-    safe_system "git", "submodule", "update", "--init", "--recursive"
+    system_command! "git",
+                    args: ["submodule", "foreach", "--recursive", "git submodule sync"],
+                    chdir: cached_location
+    system_command! "git",
+                    args: ["submodule", "update", "--init", "--recursive"],
+                    chdir: cached_location
     fix_absolute_submodule_gitdir_references!
   end
 
+  # When checking out Git repositories with recursive submodules, some Git
+  # versions create `.git` files with absolute instead of relative `gitdir:`
+  # pointers. This works for the cached location, but breaks various Git
+  # operations once the affected Git resource is staged, i.e. recursively
+  # copied to a new location. (This bug was introduced in Git 2.7.0 and fixed
+  # in 2.8.3. Clones created with affected version remain broken.)
+  # See https://github.com/Homebrew/homebrew-core/pull/1520 for an example.
   def fix_absolute_submodule_gitdir_references!
-    # When checking out Git repositories with recursive submodules, some Git
-    # versions create `.git` files with absolute instead of relative `gitdir:`
-    # pointers. This works for the cached location, but breaks various Git
-    # operations once the affected Git resource is staged, i.e. recursively
-    # copied to a new location. (This bug was introduced in Git 2.7.0 and fixed
-    # in 2.8.3. Clones created with affected version remain broken.)
-    # See https://github.com/Homebrew/homebrew-core/pull/1520 for an example.
-    submodule_dirs = Utils.popen_read(
-      "git", "submodule", "--quiet", "foreach", "--recursive", "pwd"
-    )
+    submodule_dirs = system_command!("git",
+                                     args: ["submodule", "--quiet", "foreach", "--recursive", "pwd"],
+                                     chdir: cached_location)
+                     .stdout
+
     submodule_dirs.lines.map(&:chomp).each do |submodule_dir|
       work_dir = Pathname.new(submodule_dir)
 
@@ -797,7 +835,7 @@ class GitDownloadStrategy < VCSDownloadStrategy
 end
 
 class GitHubGitDownloadStrategy < GitDownloadStrategy
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
     super
 
     return unless %r{^https?://github\.com/(?<user>[^/]+)/(?<repo>[^/]+)\.git$} =~ @url
@@ -851,7 +889,7 @@ class GitHubGitDownloadStrategy < GitDownloadStrategy
 end
 
 class CVSDownloadStrategy < VCSDownloadStrategy
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
     super
     @url = @url.sub(%r{^cvs://}, "")
 
@@ -921,7 +959,7 @@ class CVSDownloadStrategy < VCSDownloadStrategy
 end
 
 class MercurialDownloadStrategy < VCSDownloadStrategy
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
     super
     @url = @url.sub(%r{^hg://}, "")
   end
@@ -977,7 +1015,7 @@ class MercurialDownloadStrategy < VCSDownloadStrategy
 end
 
 class BazaarDownloadStrategy < VCSDownloadStrategy
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
     super
     @url.sub!(%r{^bzr://}, "")
     ENV["BZR_HOME"] = HOMEBREW_TEMP
@@ -1028,7 +1066,7 @@ class BazaarDownloadStrategy < VCSDownloadStrategy
 end
 
 class FossilDownloadStrategy < VCSDownloadStrategy
-  def initialize(name, resource)
+  def initialize(url, name, version, **meta)
     super
     @url = @url.sub(%r{^fossil://}, "")
   end
@@ -1077,20 +1115,21 @@ class FossilDownloadStrategy < VCSDownloadStrategy
 end
 
 class DownloadStrategyDetector
-  def self.detect(url, strategy = nil)
-    if strategy.nil?
+  def self.detect(url, using = nil)
+    strategy = if using.nil?
       detect_from_url(url)
-    elsif strategy == S3DownloadStrategy
-      require_aws_sdk
-      strategy
-    elsif strategy.is_a?(Class) && strategy < AbstractDownloadStrategy
-      strategy
-    elsif strategy.is_a?(Symbol)
-      detect_from_symbol(strategy)
+    elsif using.is_a?(Class) && using < AbstractDownloadStrategy
+      using
+    elsif using.is_a?(Symbol)
+      detect_from_symbol(using)
     else
       raise TypeError,
         "Unknown download strategy specification #{strategy.inspect}"
     end
+
+    require_aws_sdk if strategy == S3DownloadStrategy
+
+    strategy
   end
 
   def self.detect_from_url(url)
@@ -1116,7 +1155,6 @@ class DownloadStrategyDetector
     when %r{^https?://(.+?\.)?sourceforge\.net/hgweb/}
       MercurialDownloadStrategy
     when %r{^s3://}
-      require_aws_sdk
       S3DownloadStrategy
     when %r{^scp://}
       ScpDownloadStrategy
@@ -1127,16 +1165,19 @@ class DownloadStrategyDetector
 
   def self.detect_from_symbol(symbol)
     case symbol
-    when :hg      then MercurialDownloadStrategy
-    when :nounzip then NoUnzipCurlDownloadStrategy
-    when :git     then GitDownloadStrategy
-    when :bzr     then BazaarDownloadStrategy
-    when :svn     then SubversionDownloadStrategy
-    when :curl    then CurlDownloadStrategy
-    when :ssl3    then CurlSSL3DownloadStrategy
-    when :cvs     then CVSDownloadStrategy
-    when :post    then CurlPostDownloadStrategy
-    when :fossil  then FossilDownloadStrategy
+    when :hg                     then MercurialDownloadStrategy
+    when :nounzip                then NoUnzipCurlDownloadStrategy
+    when :git                    then GitDownloadStrategy
+    when :github_private_repo    then GitHubPrivateRepositoryDownloadStrategy
+    when :github_private_release then GitHubPrivateRepositoryReleaseDownloadStrategy
+    when :bzr                    then BazaarDownloadStrategy
+    when :s3                     then S3DownloadStrategy
+    when :scp                    then ScpDownloadStrategy
+    when :svn                    then SubversionDownloadStrategy
+    when :curl                   then CurlDownloadStrategy
+    when :cvs                    then CVSDownloadStrategy
+    when :post                   then CurlPostDownloadStrategy
+    when :fossil                 then FossilDownloadStrategy
     else
       raise "Unknown download strategy #{symbol} was requested."
     end

@@ -2,8 +2,14 @@ module UnpackStrategy
   class Lzma
     include UnpackStrategy
 
-    def self.can_extract?(path:, magic_number:)
-      magic_number.match?(/\A\]\000\000\200\000/n)
+    using Magic
+
+    def self.extensions
+      [".lzma"]
+    end
+
+    def self.can_extract?(path)
+      path.magic_number.match?(/\A\]\000\000\200\000/n)
     end
 
     def extract_to_dir(unpack_dir, basename:, verbose:)
@@ -11,7 +17,8 @@ module UnpackStrategy
       quiet_flags = verbose ? [] : ["-q"]
       system_command! "unlzma",
                       args: [*quiet_flags, "--", unpack_dir/basename],
-                      env: { "PATH" => PATH.new(Formula["xz"].opt_bin, ENV["PATH"]) }
+                      env: { "PATH" => PATH.new(Formula["xz"].opt_bin, ENV["PATH"]) },
+                      verbose: verbose
     end
 
     def dependencies

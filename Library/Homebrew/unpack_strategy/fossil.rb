@@ -2,8 +2,14 @@ module UnpackStrategy
   class Fossil
     include UnpackStrategy
 
-    def self.can_extract?(path:, magic_number:)
-      return false unless magic_number.match?(/\ASQLite format 3\000/n)
+    using Magic
+
+    def self.extensions
+      []
+    end
+
+    def self.can_extract?(path)
+      return false unless path.magic_number.match?(/\ASQLite format 3\000/n)
 
       # Fossil database is made up of artifacts, so the `artifact` table must exist.
       query = "select count(*) from sqlite_master where type = 'view' and name = 'artifact'"
@@ -22,7 +28,8 @@ module UnpackStrategy
       system_command! "fossil",
                       args: ["open", path, *args],
                       chdir: unpack_dir,
-                      env: { "PATH" => PATH.new(Formula["fossil"].opt_bin, ENV["PATH"]) }
+                      env: { "PATH" => PATH.new(Formula["fossil"].opt_bin, ENV["PATH"]) },
+                      verbose: verbose
     end
   end
 end

@@ -1,12 +1,12 @@
 require "download_strategy"
 
 describe AbstractDownloadStrategy do
-  subject { described_class.new(name, resource) }
+  subject { described_class.new(url, name, version, **specs) }
 
   let(:specs) { {} }
   let(:name) { "foo" }
   let(:url) { "http://example.com/foo.tar.gz" }
-  let(:resource) { double(Resource, url: url, mirrors: [], specs: specs, version: nil) }
+  let(:version) { nil }
   let(:args) { %w[foo bar baz] }
 
   specify "#source_modified_time" do
@@ -35,22 +35,22 @@ end
 
 describe VCSDownloadStrategy do
   let(:url) { "http://example.com/bar" }
-  let(:resource) { double(Resource, url: url, mirrors: [], specs: {}, version: nil) }
+  let(:version) { nil }
 
   describe "#cached_location" do
     it "returns the path of the cached resource" do
       allow_any_instance_of(described_class).to receive(:cache_tag).and_return("foo")
-      downloader = described_class.new("baz", resource)
+      downloader = described_class.new(url, "baz", version)
       expect(downloader.cached_location).to eq(HOMEBREW_CACHE/"baz--foo")
     end
   end
 end
 
 describe GitHubPrivateRepositoryDownloadStrategy do
-  subject { described_class.new("foo", resource) }
+  subject { described_class.new(url, "foo", version) }
 
   let(:url) { "https://github.com/owner/repo/archive/1.1.5.tar.gz" }
-  let(:resource) { double(Resource, url: url, mirrors: [], specs: {}, version: nil) }
+  let(:version) { nil }
 
   before do
     ENV["HOMEBREW_GITHUB_API_TOKEN"] = "token"
@@ -71,10 +71,10 @@ describe GitHubPrivateRepositoryDownloadStrategy do
 end
 
 describe GitHubPrivateRepositoryReleaseDownloadStrategy do
-  subject { described_class.new("foo", resource) }
+  subject { described_class.new(url, "foo", version) }
 
   let(:url) { "https://github.com/owner/repo/releases/download/tag/foo_v0.1.0_darwin_amd64.tar.gz" }
-  let(:resource) { double(Resource, url: url, mirrors: [], specs: {}, version: nil) }
+  let(:version) { nil }
 
   before do
     ENV["HOMEBREW_GITHUB_API_TOKEN"] = "token"
@@ -122,11 +122,11 @@ describe GitHubPrivateRepositoryReleaseDownloadStrategy do
 end
 
 describe GitHubGitDownloadStrategy do
-  subject { described_class.new(name, resource) }
+  subject { described_class.new(url, name, version) }
 
   let(:name) { "brew" }
   let(:url) { "https://github.com/homebrew/brew.git" }
-  let(:resource) { double(Resource, url: url, mirrors: [], specs: {}, version: nil) }
+  let(:version) { nil }
 
   it "parses the URL and sets the corresponding instance variables" do
     expect(subject.instance_variable_get(:@user)).to eq("homebrew")
@@ -135,11 +135,11 @@ describe GitHubGitDownloadStrategy do
 end
 
 describe GitDownloadStrategy do
-  subject { described_class.new(name, resource) }
+  subject { described_class.new(url, name, version) }
 
   let(:name) { "baz" }
   let(:url) { "https://github.com/homebrew/foo" }
-  let(:resource) { double(Resource, url: url, mirrors: [], specs: {}, version: nil) }
+  let(:version) { nil }
   let(:cached_location) { subject.cached_location }
 
   before do
@@ -181,7 +181,6 @@ describe GitDownloadStrategy do
   describe "#fetch_last_commit" do
     let(:url) { "file://#{remote_repo}" }
     let(:version) { Version.create("HEAD") }
-    let(:resource) { double(Resource, url: url, mirrors: [], specs: {}, version: version) }
     let(:remote_repo) { HOMEBREW_PREFIX/"remote_repo" }
 
     before { remote_repo.mkpath }
@@ -202,14 +201,14 @@ describe GitDownloadStrategy do
 end
 
 describe S3DownloadStrategy do
-  subject { described_class.new(name, resource) }
+  subject { described_class.new(url, name, version) }
 
   let(:name) { "foo" }
   let(:url) { "http://bucket.s3.amazonaws.com/foo.tar.gz" }
-  let(:resource) { double(Resource, url: url, mirrors: [], specs: {}, version: nil) }
+  let(:version) { nil }
 
   describe "#_fetch" do
-    subject { described_class.new(name, resource)._fetch }
+    subject { described_class.new(url, name, version)._fetch }
 
     context "when given Bad S3 URL" do
       let(:url) { "http://example.com/foo.tar.gz" }
@@ -224,18 +223,19 @@ describe S3DownloadStrategy do
 end
 
 describe CurlDownloadStrategy do
-  subject { described_class.new(name, resource) }
+  subject { described_class.new(url, name, version, **specs) }
 
   let(:name) { "foo" }
   let(:url) { "http://example.com/foo.tar.gz" }
-  let(:resource) { double(Resource, url: url, mirrors: [], specs: { user: "download:123456" }, version: nil) }
+  let(:version) { nil }
+  let(:specs) { { user: "download:123456" } }
 
   it "parses the opts and sets the corresponding args" do
-    expect(subject.send(:_curl_opts)).to eq(["--user", "download:123456"])
+    expect(subject.send(:_curl_args)).to eq(["--user", "download:123456"])
   end
 
-  describe "#tarball_path" do
-    subject { described_class.new(name, resource).tarball_path }
+  describe "#cached_location" do
+    subject { described_class.new(url, name, version, **specs).cached_location }
 
     context "when URL ends with file" do
       it { is_expected.to eq(HOMEBREW_CACHE/"foo-.tar.gz") }
@@ -250,14 +250,10 @@ describe CurlDownloadStrategy do
 end
 
 describe ScpDownloadStrategy do
-  def resource_for(url)
-    double(Resource, url: url, mirrors: [], specs: {}, version: nil)
-  end
-
-  subject { described_class.new(name, resource) }
+  subject { described_class.new(url, name, version) }
   let(:name) { "foo" }
   let(:url) { "scp://example.com/foo.tar.gz" }
-  let(:resource) { resource_for(url) }
+  let(:version) { nil }
 
   describe "#initialize" do
     invalid_urls = %w[
@@ -269,10 +265,10 @@ describe ScpDownloadStrategy do
 
     invalid_urls.each do |invalid_url|
       context "with invalid URL #{invalid_url}" do
+        let(:url) { invalid_url }
+
         it "raises ScpDownloadStrategyError" do
-          expect {
-            described_class.new(name, resource_for(invalid_url))
-          }.to raise_error(ScpDownloadStrategyError)
+          expect { subject }.to raise_error(ScpDownloadStrategyError)
         end
       end
     end
