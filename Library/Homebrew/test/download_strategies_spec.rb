@@ -5,7 +5,7 @@ describe AbstractDownloadStrategy do
 
   let(:specs) { {} }
   let(:name) { "foo" }
-  let(:url) { "http://example.com/foo.tar.gz" }
+  let(:url) { "https://example.com/foo.tar.gz" }
   let(:version) { nil }
   let(:args) { %w[foo bar baz] }
 
@@ -34,7 +34,7 @@ describe AbstractDownloadStrategy do
 end
 
 describe VCSDownloadStrategy do
-  let(:url) { "http://example.com/bar" }
+  let(:url) { "https://example.com/bar" }
   let(:version) { nil }
 
   describe "#cached_location" do
@@ -204,14 +204,14 @@ describe S3DownloadStrategy do
   subject { described_class.new(url, name, version) }
 
   let(:name) { "foo" }
-  let(:url) { "http://bucket.s3.amazonaws.com/foo.tar.gz" }
+  let(:url) { "https://bucket.s3.amazonaws.com/foo.tar.gz" }
   let(:version) { nil }
 
   describe "#_fetch" do
     subject { described_class.new(url, name, version)._fetch }
 
     context "when given Bad S3 URL" do
-      let(:url) { "http://example.com/foo.tar.gz" }
+      let(:url) { "https://example.com/foo.tar.gz" }
 
       it "raises Bad S3 URL error" do
         expect {
@@ -226,8 +226,8 @@ describe CurlDownloadStrategy do
   subject { described_class.new(url, name, version, **specs) }
 
   let(:name) { "foo" }
-  let(:url) { "http://example.com/foo.tar.gz" }
-  let(:version) { nil }
+  let(:url) { "https://example.com/foo.tar.gz" }
+  let(:version) { "1.2.3" }
   let(:specs) { { user: "download:123456" } }
 
   it "parses the opts and sets the corresponding args" do
@@ -238,13 +238,182 @@ describe CurlDownloadStrategy do
     subject { described_class.new(url, name, version, **specs).cached_location }
 
     context "when URL ends with file" do
-      it { is_expected.to eq(HOMEBREW_CACHE/"foo-.tar.gz") }
+      it { is_expected.to eq(HOMEBREW_CACHE/"foo--1.2.3.tar.gz") }
     end
 
     context "when URL file is in middle" do
-      let(:url) { "http://example.com/foo.tar.gz/from/this/mirror" }
+      let(:url) { "https://example.com/foo.tar.gz/from/this/mirror" }
 
-      it { is_expected.to eq(HOMEBREW_CACHE/"foo-.tar.gz") }
+      it { is_expected.to eq(HOMEBREW_CACHE/"foo--1.2.3.tar.gz") }
+    end
+  end
+
+  describe "#fetch" do
+    before(:each) do
+      FileUtils.touch subject.temporary_path
+    end
+
+    it "calls curl with default arguments" do
+      expect(subject).to receive(:curl).with(
+        "--location",
+        "--remote-time",
+        "--continue-at", "-",
+        "--output", an_instance_of(Pathname),
+        url,
+        an_instance_of(Hash)
+      )
+
+      subject.fetch
+    end
+
+    context "with an explicit user agent" do
+      let(:specs) { { user_agent: "Mozilla/25.0.1" } }
+
+      it "adds the appropriate curl args" do
+        expect(subject).to receive(:system_command!) { |*, args:, **|
+          expect(args.each_cons(2)).to include(["--user-agent", "Mozilla/25.0.1"])
+        }
+
+        subject.fetch
+      end
+    end
+
+    context "with a generalized fake user agent" do
+      alias_matcher :a_string_matching, :match
+
+      let(:specs) { { user_agent: :fake } }
+
+      it "adds the appropriate curl args" do
+        expect(subject).to receive(:system_command!) { |*, args:, **|
+          expect(args.each_cons(2).to_a).to include(["--user-agent", a_string_matching(/Mozilla.*Mac OS X 10.*AppleWebKit/)])
+        }
+
+        subject.fetch
+      end
+    end
+
+    context "with cookies set" do
+      let(:specs) {
+        {
+          cookies: {
+            coo: "kie",
+            mon: "ster",
+          },
+        }
+      }
+
+      it "adds the appropriate curl args" do
+        expect(subject).to receive(:system_command!) { |*, args:, **|
+          expect(args.each_cons(2)).to include(["-b", "coo=kie;mon=ster"])
+        }
+
+        subject.fetch
+      end
+    end
+
+    context "with referer set" do
+      let(:specs) { { referer: "https://somehost/also" } }
+
+      it "adds the appropriate curl args" do
+        expect(subject).to receive(:system_command!) { |*, args:, **|
+          expect(args.each_cons(2)).to include(["-e", "https://somehost/also"])
+        }
+
+        subject.fetch
+      end
+    end
+  end
+
+  describe "#cached_location" do
+    context "with a file name trailing the URL path" do
+      let(:url) { "https://example.com/cask.dmg" }
+      its("cached_location.extname") { is_expected.to eq(".dmg") }
+    end
+
+    context "with no discernible file name in it" do
+      let(:url) { "https://example.com/download" }
+      its("cached_location.basename.to_path") { is_expected.to eq("foo--1.2.3") }
+    end
+
+    context "with a file name trailing the first query parameter" do
+      let(:url) { "https://example.com/download?file=cask.zip&a=1" }
+      its("cached_location.extname") { is_expected.to eq(".zip") }
+    end
+
+    context "with a file name trailing the second query parameter" do
+      let(:url) { "https://example.com/dl?a=1&file=cask.zip&b=2" }
+      its("cached_location.extname") { is_expected.to eq(".zip") }
+    end
+
+    context "with an unusually long query string" do
+      let(:url) do
+        [
+          "https://node49152.ssl.fancycdn.example.com",
+          "/fancycdn/node/49152/file/upload/download",
+          "?cask_class=zf920df",
+          "&cask_group=2348779087242312",
+          "&cask_archive_file_name=cask.zip",
+          "&signature=CGmDulxL8pmutKTlCleNTUY%2FyO9Xyl5u9yVZUE0",
+          "uWrjadjuz67Jp7zx3H7NEOhSyOhu8nzicEHRBjr3uSoOJzwkLC8L",
+          "BLKnz%2B2X%2Biq5m6IdwSVFcLp2Q1Hr2kR7ETn3rF1DIq5o0lHC",
+          "yzMmyNe5giEKJNW8WF0KXriULhzLTWLSA3ZTLCIofAdRiiGje1kN",
+          "YY3C0SBqymQB8CG3ONn5kj7CIGbxrDOq5xI2ZSJdIyPysSX7SLvE",
+          "DBw2KdR24q9t1wfjS9LUzelf5TWk6ojj8p9%2FHjl%2Fi%2FVCXN",
+          "N4o1mW%2FMayy2tTY1qcC%2FTmqI1ulZS8SNuaSgr9Iys9oDF1%2",
+          "BPK%2B4Sg==",
+        ].join
+      end
+
+      its("cached_location.extname") { is_expected.to eq(".zip") }
+      its("cached_location.to_path.length") { is_expected.to be_between(0, 255) }
+    end
+  end
+end
+
+describe CurlPostDownloadStrategy do
+  subject { described_class.new(url, name, version, **specs) }
+
+  let(:name) { "foo" }
+  let(:url) { "https://example.com/foo.tar.gz" }
+  let(:version) { "1.2.3" }
+  let(:specs) { {} }
+
+  describe "#fetch" do
+    before(:each) do
+      FileUtils.touch subject.temporary_path
+    end
+
+    context "with :using and :data specified" do
+      let(:specs) {
+        {
+          using: :post,
+          data:  {
+            form: "data",
+            is:   "good",
+          },
+        }
+      }
+
+      it "adds the appropriate curl args" do
+        expect(subject).to receive(:system_command!) { |*, args:, **|
+          expect(args.each_cons(2)).to include(["-d", "form=data"])
+          expect(args.each_cons(2)).to include(["-d", "is=good"])
+        }
+
+        subject.fetch
+      end
+    end
+
+    context "with :using but no :data" do
+      let(:specs) { { using: :post } }
+
+      it "adds the appropriate curl args" do
+        expect(subject).to receive(:system_command!) { |*, args:, **|
+          expect(args.each_cons(2)).to include(["-X", "POST"])
+        }
+
+        subject.fetch
+      end
     end
   end
 end
@@ -257,7 +426,7 @@ describe ScpDownloadStrategy do
 
   describe "#initialize" do
     invalid_urls = %w[
-      http://example.com/foo.tar.gz
+      https://example.com/foo.tar.gz
       scp://@example.com/foo.tar.gz
       scp://example.com:/foo.tar.gz
       scp://example.com
@@ -283,8 +452,8 @@ describe ScpDownloadStrategy do
       let(:url) { "scp://example.com/foo.tar.gz" }
       it "copies the file via scp" do
         expect(subject)
-          .to receive(:safe_system)
-          .with("scp", "example.com:/foo.tar.gz", anything)
+          .to receive(:system_command!)
+          .with("scp", args: ["example.com:/foo.tar.gz", anything])
           .and_return(true)
 
         subject.fetch
@@ -295,8 +464,8 @@ describe ScpDownloadStrategy do
       let(:url) { "scp://user@example.com/foo.tar.gz" }
       it "copies the file via scp" do
         expect(subject)
-          .to receive(:safe_system)
-          .with("scp", "user@example.com:/foo.tar.gz", anything)
+          .to receive(:system_command!)
+          .with("scp", args: ["user@example.com:/foo.tar.gz", anything])
           .and_return(true)
 
         subject.fetch
@@ -307,8 +476,8 @@ describe ScpDownloadStrategy do
       let(:url) { "scp://example.com:1234/foo.tar.gz" }
       it "copies the file via scp" do
         expect(subject)
-          .to receive(:safe_system)
-          .with("scp", "-P 1234 example.com:/foo.tar.gz", anything)
+          .to receive(:system_command!)
+          .with("scp", args: ["-P 1234 example.com:/foo.tar.gz", anything])
           .and_return(true)
 
         subject.fetch
@@ -319,9 +488,43 @@ describe ScpDownloadStrategy do
       let(:url) { "scp://example.com/~/foo.tar.gz" }
       it "treats the path as relative to the home directory" do
         expect(subject)
-          .to receive(:safe_system)
-          .with("scp", "example.com:~/foo.tar.gz", anything)
+          .to receive(:system_command!)
+          .with("scp", args: ["example.com:~/foo.tar.gz", anything])
           .and_return(true)
+
+        subject.fetch
+      end
+    end
+  end
+end
+
+describe SubversionDownloadStrategy do
+  subject { described_class.new(url, name, version, **specs) }
+
+  let(:name) { "foo" }
+  let(:url) { "https://example.com/foo.tar.gz" }
+  let(:version) { "1.2.3" }
+  let(:specs) { {} }
+
+  describe "#fetch" do
+    context "with :trust_cert set" do
+      let(:specs) { { trust_cert: true } }
+
+      it "adds the appropriate svn args" do
+        expect(subject).to receive(:system_command!)
+          .with("svn", args: array_including("--trust-server-cert", "--non-interactive"))
+
+        subject.fetch
+      end
+    end
+
+    context "with :revision set" do
+      let(:specs) { { revision: "10" } }
+
+      it "adds svn arguments for :revision" do
+        expect(subject).to receive(:system_command!) { |*, args:, **|
+          expect(args.each_cons(2)).to include(["-r", "10"])
+        }
 
         subject.fetch
       end
