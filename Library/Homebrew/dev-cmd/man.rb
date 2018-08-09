@@ -70,10 +70,10 @@ module Homebrew
                                         .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1')
     variables[:leadership] = readme.read[/(Homebrew's project leadership committee .*\.)/, 1]
                                    .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1')
-    variables[:core_maintainer] = readme.read[%r{(Homebrew/homebrew-core's lead maintainer .*\.)}, 1]
-                                        .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1')
     variables[:brew_maintainers] = readme.read[%r{(Homebrew/brew's other current maintainers .*\.)}, 1]
                                          .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1')
+    variables[:linux_maintainers] = readme.read[%r{(Homebrew/brew's Linux support \(and Linuxbrew\) maintainers are .*\.)}, 1]
+                                          .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1')
     variables[:core_maintainers] = readme.read[%r{(Homebrew/homebrew-core's other current maintainers .*\.)}, 1]
                                          .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1')
     variables[:former_maintainers] = readme.read[/(Former maintainers .*\.)/, 1]

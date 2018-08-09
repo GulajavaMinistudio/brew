@@ -7,7 +7,7 @@ describe RuboCop::Cop::FormulaAudit::ClassName do
     expect_offense(<<~RUBY)
       class Foo < ScriptFileFormula
                   ^^^^^^^^^^^^^^^^^ ScriptFileFormula is deprecated, use Formula instead
-        url 'http://example.com/foo-1.0.tgz'
+        url 'https://example.com/foo-1.0.tgz'
       end
     RUBY
   end
@@ -16,7 +16,7 @@ describe RuboCop::Cop::FormulaAudit::ClassName do
     expect_offense(<<~RUBY)
       class Foo < GithubGistFormula
                   ^^^^^^^^^^^^^^^^^ GithubGistFormula is deprecated, use Formula instead
-        url 'http://example.com/foo-1.0.tgz'
+        url 'https://example.com/foo-1.0.tgz'
       end
     RUBY
   end
@@ -25,7 +25,7 @@ describe RuboCop::Cop::FormulaAudit::ClassName do
     expect_offense(<<~RUBY)
       class Foo < AmazonWebServicesFormula
                   ^^^^^^^^^^^^^^^^^^^^^^^^ AmazonWebServicesFormula is deprecated, use Formula instead
-        url 'http://example.com/foo-1.0.tgz'
+        url 'https://example.com/foo-1.0.tgz'
       end
     RUBY
   end
@@ -33,13 +33,13 @@ describe RuboCop::Cop::FormulaAudit::ClassName do
   it "supports auto-correcting deprecated parent classes" do
     source = <<~RUBY
       class Foo < AmazonWebServicesFormula
-        url 'http://example.com/foo-1.0.tgz'
+        url 'https://example.com/foo-1.0.tgz'
       end
     RUBY
 
     corrected_source = <<~RUBY
       class Foo < Formula
-        url 'http://example.com/foo-1.0.tgz'
+        url 'https://example.com/foo-1.0.tgz'
       end
     RUBY
 
@@ -55,7 +55,32 @@ describe RuboCop::Cop::FormulaAuditStrict::Test do
     expect_offense(<<~RUBY)
       class Foo < Formula
       ^^^^^^^^^^^^^^^^^^^ A `test do` test block should be added
-        url 'http://example.com/foo-1.0.tgz'
+        url 'https://example.com/foo-1.0.tgz'
+      end
+    RUBY
+  end
+
+  it "reports an offense when there is an empty test block" do
+    expect_offense(<<~RUBY)
+      class Foo < Formula
+        url 'https://example.com/foo-1.0.tgz'
+
+        test do
+        ^^^^^^^ `test do` should not be empty
+        end
+      end
+    RUBY
+  end
+
+  it "reports an offense when test is falsely true" do
+    expect_offense(<<~RUBY)
+      class Foo < Formula
+        url 'https://example.com/foo-1.0.tgz'
+
+        test do
+        ^^^^^^^ `test do` should contain a real test
+          true
+        end
       end
     RUBY
   end

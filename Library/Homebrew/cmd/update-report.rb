@@ -147,10 +147,6 @@ module Homebrew
     return unless legacy_cache.writable_real?
     FileUtils.touch migration_attempted_file
 
-    # Cleanup to avoid copying files unnecessarily
-    ohai "Cleaning up #{legacy_cache}..."
-    Cleanup.cleanup_cache legacy_cache
-
     # This directory could have been compromised if it's world-writable/
     # a symlink/owned by another user so don't copy files in those cases.
     world_writable = legacy_cache.stat.mode & 0777 == 0777
@@ -191,6 +187,10 @@ module Homebrew
 
   def migrate_cache_entries_to_double_dashes(initial_version)
     return if initial_version > "1.7.1"
+
+    return if ENV.key?("HOMEBREW_DISABLE_LOAD_FORMULA")
+
+    ohai "Migrating cache entries..."
 
     Formula.each do |formula|
       specs = [*formula.stable, *formula.devel, *formula.head]
