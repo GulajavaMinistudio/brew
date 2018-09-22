@@ -7,6 +7,7 @@ def curl_executable
     "/usr/bin/curl",
   ].compact.map { |c| Pathname(c) }.find(&:executable?)
   raise "no executable curl was found" unless @curl
+
   @curl
 end
 
@@ -31,7 +32,7 @@ def curl_args(*extra_args, show_output: false, user_agent: :default)
     args << "--fail"
     args << "--progress-bar" unless ARGV.verbose?
     args << "--verbose" if ENV["HOMEBREW_CURL_VERBOSE"]
-    args << "--silent" if !$stdout.tty? || ENV["TRAVIS"]
+    args << "--silent" if !$stdout.tty? || ENV["HOMEBREW_TRAVIS_CI"]
   end
 
   args + extra_args
@@ -46,19 +47,20 @@ def curl(*args)
                   env: { "SSL_CERT_FILE" => nil }
 end
 
-def curl_download(*args, to: nil, continue_at: "-", **options)
-  had_incomplete_download ||= File.exist?(to)
-  curl("--location", "--remote-time", "--continue-at", continue_at.to_s, "--output", to, *args, **options)
-rescue ErrorDuringExecution => e
-  # `curl` error 33: HTTP server doesn't seem to support byte ranges. Cannot resume.
-  # HTTP status 416: Requested range not satisfiable
-  if (e.status.exitstatus == 33 || had_incomplete_download) && continue_at == "-"
-    continue_at = 0
-    had_incomplete_download = false
-    retry
+def curl_download(*args, to: nil, **options)
+  destination = Pathname(to)
+  destination.dirname.mkpath
+
+  continue_at = if destination.exist? &&
+                   curl_output("--location", "--head", "--range", "0-1",
+                               "--write-out", "%{http_code}",
+                               "--output", "/dev/null", *args, **options).stdout.to_i == 206 # Partial Content
+    "-"
+  else
+    0
   end
 
-  raise
+  curl("--location", "--remote-time", "--continue-at", continue_at.to_s, "--output", destination, *args, **options)
 end
 
 def curl_output(*args, **options)
@@ -82,6 +84,7 @@ def curl_check_http_content(url, user_agents: [:default], check_content: false, 
   unless details[:status]
     # Hack around https://github.com/Homebrew/brew/issues/3199
     return if MacOS.version == :el_capitan
+
     return "The URL #{url} is not reachable"
   end
 
@@ -132,6 +135,7 @@ def curl_check_http_content(url, user_agents: [:default], check_content: false, 
 
   lenratio = (100 * secure_details[:file].length / details[:file].length).to_i
   return unless (90..110).cover?(lenratio)
+
   "The URL #{url} may be able to use HTTPS rather than HTTP. Please verify it in a browser."
 end
 

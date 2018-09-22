@@ -1,5 +1,5 @@
-require_relative "./extend/formula_cop"
-require_relative "../extend/string"
+require "rubocops/extend/formula_cop"
+require "extend/string"
 
 module RuboCop
   module Cop
@@ -16,6 +16,7 @@ module RuboCop
 
           patches_node = find_method_def(body, :patches)
           return if patches_node.nil?
+
           legacy_patches = find_strings(patches_node)
           problem "Use the patch DSL instead of defining a 'patches' method"
           legacy_patches.each { |p| patch_problems(p) }
@@ -48,7 +49,8 @@ module RuboCop
             end
           end
 
-          gh_patch_diff_pattern = %r{https?://patch-diff\.githubusercontent\.com/raw/(.+)/(.+)/pull/(.+)\.(?:diff|patch)}
+          gh_patch_diff_pattern =
+            %r{https?://patch-diff\.githubusercontent\.com/raw/(.+)/(.+)/pull/(.+)\.(?:diff|patch)}
           if match_obj = regex_match_group(patch, gh_patch_diff_pattern)
             problem <<~EOS
               use GitHub pull request URLs:
@@ -73,6 +75,7 @@ module RuboCop
           end
 
           return unless regex_match_group(patch, %r{^http://bugs\.debian\.org})
+
           problem <<~EOS.chomp
             Patches from Debian should be https://, not http:
             #{patch_url}

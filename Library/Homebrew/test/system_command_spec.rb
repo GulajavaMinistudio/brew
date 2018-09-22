@@ -1,9 +1,5 @@
 describe SystemCommand do
   describe "#initialize" do
-    let(:env_args) { ["bash", "-c", 'printf "%s" "${A?}" "${B?}" "${C?}"'] }
-    let(:env) { { "A" => "1", "B" => "2", "C" => "3" } }
-    let(:sudo) { false }
-
     subject(:command) {
       described_class.new(
         "env",
@@ -14,6 +10,10 @@ describe SystemCommand do
       )
     }
 
+    let(:env_args) { ["bash", "-c", 'printf "%s" "${A?}" "${B?}" "${C?}"'] }
+    let(:env) { { "A" => "1", "B" => "2", "C" => "3" } }
+    let(:sudo) { false }
+
     context "when given some environment variables" do
       its("run!.stdout") { is_expected.to eq("123") }
 
@@ -21,7 +21,7 @@ describe SystemCommand do
         it "includes the given variables explicitly" do
           expect(Open3)
             .to receive(:popen3)
-            .with(an_instance_of(Hash), "env", "A=1", "B=2", "C=3", "env", *env_args, {})
+            .with(an_instance_of(Hash), ["env", "env"], "A=1", "B=2", "C=3", "env", *env_args, {})
             .and_call_original
 
           command.run!
@@ -46,7 +46,7 @@ describe SystemCommand do
         it "includes the given variables explicitly" do
           expect(Open3)
             .to receive(:popen3)
-            .with(an_instance_of(Hash), "/usr/bin/sudo", "-E", "--",
+            .with(an_instance_of(Hash), ["/usr/bin/sudo", "/usr/bin/sudo"], "-E", "--",
                   "env", "A=1", "B=2", "C=3", "env", *env_args, {})
             .and_wrap_original do |original_popen3, *_, &block|
               original_popen3.call("true", &block)
@@ -223,9 +223,32 @@ describe SystemCommand do
 
     it 'does not format `stderr` when it starts with \r' do
       expect {
-        system_command "bash",
-                       args: ["-c", 'printf "\r%s" "###################                                                       27.6%" 1>&2']
-      }.to output("\r###################                                                       27.6%").to_stderr
+        system_command \
+          "bash",
+          args: [
+            "-c",
+            'printf "\r%s" "###################                                                       27.6%" 1>&2',
+          ]
+      }.to output( \
+        "\r###################                                                       27.6%",
+      ).to_stderr
+    end
+
+    context "when given an executable with spaces and no arguments" do
+      let(:executable) { mktmpdir/"App Uninstaller" }
+
+      before do
+        executable.write <<~SH
+          #!/usr/bin/env bash
+          true
+        SH
+
+        FileUtils.chmod "+x", executable
+      end
+
+      it "does not interpret the executable as a shell line" do
+        expect(system_command(executable)).to be_a_success
+      end
     end
   end
 end

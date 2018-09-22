@@ -41,15 +41,15 @@ require "erb"
 
 BOTTLE_ERB = <<-EOS.freeze
   bottle do
-    <% if !root_url.start_with?(HOMEBREW_BOTTLE_DEFAULT_DOMAIN) %>
+    <% if !["#{HOMEBREW_BOTTLE_DEFAULT_DOMAIN}/bottles", "https://homebrew.bintray.com/bottles"].include?(root_url) %>
     root_url "<%= root_url %>"
     <% end %>
-    <% if prefix != BottleSpecification::DEFAULT_PREFIX %>
+    <% if ![Homebrew::DEFAULT_PREFIX, "/usr/local"].include?(prefix) %>
     prefix "<%= prefix %>"
     <% end %>
     <% if cellar.is_a? Symbol %>
     cellar :<%= cellar %>
-    <% elsif cellar != BottleSpecification::DEFAULT_CELLAR %>
+    <% elsif ![Homebrew::DEFAULT_CELLAR, "/usr/local/Cellar"].include?(cellar) %>
     cellar "<%= cellar %>"
     <% end %>
     <% if rebuild.positive? %>
@@ -86,6 +86,7 @@ module Homebrew
     end
 
     return merge if args.merge?
+
     ensure_relocation_formulae_installed!
     ARGV.resolved_formulae.each do |f|
       bottle_formula f
@@ -95,6 +96,7 @@ module Homebrew
   def ensure_relocation_formulae_installed!
     Keg.relocation_formulae.each do |f|
       next if Formula[f].installed?
+
       ohai "Installing #{f}..."
       safe_system HOMEBREW_BREW_FILE, "install", f
     end
@@ -140,6 +142,7 @@ module Homebrew
           str = io.readline.chomp
           next if ignores.any? { |i| i =~ str }
           next unless str.include? string
+
           offset, match = str.split(" ", 2)
           next if linked_libraries.include? match # Don't bother reporting a string if it was found by otool
 
@@ -149,6 +152,7 @@ module Homebrew
       end
 
       next unless args.verbose? && !text_matches.empty?
+
       print_filename.call(string, file)
       text_matches.first(MAXIMUM_STRING_MATCHES).each do |match, offset|
         puts " #{Tty.bold}-->#{Tty.reset} match '#{match}' at offset #{Tty.bold}0x#{offset}#{Tty.reset}"
@@ -166,6 +170,7 @@ module Homebrew
     absolute_symlinks_start_with_string = []
     keg.find do |pn|
       next unless pn.symlink? && (link = pn.readlink).absolute?
+
       absolute_symlinks_start_with_string << pn if link.to_s.start_with?(string)
     end
 
@@ -285,7 +290,7 @@ module Homebrew
           ohai "Detecting if #{filename} is relocatable..."
         end
 
-        if prefix == "/usr/local"
+        if Homebrew.default_prefix?(prefix)
           prefix_check = File.join(prefix, "opt")
         else
           prefix_check = prefix
@@ -376,13 +381,14 @@ module Homebrew
     puts output
 
     return unless args.json?
+
     tag = Utils::Bottles.tag.to_s
     tag += "_or_later" if args.or_later?
     json = {
       f.full_name => {
         "formula" => {
           "pkg_version" => f.pkg_version.to_s,
-          "path" => f.path.to_s.strip_prefix("#{HOMEBREW_REPOSITORY}/"),
+          "path" => f.path.to_s.delete_prefix("#{HOMEBREW_REPOSITORY}/"),
         },
         "bottle" => {
           "root_url" => bottle.root_url,
@@ -392,6 +398,7 @@ module Homebrew
           "tags" => {
             tag => {
               "filename" => filename.bintray,
+              "local_filename" => filename.to_s,
               "sha256" => sha256,
             },
           },
@@ -411,7 +418,7 @@ module Homebrew
     write = args.write?
 
     bottles_hash = ARGV.named.reduce({}) do |hash, json_file|
-      deep_merge_hashes hash, JSON.parse(IO.read(json_file))
+      hash.deep_merge(JSON.parse(IO.read(json_file)))
     end
 
     bottles_hash.each do |formula_name, bottle_hash|
@@ -443,15 +450,17 @@ module Homebrew
               bottle_block_contents.lines.each do |line|
                 line = line.strip
                 next if line.empty?
+
                 key, old_value_original, _, tag = line.split " ", 4
                 valid_key = %w[root_url prefix cellar rebuild sha1 sha256].include? key
                 next unless valid_key
 
-                old_value = old_value_original.to_s.delete ":'\""
+                old_value = old_value_original.to_s.delete "'\""
+                old_value = old_value.to_s.delete ":" if key != "root_url"
                 tag = tag.to_s.delete ":"
 
                 unless tag.empty?
-                  if !bottle_hash["bottle"]["tags"][tag].to_s.empty?
+                  if bottle_hash["bottle"]["tags"][tag].present?
                     mismatches << "#{key} => #{tag}"
                   else
                     bottle.send(key, old_value => tag.to_sym)
@@ -463,6 +472,7 @@ module Homebrew
                 value = value_original.to_s
                 next if key == "cellar" && old_value == "any" && value == "any_skip_relocation"
                 next unless old_value.empty? || value != old_value
+
                 old_value = old_value_original.inspect
                 value = value_original.inspect
                 mismatches << "#{key}: old: #{old_value}, new: #{value}"

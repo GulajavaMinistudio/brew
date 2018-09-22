@@ -19,6 +19,8 @@ class LinkageChecker
     @indirect_deps    = []
     @undeclared_deps  = []
     @unnecessary_deps = []
+    @unwanted_system_dylibs = []
+    @version_conflict_deps = []
 
     check_dylibs(rebuild_cache: rebuild_cache)
   end
@@ -32,15 +34,17 @@ class LinkageChecker
     display_items "Broken dependencies", @broken_deps
     display_items "Undeclared dependencies with linkage", @undeclared_deps
     display_items "Dependencies with no linkage", @unnecessary_deps
+    display_items "Unwanted system libraries", @unwanted_system_dylibs
   end
 
   def display_reverse_output
     return if @reverse_links.empty?
+
     sorted = @reverse_links.sort
     sorted.each do |dylib, files|
       puts dylib
       files.each do |f|
-        unprefixed = f.to_s.strip_prefix "#{keg}/"
+        unprefixed = f.to_s.delete_prefix "#{keg}/"
         puts "  #{unprefixed}"
       end
       puts if dylib != sorted.last.first
@@ -50,11 +54,16 @@ class LinkageChecker
   def display_test_output(puts_output: true)
     display_items "Missing libraries", @broken_dylibs, puts_output: puts_output
     display_items "Broken dependencies", @broken_deps, puts_output: puts_output
+    display_items "Unwanted system libraries", @unwanted_system_dylibs, puts_output: puts_output
+    display_items "Conflicting libraries", @version_conflict_deps, puts_output: puts_output
     puts "No broken library linkage" unless broken_library_linkage?
   end
 
   def broken_library_linkage?
-    !@broken_dylibs.empty? || !@broken_deps.empty?
+    !@broken_dylibs.empty? ||
+      !@broken_deps.empty? ||
+      !@unwanted_system_dylibs.empty? ||
+      !@version_conflict_deps.empty?
   end
 
   private
@@ -82,6 +91,7 @@ class LinkageChecker
       @keg.find do |file|
         next if file.symlink? || file.directory?
         next if !file.dylib? && !file.binary_executable? && !file.mach_o_bundle?
+
         # weakly loaded dylibs may not actually exist on disk, so skip them
         # when checking for broken linkage
         keg_files_dylibs[file] =
@@ -96,6 +106,7 @@ class LinkageChecker
         @reverse_links[dylib] << file
 
         next if checked_dylibs.include? dylib
+
         checked_dylibs << dylib
 
         if dylib.start_with? "@"
@@ -109,6 +120,7 @@ class LinkageChecker
           @system_dylibs << dylib
         rescue Errno::ENOENT
           next if harmless_broken_link?(dylib)
+
           if (dep = dylib_to_dep(dylib))
             @broken_deps[dep] |= [dylib]
           else
@@ -127,19 +139,21 @@ class LinkageChecker
     end
 
     if formula
-      @indirect_deps, @undeclared_deps, @unnecessary_deps =
-        check_undeclared_deps
+      @indirect_deps, @undeclared_deps, @unnecessary_deps,
+        @version_conflict_deps = check_formula_deps
     end
 
     return unless keg_files_dylibs_was_empty
 
     store&.update!(keg_files_dylibs: keg_files_dylibs)
   end
+  alias generic_check_dylibs check_dylibs
 
-  def check_undeclared_deps
+  def check_formula_deps
     filter_out = proc do |dep|
       next true if dep.build?
       next false unless dep.optional? || dep.recommended?
+
       formula.build.without?(dep)
     end
 
@@ -157,6 +171,7 @@ class LinkageChecker
     @brewed_dylibs.each_key do |full_name|
       name = full_name.split("/").last
       next if name == formula.name
+
       if recursive_deps.include?(name)
         indirect_deps << full_name unless declared_deps_names.include?(name)
       else
@@ -169,14 +184,28 @@ class LinkageChecker
 
     unnecessary_deps = declared_deps_full_names.reject do |full_name|
       next true if Formula[full_name].bin.directory?
+
       name = full_name.split("/").last
-      @brewed_dylibs.keys.map { |x| x.split("/").last }.include?(name)
+      @brewed_dylibs.keys.map { |l| l.split("/").last }.include?(name)
     end
 
     missing_deps = @broken_deps.values.flatten.map { |d| dylib_to_dep(d) }
     unnecessary_deps -= missing_deps
 
-    [indirect_deps, undeclared_deps, unnecessary_deps]
+    version_hash = {}
+    version_conflict_deps = Set.new
+    @brewed_dylibs.keys.each do |l|
+      name = l.split("/").last
+      unversioned_name, = name.split("@")
+      version_hash[unversioned_name] ||= Set.new
+      version_hash[unversioned_name] << name
+      next if version_hash[unversioned_name].length < 2
+
+      version_conflict_deps += version_hash[unversioned_name]
+    end
+
+    [indirect_deps, undeclared_deps,
+     unnecessary_deps, version_conflict_deps.to_a]
   end
 
   def sort_by_formula_full_name!(arr)
@@ -206,6 +235,7 @@ class LinkageChecker
   # Things may either be an array, or a hash of (label -> array)
   def display_items(label, things, puts_output: true)
     return if things.empty?
+
     output = "#{label}:"
     if things.is_a? Hash
       things.keys.sort.each do |list_label|
@@ -228,3 +258,5 @@ class LinkageChecker
     opoo "Formula unavailable: #{keg.name}"
   end
 end
+
+require "extend/os/linkage_checker"

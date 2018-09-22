@@ -1,4 +1,5 @@
 require "keg_relocate"
+require "language/python"
 require "lock_file"
 require "ostruct"
 
@@ -64,16 +65,40 @@ class Keg
   # locale-specific directories have the form language[_territory][.codeset][@modifier]
   LOCALEDIR_RX = %r{(locale|man)/([a-z]{2}|C|POSIX)(_[A-Z]{2})?(\.[a-zA-Z\-0-9]+(@.+)?)?}
   INFOFILE_RX = %r{info/([^.].*?\.info|dir)$}
-  TOP_LEVEL_DIRECTORIES = %w[bin etc include lib sbin share var Frameworks].freeze
-  ALL_TOP_LEVEL_DIRECTORIES = (TOP_LEVEL_DIRECTORIES + %w[lib/pkgconfig share/locale share/man opt]).freeze
-  PRUNEABLE_DIRECTORIES = %w[bin etc include lib sbin share opt Frameworks LinkedKegs var/homebrew/linked].map do |dir|
-    case dir
-    when "LinkedKegs"
-      HOMEBREW_LIBRARY/dir
-    else
-      HOMEBREW_PREFIX/dir
-    end
-  end
+  KEG_LINK_DIRECTORIES = %w[
+    bin etc include lib sbin share var Frameworks
+  ].freeze
+  # TODO: remove when brew-test-bot no longer uses this
+  TOP_LEVEL_DIRECTORIES = KEG_LINK_DIRECTORIES
+  PRUNEABLE_DIRECTORIES = (
+    KEG_LINK_DIRECTORIES - %w[var] + %w[var/homebrew/linked]
+  ).map { |dir| HOMEBREW_PREFIX/dir }
+
+  # Keep relatively in sync with
+  # https://github.com/Homebrew/install/blob/master/install
+  MUST_EXIST_DIRECTORIES = (
+    (KEG_LINK_DIRECTORIES + %w[
+      opt
+    ]).map { |dir| HOMEBREW_PREFIX/dir }
+  ).freeze
+  MUST_BE_WRITABLE_DIRECTORIES = (
+    (KEG_LINK_DIRECTORIES + %w[
+      opt
+      etc/bash_completion.d lib/pkgconfig
+      share/aclocal share/doc share/info share/locale share/man
+      share/man/man1 share/man/man2 share/man/man3 share/man/man4
+      share/man/man5 share/man/man6 share/man/man7 share/man/man8
+      share/zsh share/zsh/site-functions
+      var/log
+    ]).map { |dir| HOMEBREW_PREFIX/dir } + [
+      HOMEBREW_CACHE,
+      HOMEBREW_CELLAR,
+      HOMEBREW_LOCKS,
+      HOMEBREW_LOGS,
+      HOMEBREW_REPOSITORY,
+      Language::Python.homebrew_site_packages,
+    ]
+  ).freeze
 
   # These paths relative to the keg's share directory should always be real
   # directories in the prefix, never symlinks.
@@ -149,6 +174,7 @@ class Keg
     path = path.realpath
     until path.root?
       return Keg.new(path) if path.parent.parent == HOMEBREW_CELLAR.realpath
+
       path = path.parent.realpath # realpath() prevents root? failing
     end
     raise NotAKegError, "#{path} is not inside a keg"
@@ -171,6 +197,7 @@ class Keg
     path = path.resolved_path if path.to_s.start_with?("#{HOMEBREW_PREFIX}/opt/")
     raise "#{path} is not a valid keg" unless path.parent.parent.realpath == HOMEBREW_CELLAR.realpath
     raise "#{path} is not a directory" unless path.directory?
+
     @path = path
     @name = path.parent.basename.to_s
     @linked_keg_record = HOMEBREW_LINKED_KEGS/name
@@ -196,9 +223,11 @@ class Keg
   def empty_installation?
     Pathname.glob("#{path}/*") do |file|
       return false if file.directory? && !file.children.reject(&:ds_store?).empty?
+
       basename = file.basename.to_s
       next if Metafiles.copy?(basename)
       next if %w[.DS_Store INSTALL_RECEIPT.json].include?(basename)
+
       return false
     end
 
@@ -245,6 +274,7 @@ class Keg
     aliases.each do |a|
       # versioned aliases are handled below
       next if a =~ /.+@./
+
       alias_symlink = opt/a
       if alias_symlink.symlink? && alias_symlink.exist?
         alias_symlink.delete if alias_symlink.realpath == opt_record.realpath
@@ -274,6 +304,7 @@ class Keg
   def uninstall
     CacheStoreDatabase.use(:linkage) do |db|
       break unless db.created?
+
       LinkageCacheStore.new(path, db).flush_cache!
     end
 
@@ -289,8 +320,9 @@ class Keg
 
     dirs = []
 
-    TOP_LEVEL_DIRECTORIES.map { |d| path/d }.each do |dir|
+    KEG_LINK_DIRECTORIES.map { |d| path/d }.each do |dir|
       next unless dir.exist?
+
       dir.find do |src|
         dst = HOMEBREW_PREFIX + src.relative_path_from(path)
         dst.extend(ObserverPathnameExtension)
@@ -299,6 +331,7 @@ class Keg
 
         # check whether the file to be unlinked is from the current keg first
         next unless dst.symlink? && src == dst.resolved_path
+
         if mode.dry_run
           puts dst
           Find.prune if src.directory?
@@ -373,6 +406,7 @@ class Keg
 
   def elisp_installed?
     return false unless (path/"share/emacs/site-lisp"/name).exist?
+
     (path/"share/emacs/site-lisp"/name).children.any? { |f| %w[.el .elc].include? f.extname }
   end
 
@@ -387,7 +421,7 @@ class Keg
 
   def oldname_opt_record
     @oldname_opt_record ||= if (opt_dir = HOMEBREW_PREFIX/"opt").directory?
-      opt_dir.subdirs.detect do |dir|
+      opt_dir.subdirs.find do |dir|
         dir.symlink? && dir != opt_record && path.parent == dir.resolved_path.parent
       end
     end
@@ -474,6 +508,7 @@ class Keg
   def remove_oldname_opt_record
     return unless oldname_opt_record
     return unless oldname_opt_record.resolved_path == path
+
     @oldname_opt_record.unlink
     @oldname_opt_record.parent.rmdir_if_possible
     @oldname_opt_record = nil
@@ -501,6 +536,7 @@ class Keg
     end
 
     return unless oldname_opt_record
+
     oldname_opt_record.delete
     make_relative_symlink(oldname_opt_record, path, mode)
   end
@@ -530,6 +566,7 @@ class Keg
     end
 
     return unless stat.directory?
+
     begin
       keg = Keg.for(src)
     rescue NotAKegError
@@ -570,6 +607,7 @@ class Keg
     dst.make_relative_symlink(src)
   rescue Errno::EEXIST => e
     raise ConflictError.new(self, src.relative_path_from(path), dst, e) if dst.exist?
+
     if dst.symlink?
       dst.unlink
       retry
@@ -586,8 +624,10 @@ class Keg
   def link_dir(relative_dir, mode)
     root = path/relative_dir
     return unless root.exist?
+
     root.find do |src|
       next if src == root
+
       dst = HOMEBREW_PREFIX + src.relative_path_from(path)
       dst.extend ObserverPathnameExtension
 
@@ -606,6 +646,7 @@ class Keg
           Find.prune
         when :info
           next if File.basename(src) == "dir" # skip historical local 'dir' files
+
           make_relative_symlink dst, src, mode
           dst.install_info
         else
@@ -614,6 +655,7 @@ class Keg
       elsif src.directory?
         # if the dst dir already exists, then great! walk the rest of the tree tho
         next if dst.directory? && !dst.symlink?
+
         # no need to put .app bundles in the path, the user can just use
         # spotlight, or the open command and actual mac apps use an equivalent
         Find.prune if src.extname == ".app"

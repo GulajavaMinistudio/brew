@@ -74,6 +74,7 @@ module Homebrew
 
     formula_count = 0
     problem_count = 0
+    corrected_problem_count = 0
     new_formula_problem_count = 0
     new_formula = args.new_formula?
     strict = new_formula || args.strict?
@@ -125,10 +126,12 @@ module Homebrew
       fa = FormulaAuditor.new(f, options)
       fa.audit
       next if fa.problems.empty? && fa.new_formula_problems.empty?
+
       fa.problems
       formula_count += 1
       problem_count += fa.problems.size
       problem_lines = format_problem_lines(fa.problems)
+      corrected_problem_count = options[:style_offenses].count(&:corrected?)
       new_formula_problem_lines = format_problem_lines(fa.new_formula_problems)
       if args.display_filename?
         puts problem_lines.map { |s| "#{f.path}: #{s}" }
@@ -156,7 +159,11 @@ module Homebrew
     total_problems_count = problem_count + new_formula_problem_count
     problem_plural = Formatter.pluralize(total_problems_count, "problem")
     formula_plural = Formatter.pluralize(formula_count, "formula")
-    errors_summary = "#{problem_plural} in #{formula_plural}"
+    corrected_problem_plural = Formatter.pluralize(corrected_problem_count, "problem")
+    errors_summary = "#{problem_plural} in #{formula_plural} detected"
+    if corrected_problem_count.positive?
+      errors_summary += ", #{corrected_problem_plural} corrected"
+    end
 
     if problem_count.positive? ||
        (new_formula_problem_count.positive? && !created_pr_comment)
@@ -234,9 +241,11 @@ module Homebrew
 
     def audit_style
       return unless @style_offenses
+
       @style_offenses.each do |offense|
         if offense.cop_name.start_with?("NewFormulaAudit")
           next if formula.versioned_formula?
+
           new_formula_problem offense.to_s(display_cop_name: @display_cop_names)
           next
         end
@@ -251,8 +260,10 @@ module Homebrew
       wanted_mode = 0100644 & ~File.umask
       actual_mode = formula.path.stat.mode
       unless actual_mode == wanted_mode
-        problem format("Incorrect file permissions (%03o): chmod %03o %s",
-                       actual_mode & 0777, wanted_mode & 0777, formula.path)
+        problem format("Incorrect file permissions (%03<actual>o): chmod %03<wanted>o %{path}",
+                       actual: actual_mode & 0777,
+                       wanted: wanted_mode & 0777,
+                       path:   formula.path)
       end
 
       problem "'DATA' was found, but no '__END__'" if text.data? && !text.end?
@@ -393,12 +404,15 @@ module Homebrew
           if @new_formula && dep_f.keg_only_reason &&
              !["openssl", "apr", "apr-util"].include?(dep.name) &&
              dep_f.keg_only_reason.reason == :provided_by_macos
-            new_formula_problem "Dependency '#{dep.name}' may be unnecessary as it is provided by macOS; try to build this formula without it."
+            new_formula_problem(
+              "Dependency '#{dep.name}' may be unnecessary as it is provided " \
+              "by macOS; try to build this formula without it.",
+            )
           end
 
           dep.options.each do |opt|
             next if dep_f.option_defined?(opt)
-            next if dep_f.requirements.detect do |r|
+            next if dep_f.requirements.find do |r|
               if r.recommended?
                 opt.name == "with-#{r.name}"
               elsif r.optional?
@@ -419,6 +433,7 @@ module Homebrew
 
           next unless @new_formula
           next unless @official_tap
+
           if dep.tags.include?(:recommended) || dep.tags.include?(:optional)
             new_formula_problem options_message
           end
@@ -426,6 +441,7 @@ module Homebrew
 
         next unless @new_formula
         next unless @official_tap
+
         if spec.requirements.map(&:recommended?).any? || spec.requirements.map(&:optional?).any?
           new_formula_problem options_message
         end
@@ -476,6 +492,7 @@ module Homebrew
       end
 
       return unless reason.end_with?(".")
+
       problem "keg_only reason should not end with a period."
     end
 
@@ -487,6 +504,7 @@ module Homebrew
       return unless @online
 
       return unless DevelopmentTools.curl_handles_most_https_certificates?
+
       if http_content_problem = curl_check_http_content(homepage,
                                   user_agents: [:browser, :default],
                                   check_content: true,
@@ -507,17 +525,9 @@ module Homebrew
           leafnode
         ]
         return if bottle_disabled_whitelist.include?(formula.name)
+
         problem "Formulae should not use `bottle :disabled`" if @official_tap
       end
-    end
-
-    def audit_bottle_spec
-      return unless @official_tap
-      return if @new_formula
-      return unless @online
-      return if formula.bottle_defined? || formula.bottle_disabled?
-      return if formula.name == "testbottest"
-      problem "`bottle` is not defined"
     end
 
     def audit_github_repository
@@ -547,6 +557,7 @@ module Homebrew
       end
 
       return if Date.parse(metadata["created_at"]) <= (Date.today - 30)
+
       new_formula_problem "GitHub repository too new (<30 days old)"
     end
 
@@ -575,11 +586,16 @@ module Homebrew
 
         next if spec.patches.empty?
         next unless @new_formula
-        new_formula_problem "Formulae should not require patches to build. Patches should be submitted and accepted upstream first."
+
+        new_formula_problem(
+          "Formulae should not require patches to build. " \
+          "Patches should be submitted and accepted upstream first.",
+        )
       end
 
       %w[Stable Devel].each do |name|
         next unless spec = formula.send(name.downcase)
+
         version = spec.version
         if version.to_s !~ /\d/
           problem "#{name}: version (#{version}) is set to a string without a digit"
@@ -622,6 +638,7 @@ module Homebrew
 
       throttled.each_slice(2).to_a.map do |a, b|
         next if formula.stable.nil?
+
         version = formula.stable.version.to_s.split(".").last.to_i
         if @strict && a == formula.name && version.modulo(b.to_i).nonzero?
           problem "should only be updated every #{b} releases on multiples of #{b}"
@@ -670,10 +687,12 @@ module Homebrew
         matched = Regexp.last_match(1)
         version_prefix = stable.version.to_s.sub(/\d+$/, "")
         return if unstable_whitelist.include?([formula.name, version_prefix])
+
         problem "Stable version URLs should not contain #{matched}"
       when %r{download\.gnome\.org/sources}, %r{ftp\.gnome\.org/pub/GNOME/sources}i
         version_prefix = stable.version.to_s.split(".")[0..1].join(".")
         return if gnome_devel_whitelist.include?([formula.name, version_prefix])
+
         version = Version.parse(stable.url)
         if version >= Version.create("1.0")
           minor_version = version.to_s.split(".", 3)[1].to_i
@@ -696,7 +715,12 @@ module Homebrew
         next unless spec = formula.send(spec_sym)
         next unless previous_version_and_checksum[spec_sym][:version] == spec.version
         next if previous_version_and_checksum[spec_sym][:checksum] == spec.checksum
-        problem "#{spec_sym}: sha256 changed without the version also changing; please create an issue upstream to rule out malicious circumstances and to find out why the file changed."
+
+        problem(
+          "#{spec_sym}: sha256 changed without the version also changing; " \
+          "please create an issue upstream to rule out malicious " \
+          "circumstances and to find out why the file changed.",
+        )
       end
 
       attributes = [:revision, :version_scheme]
@@ -734,6 +758,7 @@ module Homebrew
         map_includes_version = spec_version_scheme_map.key?(spec_version)
         next if !current_version_scheme.zero? &&
                 (above_max_version_scheme || map_includes_version)
+
         problem "#{spec} version should not decrease (from #{max_version} to #{spec_version})"
       end
 
@@ -768,6 +793,7 @@ module Homebrew
       bin_names += formula.aliases
       [formula.bin, formula.sbin].each do |dir|
         next unless dir.exist?
+
         bin_names += dir.children.map(&:basename).map(&:to_s)
       end
       bin_names.each do |name|
@@ -798,7 +824,10 @@ module Homebrew
 
       # Prefer formula path shortcuts in Pathname+
       if line =~ %r{\(\s*(prefix\s*\+\s*(['"])(bin|include|libexec|lib|sbin|share|Frameworks)[/'"])}
-        problem "\"(#{Regexp.last_match(1)}...#{Regexp.last_match(2)})\" should be \"(#{Regexp.last_match(3).downcase}+...)\""
+        problem(
+          "\"(#{Regexp.last_match(1)}...#{Regexp.last_match(2)})\" should" \
+          " be \"(#{Regexp.last_match(3).downcase}+...)\"",
+        )
       end
 
       problem "Use separate make calls" if line.include?("make && make")
@@ -836,6 +865,7 @@ module Homebrew
       end
 
       return unless line =~ %r{share(\s*[/+]\s*)(['"])#{Regexp.escape(formula.name)}(?:\2|/)}
+
       problem "Use pkgshare instead of (share#{Regexp.last_match(1)}\"#{formula.name}\")"
     end
 
@@ -949,7 +979,7 @@ module Homebrew
     def audit_version
       if version.nil?
         problem "missing version"
-      elsif version.to_s.empty?
+      elsif version.blank?
         problem "version is set to an empty string"
       elsif !version.detected_from_url?
         version_text = version
@@ -964,6 +994,7 @@ module Homebrew
       end
 
       return unless version.to_s =~ /_\d+$/
+
       problem "version #{version} should not end with an underline and a number"
     end
 
@@ -999,6 +1030,7 @@ module Homebrew
       end
 
       return unless url_strategy == DownloadStrategyDetector.detect("", using)
+
       problem "Redundant :using value in URL"
     end
 
@@ -1028,6 +1060,7 @@ module Homebrew
       end
 
       return unless @online
+
       urls.each do |url|
         next if !@strict && mirrors.include?(url)
 
@@ -1036,6 +1069,7 @@ module Homebrew
           # A `brew mirror`'ed URL is usually not yet reachable at the time of
           # pull request.
           next if url =~ %r{^https://dl.bintray.com/homebrew/mirror/}
+
           if http_content_problem = curl_check_http_content(url, require_http: curl_openssl_or_deps)
             problem http_content_problem
           end
@@ -1046,6 +1080,7 @@ module Homebrew
         elsif strategy <= SubversionDownloadStrategy
           next unless DevelopmentTools.subversion_handles_most_https_certificates?
           next unless Utils.svn_available?
+
           unless Utils.svn_remote_exists? url
             problem "The URL #{url} is not a valid svn URL"
           end

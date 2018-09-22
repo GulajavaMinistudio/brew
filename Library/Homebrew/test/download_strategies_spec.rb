@@ -207,16 +207,12 @@ describe S3DownloadStrategy do
   let(:url) { "https://bucket.s3.amazonaws.com/foo.tar.gz" }
   let(:version) { nil }
 
-  describe "#_fetch" do
-    subject { described_class.new(url, name, version)._fetch }
-
+  describe "#fetch" do
     context "when given Bad S3 URL" do
       let(:url) { "https://example.com/foo.tar.gz" }
 
       it "raises Bad S3 URL error" do
-        expect {
-          subject._fetch
-        }.to raise_error(RuntimeError)
+        expect { subject.fetch }.to raise_error(RuntimeError, /S3/)
       end
     end
   end
@@ -238,18 +234,27 @@ describe CurlDownloadStrategy do
     subject { described_class.new(url, name, version, **specs).cached_location }
 
     context "when URL ends with file" do
-      it { is_expected.to eq(HOMEBREW_CACHE/"foo--1.2.3.tar.gz") }
+      it {
+        expect(subject).to eq(
+          HOMEBREW_CACHE/"downloads/3d1c0ae7da22be9d83fb1eb774df96b7c4da71d3cf07e1cb28555cf9a5e5af70--foo.tar.gz",
+        )
+      }
     end
 
     context "when URL file is in middle" do
       let(:url) { "https://example.com/foo.tar.gz/from/this/mirror" }
 
-      it { is_expected.to eq(HOMEBREW_CACHE/"foo--1.2.3.tar.gz") }
+      it {
+        expect(subject).to eq(
+          HOMEBREW_CACHE/"downloads/1ab61269ba52c83994510b1e28dd04167a2f2e8393a35a9c50c1f7d33fd8f619--foo.tar.gz",
+        )
+      }
     end
   end
 
   describe "#fetch" do
-    before(:each) do
+    before do
+      subject.temporary_path.dirname.mkpath
       FileUtils.touch subject.temporary_path
     end
 
@@ -257,7 +262,7 @@ describe CurlDownloadStrategy do
       expect(subject).to receive(:curl).with(
         "--location",
         "--remote-time",
-        "--continue-at", "-",
+        "--continue-at", "0",
         "--output", an_instance_of(Pathname),
         url,
         an_instance_of(Hash)
@@ -285,7 +290,12 @@ describe CurlDownloadStrategy do
 
       it "adds the appropriate curl args" do
         expect(subject).to receive(:system_command!) { |*, args:, **|
-          expect(args.each_cons(2).to_a).to include(["--user-agent", a_string_matching(/Mozilla.*Mac OS X 10.*AppleWebKit/)])
+          expect(args.each_cons(2).to_a).to include(
+            [
+              "--user-agent",
+              a_string_matching(/Mozilla.*Mac OS X 10.*AppleWebKit/),
+            ],
+          )
         }
 
         subject.fetch
@@ -327,21 +337,19 @@ describe CurlDownloadStrategy do
   describe "#cached_location" do
     context "with a file name trailing the URL path" do
       let(:url) { "https://example.com/cask.dmg" }
-      its("cached_location.extname") { is_expected.to eq(".dmg") }
-    end
 
-    context "with no discernible file name in it" do
-      let(:url) { "https://example.com/download" }
-      its("cached_location.basename.to_path") { is_expected.to eq("foo--1.2.3") }
+      its("cached_location.extname") { is_expected.to eq(".dmg") }
     end
 
     context "with a file name trailing the first query parameter" do
       let(:url) { "https://example.com/download?file=cask.zip&a=1" }
+
       its("cached_location.extname") { is_expected.to eq(".zip") }
     end
 
     context "with a file name trailing the second query parameter" do
       let(:url) { "https://example.com/dl?a=1&file=cask.zip&b=2" }
+
       its("cached_location.extname") { is_expected.to eq(".zip") }
     end
 
@@ -379,7 +387,8 @@ describe CurlPostDownloadStrategy do
   let(:specs) { {} }
 
   describe "#fetch" do
-    before(:each) do
+    before do
+      subject.temporary_path.dirname.mkpath
       FileUtils.touch subject.temporary_path
     end
 
@@ -420,6 +429,7 @@ end
 
 describe ScpDownloadStrategy do
   subject { described_class.new(url, name, version) }
+
   let(:name) { "foo" }
   let(:url) { "scp://example.com/foo.tar.gz" }
   let(:version) { nil }
@@ -450,6 +460,7 @@ describe ScpDownloadStrategy do
 
     context "when given a valid URL" do
       let(:url) { "scp://example.com/foo.tar.gz" }
+
       it "copies the file via scp" do
         expect(subject)
           .to receive(:system_command!)
@@ -462,6 +473,7 @@ describe ScpDownloadStrategy do
 
     context "when given a URL with a username" do
       let(:url) { "scp://user@example.com/foo.tar.gz" }
+
       it "copies the file via scp" do
         expect(subject)
           .to receive(:system_command!)
@@ -474,6 +486,7 @@ describe ScpDownloadStrategy do
 
     context "when given a URL with a port" do
       let(:url) { "scp://example.com:1234/foo.tar.gz" }
+
       it "copies the file via scp" do
         expect(subject)
           .to receive(:system_command!)
@@ -486,6 +499,7 @@ describe ScpDownloadStrategy do
 
     context "when given a URL with /~/" do
       let(:url) { "scp://example.com/~/foo.tar.gz" }
+
       it "treats the path as relative to the home directory" do
         expect(subject)
           .to receive(:system_command!)
@@ -512,8 +526,8 @@ describe SubversionDownloadStrategy do
 
       it "adds the appropriate svn args" do
         expect(subject).to receive(:system_command!)
-          .with("svn", args: array_including("--trust-server-cert", "--non-interactive"))
-
+          .with("svn", args: array_including("--trust-server-cert",
+                                             "--non-interactive"))
         subject.fetch
       end
     end
@@ -556,7 +570,7 @@ describe DownloadStrategyDetector do
 
       it "returns S3DownloadStrategy" do
         allow(described_class).to receive(:require_aws_sdk).and_return(true)
-        is_expected.to eq(S3DownloadStrategy)
+        expect(subject).to eq(S3DownloadStrategy)
       end
     end
 
@@ -566,12 +580,13 @@ describe DownloadStrategyDetector do
 
       it "requires aws-sdk-s3" do
         allow(described_class).to receive(:require_aws_sdk).and_return(true)
-        is_expected.to eq(S3DownloadStrategy)
+        expect(subject).to eq(S3DownloadStrategy)
       end
     end
 
     context "when given an scp URL" do
       let(:url) { "scp://example.com/brew.tar.gz" }
+
       it { is_expected.to eq(ScpDownloadStrategy) }
     end
 

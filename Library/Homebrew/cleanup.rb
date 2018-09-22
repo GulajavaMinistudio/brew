@@ -1,6 +1,6 @@
 require "utils/bottles"
 require "formula"
-require "hbc/cask_loader"
+require "cask/cask_loader"
 require "set"
 
 module CleanupRefinement
@@ -36,19 +36,27 @@ module CleanupRefinement
     end
 
     def nested_cache?
-      directory? && %w[glide_home java_cache npm_cache gclient_cache].include?(basename.to_s)
+      directory? && %w[cargo_cache go_cache glide_home java_cache npm_cache gclient_cache].include?(basename.to_s)
+    end
+
+    def go_cache_directory?
+      # Go makes its cache contents read-only to ensure cache integrity,
+      # which makes sense but is something we need to undo for cleanup.
+      directory? && %w[go_cache].include?(basename.to_s)
     end
 
     def prune?(days)
       return false unless days
       return true if days.zero?
 
+      return true if symlink? && !exist?
+
       # TODO: Replace with ActiveSupport's `.days.ago`.
       mtime < ((@time ||= Time.now) - days * 60 * 60 * 24)
     end
 
     def stale?(scrub = false)
-      return false unless file?
+      return false unless resolved_path.file?
 
       stale_formula?(scrub) || stale_cask?(scrub)
     end
@@ -105,8 +113,8 @@ module CleanupRefinement
       return false unless name = basename.to_s[/\A(.*?)\-\-/, 1]
 
       cask = begin
-        Hbc::CaskLoader.load(name)
-      rescue Hbc::CaskUnavailableError
+        Cask::CaskLoader.load(name)
+      rescue Cask::CaskUnavailableError
         return false
       end
 
@@ -155,18 +163,19 @@ module Homebrew
         cleanup_cache
         cleanup_logs
         return if dry_run?
+
         rm_ds_store
       else
         args.each do |arg|
           formula = begin
-            Formula[arg]
+            Formulary.resolve(arg)
           rescue FormulaUnavailableError, TapFormulaAmbiguityError, TapFormulaWithOldnameAmbiguityError
             nil
           end
 
           cask = begin
-            Hbc::CaskLoader.load(arg)
-          rescue Hbc::CaskUnavailableError
+            Cask::CaskLoader.load(arg)
+          rescue Cask::CaskUnavailableError
             nil
           end
 
@@ -204,20 +213,36 @@ module Homebrew
 
     def cleanup_logs
       return unless HOMEBREW_LOGS.directory?
+
       HOMEBREW_LOGS.subdirs.each do |dir|
         cleanup_path(dir) { dir.rmtree } if dir.prune?(days || DEFAULT_LOG_DAYS)
       end
+    end
+
+    def cleanup_unreferenced_downloads
+      return if dry_run?
+      return unless (cache/"downloads").directory?
+
+      # We can't use `.reject(&:incomplete?) here due to the refinement scope.
+      downloads = (cache/"downloads").children.reject { |path| path.incomplete? } # rubocop:disable Style/SymbolProc
+      referenced_downloads = [cache, cache/"Cask"].select(&:directory?)
+                                                  .flat_map(&:children)
+                                                  .select(&:symlink?)
+                                                  .map(&:resolved_path)
+
+      (downloads - referenced_downloads).each(&:unlink)
     end
 
     def cleanup_cache(entries = nil)
       entries ||= [cache, cache/"Cask"].select(&:directory?).flat_map(&:children)
 
       entries.each do |path|
+        FileUtils.chmod_R 0755, path if path.go_cache_directory? && !dry_run?
         next cleanup_path(path) { path.unlink } if path.incomplete?
         next cleanup_path(path) { FileUtils.rm_rf path } if path.nested_cache?
 
         if path.prune?(days)
-          if path.file?
+          if path.file? || path.symlink?
             cleanup_path(path) { path.unlink }
           elsif path.directory? && path.to_s.include?("--")
             cleanup_path(path) { FileUtils.rm_rf path }
@@ -227,6 +252,8 @@ module Homebrew
 
         next cleanup_path(path) { path.unlink } if path.stale?(scrub?)
       end
+
+      cleanup_unreferenced_downloads
     end
 
     def cleanup_path(path)
@@ -247,8 +274,8 @@ module Homebrew
     def cleanup_lockfiles(*lockfiles)
       return if dry_run?
 
-      if lockfiles.empty? && HOMEBREW_LOCK_DIR.directory?
-        lockfiles = HOMEBREW_LOCK_DIR.children.select(&:file?)
+      if lockfiles.empty? && HOMEBREW_LOCKS.directory?
+        lockfiles = HOMEBREW_LOCKS.children.select(&:file?)
       end
 
       lockfiles.each do |file|
@@ -264,11 +291,16 @@ module Homebrew
     end
 
     def rm_ds_store(dirs = nil)
-      dirs ||= %w[Caskroom Cellar Frameworks Library bin etc include lib opt sbin share var]
-               .map { |path| HOMEBREW_PREFIX/path }
-
+      dirs ||= begin
+        Keg::MUST_EXIST_DIRECTORIES + [
+          HOMEBREW_CELLAR,
+          HOMEBREW_PREFIX/"Caskroom",
+        ]
+      end
       dirs.select(&:directory?).each.parallel do |dir|
-        system_command "find", args: [dir, "-name", ".DS_Store", "-delete"], print_stderr: false
+        system_command "find",
+          args: [dir, "-name", ".DS_Store", "-delete"],
+          print_stderr: false
       end
     end
   end

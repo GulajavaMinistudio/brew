@@ -39,6 +39,7 @@ module OS
 
       def below_minimum_version?
         return false unless installed?
+
         version < minimum_version
       end
 
@@ -48,11 +49,13 @@ module OS
 
       def needs_clt_installed?
         return false if latest_sdk_version?
+
         without_clt?
       end
 
       def outdated?
         return false unless installed?
+
         version < latest_version
       end
 
@@ -79,6 +82,7 @@ module OS
 
       def toolchain_path
         return if version < "4.3"
+
         Pathname.new("#{prefix}/Toolchains/XcodeDefault.xctoolchain")
       end
 
@@ -140,6 +144,7 @@ module OS
           #{which("xcodebuild")}
         ].uniq.each do |xcodebuild_path|
           next unless File.executable? xcodebuild_path
+
           xcodebuild_output = Utils.popen_read(xcodebuild_path, "-version")
           next unless $CHILD_STATUS.success?
 
@@ -158,6 +163,7 @@ module OS
 
       def detect_version_from_clang_version
         return "dunno" if DevelopmentTools.clang_version.null?
+
         # This logic provides a fake Xcode version based on the
         # installed CLT version. This is useful as they are packaged
         # simultaneously so workarounds need to apply to both based on their
@@ -211,7 +217,8 @@ module OS
       EXECUTABLE_PKG_ID = "com.apple.pkg.CLTools_Executables".freeze
       MAVERICKS_NEW_PKG_ID = "com.apple.pkg.CLTools_Base".freeze # obsolete
       PKG_PATH = "/Library/Developer/CommandLineTools".freeze
-      HEADER_PKG_PATH = "/Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_:macos_version.pkg".freeze
+      HEADER_PKG_PATH =
+        "/Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_:macos_version.pkg".freeze
       HEADER_PKG_ID = "com.apple.pkg.macOS_SDK_headers_for_macOS_10.14".freeze
 
       # Returns true even if outdated tools are installed, e.g.
@@ -289,12 +296,14 @@ module OS
         # Lion was the first version of OS X to ship with a CLT
         return false if MacOS.version < :lion
         return false unless installed?
+
         version < minimum_version
       end
 
       def outdated?
         clang_version = detect_clang_version
         return false unless clang_version
+
         ::Version.new(clang_version) < latest_version
       end
 
@@ -331,6 +340,7 @@ module OS
         else
           @header_version ||= MacOS.pkgutil_info(HEADER_PKG_ID)[/version: (.+)$/, 1]
           return ::Version::NULL unless @header_version
+
           ::Version.new(@header_version)
         end
       end

@@ -19,7 +19,7 @@ module Homebrew
 
           We recommend using a MacTeX distribution: https://www.tug.org/mactex/
 
-          You can install it with Homebrew-Cask:
+          You can install it with Homebrew Cask:
             brew cask install mactex
         EOS
         when "pip" then <<~EOS
@@ -76,7 +76,7 @@ module Homebrew
         when "ngrok" then <<~EOS
           Upstream sunsetted 1.x in March 2016 and 2.x is not open-source.
 
-          If you wish to use the 2.x release you can install with Homebrew-Cask:
+          If you wish to use the 2.x release you can install with Homebrew Cask:
             brew cask install ngrok
         EOS
         end
@@ -120,8 +120,10 @@ module Homebrew
       def deleted_reason(name, silent: false)
         path = Formulary.path name
         return if File.exist? path
+
         tap = Tap.from_path(path)
         return if tap.nil? || !File.exist?(tap.path)
+
         relative_path = path.relative_path_from tap.path
 
         tap.path.cd do
@@ -136,12 +138,13 @@ module Homebrew
             end
           end
 
-          log_command = "git log --since='1 month ago' --diff-filter=D --name-only --max-count=1 --format=%H\\\\n%h\\\\n%B -- #{relative_path}"
+          log_command = "git log --since='1 month ago' --diff-filter=D " \
+                        "--name-only --max-count=1 " \
+                        "--format=%H\\\\n%h\\\\n%B -- #{relative_path}"
           hash, short_hash, *commit_message, relative_path =
             Utils.popen_read(log_command).gsub("\\n", "\n").lines.map(&:chomp)
 
-          if hash.to_s.empty? || short_hash.to_s.empty? ||
-             relative_path.to_s.empty?
+          if hash.blank? || short_hash.blank? || relative_path.blank?
             ofail "No previously deleted formula found." unless silent
             return
           end

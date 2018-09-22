@@ -214,6 +214,7 @@ class Formula
   def active_spec=(spec_sym)
     spec = send(spec_sym)
     raise FormulaSpecificationError, "#{spec_sym} spec is not available for #{full_name}" unless spec
+
     @active_spec = spec
     @active_spec_sym = spec_sym
     validate_attributes!
@@ -235,6 +236,7 @@ class Formula
   def spec_eval(name)
     spec = self.class.send(name)
     return unless spec.url
+
     spec.owner = self
     instance_variable_set("@#{name}", spec)
   end
@@ -256,6 +258,7 @@ class Formula
 
     val = version.respond_to?(:to_str) ? version.to_str : version
     return unless val.nil? || val.empty? || val =~ /\s/
+
     raise FormulaValidationError.new(full_name, :version, val)
   end
 
@@ -268,6 +271,7 @@ class Formula
     path = build.source["path"] if build.is_a?(Tab)
     return unless path =~ %r{#{HOMEBREW_TAP_DIR_REGEX}/Aliases}
     return unless File.symlink?(path)
+
     path
   end
 
@@ -500,6 +504,7 @@ class Formula
 
     if options[:fetch_head]
       return false unless head&.downloader.is_a?(VCSDownloadStrategy)
+
       downloader = head.downloader
       downloader.shutup! unless ARGV.verbose?
       downloader.commit_outdated?(version.version.commit)
@@ -557,12 +562,14 @@ class Formula
   # Is formula's linked keg points to the prefix.
   def prefix_linked?(v = pkg_version)
     return false unless linked?
+
     linked_keg.resolved_path == versioned_prefix(v)
   end
 
   # {PkgVersion} of the linked keg for the formula.
   def linked_version
     return unless linked?
+
     Keg.for(linked_keg).version
   end
 
@@ -1036,6 +1043,7 @@ class Formula
   # see gettext.rb for an example
   def keg_only?
     return false unless keg_only_reason
+
     keg_only_reason.valid?
   end
 
@@ -1052,6 +1060,7 @@ class Formula
   # @private
   def skip_clean?(path)
     return true if path.extname == ".la" && self.class.skip_clean_paths.include?(:la)
+
     to_check = path.relative_path_from(prefix).to_s
     self.class.skip_clean_paths.include? to_check
   end
@@ -1065,6 +1074,7 @@ class Formula
   def link_overwrite?(path)
     # Don't overwrite files not created by Homebrew.
     return false unless path.stat.uid == HOMEBREW_BREW_FILE.stat.uid
+
     # Don't overwrite files belong to other keg except when that
     # keg's formula is deleted.
     begin
@@ -1073,7 +1083,9 @@ class Formula
       # file doesn't belong to any keg.
     else
       tab_tap = Tab.for_keg(keg).tap
-      return false if tab_tap.nil? # this keg doesn't below to any core/tap formula, most likely coming from a DIY install.
+      # this keg doesn't below to any core/tap formula, most likely coming from a DIY install.
+      return false if tab_tap.nil?
+
       begin
         Formulary.factory(keg.name)
       rescue FormulaUnavailableError # rubocop:disable Lint/HandleExceptions
@@ -1104,6 +1116,7 @@ class Formula
   # @private
   def patch
     return if patchlist.empty?
+
     ohai "Patching"
     patchlist.each(&:apply)
   end
@@ -1119,7 +1132,7 @@ class Formula
 
       begin
         yield self, staging
-      rescue StandardError
+      rescue
         staging.retain! if ARGV.interactive? || ARGV.debug?
         raise
       ensure
@@ -1137,6 +1150,7 @@ class Formula
     return unless oldname
     return unless (oldname_rack = HOMEBREW_CELLAR/oldname).exist?
     return unless oldname_rack.resolved_path == rack
+
     @oldname_lock = FormulaLock.new(oldname)
     @oldname_lock.lock
   end
@@ -1162,6 +1176,7 @@ class Formula
   def outdated_kegs(options = {})
     @outdated_kegs ||= Hash.new do |cache, key|
       raise Migrator::MigrationNeededError, self if migration_needed?
+
       cache[key] = _outdated_kegs(key)
     end
     @outdated_kegs[options]
@@ -1211,6 +1226,7 @@ class Formula
   def installed_alias_target_changed?
     target = current_installed_alias_target
     return false unless target
+
     target.name != name
   end
 
@@ -1236,6 +1252,7 @@ class Formula
     # it doesn't make sense to say that other formulae are older versions of it
     # because we don't know which came first.
     return [] if alias_path.nil? || installed_alias_target_changed?
+
     self.class.installed_with_alias_path(alias_path).reject { |f| f.name == name }
   end
 
@@ -1287,6 +1304,7 @@ class Formula
   # @private
   def <=>(other)
     return unless other.is_a?(Formula)
+
     name <=> other.name
   end
 
@@ -1372,7 +1390,7 @@ class Formula
     files.each do |file|
       begin
         yield Formulary.factory(file)
-      rescue StandardError => e
+      rescue => e
         # Don't let one broken formula break commands. But do complain.
         onoe "Failed to import: #{file}"
         puts e
@@ -1418,6 +1436,7 @@ class Formula
 
   def self.installed_with_alias_path(alias_path)
     return [] if alias_path.nil?
+
     installed.select { |f| f.installed_alias_path == alias_path }
   end
 
@@ -1477,12 +1496,14 @@ class Formula
   # @private
   def tap?
     return false unless tap
+
     !tap.core_tap?
   end
 
   # @private
   def print_tap_action(options = {})
     return unless tap?
+
     verb = options[:verb] || "Installing"
     ohai "#{verb} #{name} from #{tap}"
   end
@@ -1531,11 +1552,13 @@ class Formula
       return tab_deps.map do |d|
         full_name = d["full_name"]
         next unless full_name
+
         Dependency.new full_name
       end.compact
     end
 
     return declared_runtime_dependencies unless undeclared
+
     declared_runtime_dependencies | undeclared_runtime_dependencies
   end
 
@@ -1606,6 +1629,7 @@ class Formula
     %w[stable devel].each do |spec_sym|
       next unless spec = send(spec_sym)
       next unless spec.bottle_defined?
+
       bottle_spec = spec.bottle_specification
       bottle_info = {
         "rebuild" => bottle_spec.rebuild,
@@ -1678,6 +1702,8 @@ class Formula
       PATH: PATH.new(ENV["PATH"], HOMEBREW_PREFIX/"bin"),
       HOMEBREW_PATH: nil,
       _JAVA_OPTIONS: "#{ENV["_JAVA_OPTIONS"]} -Duser.home=#{HOMEBREW_CACHE}/java_cache",
+      GOCACHE: "#{HOMEBREW_CACHE}/go_cache",
+      CARGO_HOME: "#{HOMEBREW_CACHE}/cargo_cache",
     }
 
     ENV.clear_sensitive_environment!
@@ -1744,6 +1770,7 @@ class Formula
     recursive_dependencies do |_, dependency|
       Dependency.prune if dependency.build?
       next if dependency.required?
+
       if build.any_args_or_options?
         Dependency.prune if build.without?(dependency)
       elsif !dependency.recommended?
@@ -1810,7 +1837,9 @@ class Formula
 
     @exec_count ||= 0
     @exec_count += 1
-    logfn = format("#{logs}/#{active_log_prefix}%02d.%s", @exec_count, File.basename(cmd).split(" ").first)
+    logfn = format("#{logs}/#{active_log_prefix}%02<exec_count>d.%{cmd_base}",
+                   exec_count: @exec_count,
+                   cmd_base: File.basename(cmd).split(" ").first)
     logs.mkpath
 
     File.open(logfn, "w") do |log|
@@ -1833,6 +1862,7 @@ class Formula
               log.puts buf
               # make sure dots printed with interval of at least 1 min.
               next unless (Time.now - last_dot) > 60
+
               print "."
               $stdout.flush
               last_dot = Time.now
@@ -1934,6 +1964,7 @@ class Formula
   def mkdir(name)
     result = FileUtils.mkdir_p(name)
     return result unless block_given?
+
     FileUtils.chdir name do
       yield
     end
@@ -2004,7 +2035,7 @@ class Formula
     $stdout.reopen(out)
     $stderr.reopen(out)
     out.close
-    args.collect!(&:to_s)
+    args.map!(&:to_s)
     begin
       exec(cmd, *args)
     rescue
@@ -2029,6 +2060,8 @@ class Formula
         stage_env[:HOME] = env_home
         stage_env[:_JAVA_OPTIONS] =
           "#{ENV["_JAVA_OPTIONS"]} -Duser.home=#{HOMEBREW_CACHE}/java_cache"
+        stage_env[:GOCACHE] = "#{HOMEBREW_CACHE}/go_cache"
+        stage_env[:CARGO_HOME] = "#{HOMEBREW_CACHE}/cargo_cache"
         stage_env[:CURL_HOME] = ENV["CURL_HOME"] || ENV["HOME"]
       end
 
@@ -2252,6 +2285,7 @@ class Formula
     def stable(&block)
       @stable ||= SoftwareSpec.new
       return @stable unless block_given?
+
       @stable.instance_eval(&block)
     end
 
@@ -2270,6 +2304,7 @@ class Formula
     def devel(&block)
       @devel ||= SoftwareSpec.new
       return @devel unless block_given?
+
       @devel.instance_eval(&block)
     end
 

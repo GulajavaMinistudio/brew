@@ -1,4 +1,4 @@
-require_relative "../../rubocops/text_cop"
+require "rubocops/text_cop"
 
 describe RuboCop::Cop::FormulaAudit::Text do
   subject(:cop) { described_class.new }
@@ -200,7 +200,7 @@ describe RuboCop::Cop::FormulaAudit::Text do
 
           def install
             system "cargo", "build"
-            ^^^^^^^^^^^^^^^^^^^^^^^ use \"cargo\", \"install\", \"--root\", prefix
+            ^^^^^^^^^^^^^^^^^^^^^^^ use \"cargo\", \"install\", \"--root\", prefix, \"--path\", \".\"
           end
         end
       RUBY

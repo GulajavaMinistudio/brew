@@ -7,19 +7,19 @@ brew-cask(1) - a friendly binary installer for macOS
 
 ## DESCRIPTION
 
-Homebrew-Cask is a tool for installing precompiled macOS binaries (such as
+Homebrew Cask is a tool for installing precompiled macOS binaries (such as
 Applications) from the command line. The user is never required to use the
 graphical user interface.
 
 ## ALPHA-QUALITY SOFTWARE
 
-Homebrew-Cask works robustly enough that we welcome new users, but the
+Homebrew Cask works robustly enough that we welcome new users, but the
 project is still in early development. That means command names, option
 names, and other aspects of this manual are still subject to change.
 
 ## FREQUENTLY USED COMMANDS
 
-  * `install` [--force] [--skip-cask-deps] [--require-sha] [--language=<iso-language>[,<iso-language> ... ]] <token> [ <token> ... ]:
+  * `install` [--force] [--skip-cask-deps] [--require-sha] [--no-quarantine] [--language=<iso-language>[,<iso-language> ... ]] <token> [ <token> ... ]:
     Install Cask identified by <token>.
 
   * `uninstall` [--force] <token> [ <token> ... ]:
@@ -56,10 +56,11 @@ names, and other aspects of this manual are still subject to change.
   * `edit` <token>:
     Open the given Cask definition file for editing.
 
-  * `fetch` [--force] <token> [ <token> ... ]:
+  * `fetch` [--force] [--no-quarantine] <token> [ <token> ... ]:
     Download remote application files for the given Cask to the local
     cache. With `--force`, force re-download even if the files are already
-    cached.
+    cached. `--no-quarantine` will prevent Gatekeeper from
+    enforcing its security restrictions on the Cask.
 
   * `home` or `homepage` [ <token> ... ]:
     Display the homepage associated with a given Cask in a browser.
@@ -69,11 +70,12 @@ names, and other aspects of this manual are still subject to change.
   * `info` or `abv` <token> [ <token> ... ]:
     Display information about the given Cask.
 
-  * `install` [--force] [--skip-cask-deps] [--require-sha] <token> [ <token> ... ]:
+  * `install` [--force] [--skip-cask-deps] [--require-sha] [--no-quarantine] <token> [ <token> ... ]:
     Install the given Cask. With `--force`, re-install even if the Cask
     appears to be already present. With `--skip-cask-deps`, skip any Cask
     dependencies. `--require-sha` will abort installation if the Cask does not
-    have a checksum defined.
+    have a checksum defined. `--no-quarantine` will prevent Gatekeeper from
+    enforcing its security restrictions on the Cask.
 
     <token> is usually the ID of a Cask,
     but see [OTHER WAYS TO SPECIFY A CASK][] for variations.
@@ -97,7 +99,7 @@ names, and other aspects of this manual are still subject to change.
     `--verbose` forces the display of the outdated and latest version.<br>
     `--quiet` suppresses the display of versions.
 
-  * `reinstall` <token> [ <token> ... ]:
+  * `reinstall` [--no-quarantine] <token> [ <token> ... ]:
     Reinstall the given Cask.
 
   * `search` or `-S` [<text> | /<regexp>/]:
@@ -162,6 +164,10 @@ in a future version.
   *  `--require-sha`:
     Abort Cask installation if the Cask does not have a checksum defined.
 
+  *  `--no-quarantine`:
+    Prevent Gatekeeper from enforcing its security restrictions on the Cask.
+    This will let you run it straightaway.
+
   * `--verbose`:
     Give additional feedback during installation.
 
@@ -215,9 +221,9 @@ in a future version.
 
 ## INTERACTION WITH HOMEBREW
 
-Homebrew-Cask is implemented as a external command for Homebrew. That means
+Homebrew Cask is implemented as a external command for Homebrew. That means
 this project is entirely built upon the Homebrew infrastructure. For
-example, upgrades to the Homebrew-Cask tool are received through Homebrew:
+example, upgrades to the Homebrew Cask tool are received through Homebrew:
 
     brew update; brew cask upgrade; brew cleanup
 
@@ -228,12 +234,12 @@ the Homebrew command:
 
 ## OTHER WAYS TO SPECIFY A CASK
 
-Most Homebrew-Cask commands can accept a Cask token as an argument. As
+Most Homebrew Cask commands can accept a Cask token as an argument. As
 described above, the argument can take the form of:
 
   * A simple token, e.g. `google-chrome`
 
-Homebrew-Cask also accepts three other forms in place of plain tokens:
+Homebrew Cask also accepts three other forms in place of plain tokens:
 
   * A fully-qualified token which includes the Tap name, e.g.
     `homebrew/cask-fonts/font-symbola`
@@ -246,11 +252,11 @@ Homebrew-Cask also accepts three other forms in place of plain tokens:
 
 ## ENVIRONMENT
 
-Homebrew-Cask respects many of the environment variables used by the
+Homebrew Cask respects many of the environment variables used by the
 parent command `brew`. Please refer to the `brew`(1) man page for more
 information.
 
-Environment variables specific to Homebrew-Cask:
+Environment variables specific to Homebrew Cask:
 
   * `HOMEBREW_CASK_OPTS`:
     This variable may contain any arguments normally used as options on
@@ -262,14 +268,14 @@ Environment variables specific to Homebrew-Cask:
 Other environment variables:
 
   * `SUDO_ASKPASS`:
-    When this variable is set, Homebrew-Cask will call `sudo`(8) with the `-A` option.
+    When this variable is set, Homebrew Cask will call `sudo`(8) with the `-A` option.
 
 
 ## SEE ALSO
 
-The Homebrew-Cask home page: <https://caskroom.github.io/>
+The Homebrew Cask home page: <https://caskroom.github.io/>
 
-The Homebrew-Cask GitHub page: <https://github.com/Homebrew/homebrew-cask>
+The Homebrew Cask GitHub page: <https://github.com/Homebrew/homebrew-cask>
 
 `brew`(1), `curl`(1)
 
@@ -284,6 +290,6 @@ Man page format based on `brew.1.md` from Homebrew.
 We still have bugs - and we are busy fixing them!  If you have a problem, don't
 be shy about reporting it on our [GitHub issues page](https://github.com/Homebrew/homebrew-cask/issues?state=open).
 
-When reporting bugs, remember that Homebrew-Cask is an independent project from
-Homebrew. Do your best to direct bug reports to the appropriate project. If
+When reporting bugs, remember that Homebrew Cask is an separate repository within
+Homebrew. Do your best to direct bug reports to the appropriate repository. If
 your command-line started with `brew cask`, bring the bug to us first!

@@ -29,6 +29,7 @@ module FormulaCellarChecks
 
   def check_openssl_links
     return unless formula.prefix.directory?
+
     keg = Keg.new(formula.prefix)
     system_openssl = keg.mach_o_files.select do |obj|
       dlls = obj.dynamically_linked_libraries
@@ -64,6 +65,7 @@ module FormulaCellarChecks
 
   def check_linkage
     return unless formula.prefix.directory?
+
     keg = Keg.new(formula.prefix)
 
     CacheStoreDatabase.use(:linkage) do |db|
@@ -93,5 +95,10 @@ module FormulaCellarChecks
     problem_if_output(check_openssl_links)
     problem_if_output(check_python_framework_links(formula.lib))
     check_linkage
+  end
+
+  def valid_library_extension?(filename)
+    macos_lib_extensions = %w[.dylib .framework]
+    generic_valid_library_extension?(filename) || macos_lib_extensions.include?(filename.extname)
   end
 end

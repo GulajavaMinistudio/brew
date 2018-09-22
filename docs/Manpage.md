@@ -62,7 +62,7 @@ With `--verbose` or `-v`, many commands print extra debugging information. Note 
 
     If `-s` is passed, scrub the cache, including downloads for even the latest
     versions. Note downloads for any installed formula or cask will still not
-    be deleted. If you want to delete those too: `rm -rf $(brew --cache)`
+    be deleted. If you want to delete those too: `rm -rf "$(brew --cache)"`
 
   * `command` `cmd`:
     Display the path to the file which is used when invoking `brew` `cmd`.
@@ -199,8 +199,11 @@ With `--verbose` or `-v`, many commands print extra debugging information. Note 
   * `info`:
     Display brief statistics for your Homebrew installation.
 
-  * `info` `formula`:
-    Display information about `formula`.
+  * `info` `formula`  (`--verbose`):
+    Display information about `formula` and analytics data (provided neither
+    `HOMEBREW_NO_ANALYTICS` or `HOMEBREW_NO_GITHUB_API` are set)
+
+    Pass `--verbose` to see more detailed analytics data.
 
   * `info` `--github` `formula`:
     Open a browser to the GitHub History page for `formula`.
@@ -438,6 +441,16 @@ With `--verbose` or `-v`, many commands print extra debugging information. Note 
 
     If `--env=std` is passed, use the standard `PATH` instead of superenv's.
 
+  * `shellenv`:
+    Prints export statements - run them in a shell and this installation of
+    Homebrew will be included into your PATH, MANPATH, and INFOPATH.
+
+    HOMEBREW_PREFIX, HOMEBREW_CELLAR and HOMEBREW_REPOSITORY are also exported
+    to save multiple queries of those variables.
+
+    Consider adding evaluating the output in your dotfiles (e.g. `~/.profile`)
+    with `eval $(brew shellenv)`
+
   * `style` [`--fix`] [`--display-cop-names`] [`--only-cops=``cops`|`--except-cops=``cops`] [`files`|`taps`|`formulae`]:
     Check formulae or files for conformance to Homebrew style guidelines.
 
@@ -450,8 +463,6 @@ With `--verbose` or `-v`, many commands print extra debugging information. Note 
 
     If `--display-cop-names` is passed, include the RuboCop cop name for each
     violation in the output.
-
-    If `--rspec` is passed, install and use the RuboCop RSpec gem.
 
     Passing `--only-cops=``cops` will check for violations of only the listed
     RuboCop `cops`, while `--except-cops=``cops` will skip checking the listed
@@ -565,10 +576,10 @@ With `--verbose` or `-v`, many commands print extra debugging information. Note 
     If `--force` (or `-f`) is specified then always do a slower, full update check even
     if unnecessary.
 
-  * `update-reset`:
-    Fetches and resets Homebrew and all tap repositories using `git`(1) to
-    their latest `origin/master`. Note this will destroy all your uncommitted
-    or committed changes.
+  * `update-reset` [`repositories`]:
+    Fetches and resets Homebrew and all tap repositories (or the specified
+    `repositories`) using `git`(1) to their latest `origin/master`. Note this
+    will destroy all your uncommitted or committed changes.
 
   * `upgrade` [`install-options`] [`--cleanup`] [`--fetch-HEAD`] [`--ignore-pinned`] [`--display-times`] [`formulae`]:
     Upgrade outdated, unpinned brews (with existing install options).
@@ -636,7 +647,7 @@ With `--verbose` or `-v`, many commands print extra debugging information. Note 
     the list is formatted for export to `bash`(1) unless `--plain` is passed.
 
   * `--prefix`:
-    Display Homebrew's install path. *Default:* `/usr/local`
+    Display Homebrew's install path. *Default:* `/usr/local` on macOS and `/home/linuxbrew/.linuxbrew` on Linux
 
   * `--prefix` `formula`:
     Display the location in the cellar where `formula` is or would be installed.
@@ -789,6 +800,18 @@ With `--verbose` or `-v`, many commands print extra debugging information. Note 
 
   * `edit` `formula`:
     Open `formula` in the editor.
+
+  * `extract` [`--force`] `formula` `tap` [`--version=``version`]:
+    Looks through repository history to find the `version` of `formula` and
+    creates a copy in `tap`/Formula/`formula`@`version`.rb. If the tap is
+    not installed yet, attempts to install/clone the tap before continuing.
+
+    If `--force` is passed, the file at the destination will be overwritten
+    if it already exists. Otherwise, existing files will be preserved.
+
+    If an argument is passed through `--version`, `version` of `formula`
+    will be extracted and placed in the destination tap. Otherwise, the most
+    recent version that can be found will be used.
 
   * `formula` `formula`:
     Display the path where `formula` is located.
@@ -998,6 +1021,10 @@ With `--verbose` or `-v`, many commands print extra debugging information. Note 
   
 
       If `--force` is passed, uninstall dependencies or overwrite an existing Brewfile.
+
+  
+
+      If `--zap` is passed, casks will be removed using the `zap` command instead of `uninstall`.
 
   
 
@@ -1316,13 +1343,13 @@ Homebrew's lead maintainer is Mike McQuaid.
 
 Homebrew's project leadership committee is Mike McQuaid, JCount, Misty De Meo and Markus Reiter.
 
-Homebrew/brew's other current maintainers are Dominyk Tiller, Claudia, Michka Popoff, Shaun Jackman, Chongyu Zhu, commitay, Vitor Galvao, JCount, Misty De Meo, Gautham Goli, Markus Reiter, Jonathan Chang and William Woodruff.
+Homebrew/brew's other current maintainers are Claudia, Michka Popoff, Shaun Jackman, Chongyu Zhu, commitay, Vitor Galvao, JCount, Misty De Meo, Gautham Goli, Markus Reiter, Steven Peters, Jonathan Chang and William Woodruff.
 
 Homebrew/brew's Linux support (and Linuxbrew) maintainers are Michka Popoff and Shaun Jackman.
 
-Homebrew/homebrew-core's other current maintainers are Dominyk Tiller, Claudia, Michka Popoff, Shaun Jackman, Chongyu Zhu, commitay, Izaak Beekman, Sean Molenaar, Jan Viljanen, Viktor Szakats, FX Coudert, JCount, Misty De Meo and Tom Schoonjans.
+Homebrew/homebrew-core's other current maintainers are Claudia, Michka Popoff, Shaun Jackman, Chongyu Zhu, commitay, Izaak Beekman, Sean Molenaar, Jan Viljanen, Viktor Szakats, FX Coudert, Steven Peters, JCount, Misty De Meo and Tom Schoonjans.
 
-Former maintainers with significant contributions include Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew,  Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs and Homebrew's creator: Max Howell.
+Former maintainers with significant contributions include Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew,  Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs and Homebrew's creator: Max Howell.
 
 ## BUGS
 

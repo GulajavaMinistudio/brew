@@ -86,6 +86,7 @@ then
   HOMEBREW_OS_VERSION="macOS $HOMEBREW_MACOS_VERSION"
   # Don't change this from Mac OS X to match what macOS itself does in Safari on 10.12
   HOMEBREW_OS_USER_AGENT_VERSION="Mac OS X $HOMEBREW_MACOS_VERSION"
+  HOMEBREW_BOTTLE_DEFAULT_DOMAIN="https://homebrew.bintray.com"
 
   # The system Curl is too old for some modern HTTPS certificates on
   # older macOS versions.
@@ -96,10 +97,8 @@ then
     HOMEBREW_FORCE_BREWED_CURL="1"
   fi
 
-  # The system Git is too old for some GitHub's SSL ciphers on older
-  # macOS versions.
-  # https://github.com/blog/2507-weak-cryptographic-standards-removed
-  if [[ "$HOMEBREW_MACOS_VERSION_NUMERIC" -lt "100900" ]]
+  # The system Git is too old for some Homebrew functionality we rely on.
+  if [[ "$HOMEBREW_MACOS_VERSION_NUMERIC" -lt "101200" ]]
   then
     HOMEBREW_FORCE_BREWED_GIT="1"
   fi
@@ -112,6 +111,7 @@ else
   [[ -n "$HOMEBREW_LINUX" ]] && HOMEBREW_OS_VERSION="$(lsb_release -sd 2>/dev/null)"
   : "${HOMEBREW_OS_VERSION:=$(uname -r)}"
   HOMEBREW_OS_USER_AGENT_VERSION="$HOMEBREW_OS_VERSION"
+  HOMEBREW_BOTTLE_DEFAULT_DOMAIN="https://linuxbrew.bintray.com"
 
   CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
   HOMEBREW_CACHE="${HOMEBREW_CACHE:-${CACHE_HOME}/Homebrew}"
@@ -125,6 +125,9 @@ if [[ -n "$HOMEBREW_FORCE_BREWED_CURL" &&
          "$HOMEBREW_PREFIX/opt/curl/bin/curl" --version >/dev/null
 then
   HOMEBREW_CURL="$HOMEBREW_PREFIX/opt/curl/bin/curl"
+elif [[ -n "$HOMEBREW_DEVELOPER" && -x "$HOMEBREW_CURL_PATH" ]]
+then
+  HOMEBREW_CURL="$HOMEBREW_CURL_PATH"
 else
   HOMEBREW_CURL="curl"
 fi
@@ -134,6 +137,9 @@ if [[ -n "$HOMEBREW_FORCE_BREWED_GIT" &&
          "$HOMEBREW_PREFIX/opt/git/bin/git" --version >/dev/null
 then
   HOMEBREW_GIT="$HOMEBREW_PREFIX/opt/git/bin/git"
+elif [[ -n "$HOMEBREW_DEVELOPER" && -x "$HOMEBREW_GIT_PATH" ]]
+then
+  HOMEBREW_GIT="$HOMEBREW_GIT_PATH"
 else
   HOMEBREW_GIT="git"
 fi
@@ -156,10 +162,12 @@ export HOMEBREW_CACHE
 export HOMEBREW_CELLAR
 export HOMEBREW_SYSTEM
 export HOMEBREW_CURL
+export HOMEBREW_GIT
 export HOMEBREW_PROCESSOR
 export HOMEBREW_PRODUCT
 export HOMEBREW_OS_VERSION
 export HOMEBREW_MACOS_VERSION
+export HOMEBREW_MACOS_VERSION_NUMERIC
 export HOMEBREW_USER_AGENT
 export HOMEBREW_USER_AGENT_CURL
 
@@ -269,7 +277,6 @@ then
   export HOMEBREW_RUBY_WARNINGS="-W0"
 fi
 
-export HOMEBREW_BOTTLE_DEFAULT_DOMAIN="https://homebrew.bintray.com"
 if [[ -z "$HOMEBREW_BOTTLE_DOMAIN" ]]
 then
   export HOMEBREW_BOTTLE_DOMAIN="$HOMEBREW_BOTTLE_DEFAULT_DOMAIN"

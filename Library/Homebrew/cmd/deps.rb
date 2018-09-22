@@ -73,6 +73,7 @@ module Homebrew
         puts_deps_tree Formula.installed.sort, !ARGV.one?
       else
         raise FormulaUnspecifiedError if ARGV.named.empty?
+
         puts_deps_tree ARGV.formulae, !ARGV.one?
       end
       return
@@ -92,6 +93,7 @@ module Homebrew
 
     if ARGV.named.empty?
       raise FormulaUnspecifiedError unless mode.installed?
+
       puts_deps Formula.installed.sort
       return
     end
@@ -107,6 +109,7 @@ module Homebrew
 
   def condense_requirements(deps)
     return deps if ARGV.include?("--include-requirements")
+
     deps.select { |dep| dep.is_a? Dependency }
   end
 
@@ -151,7 +154,7 @@ module Homebrew
   end
 
   def deps_for_formulae(formulae, recursive = false, &block)
-    formulae.map { |f| deps_for_formula(f, recursive) }.inject(&block)
+    formulae.map { |f| deps_for_formula(f, recursive) }.reduce(&block)
   end
 
   def puts_deps(formulae)

@@ -12,6 +12,7 @@ module Homebrew
       ff.each do |f|
         missing_dependencies = f.missing_dependencies(hide: hide)
         next if missing_dependencies.empty?
+
         yield f.full_name, missing_dependencies if block_given?
         missing[f.full_name] = missing_dependencies
       end
@@ -32,6 +33,7 @@ module Homebrew
         vol_index = @volumes.index(vols[0])
         # volume not found in volume list
         return -1 if vol_index.nil?
+
         vol_index
       end
 
@@ -61,15 +63,21 @@ module Homebrew
       # Specify paths relative to a prefix eg. "include/foo.h".
       # Sets @found for your convenience.
       def find_relative_paths(*relative_paths)
-        @found = [HOMEBREW_PREFIX, "/usr/local"].uniq.inject([]) do |found, prefix|
+        @found = [HOMEBREW_PREFIX, "/usr/local"].uniq.reduce([]) do |found, prefix|
           found + relative_paths.map { |f| File.join(prefix, f) }.select { |f| File.exist? f }
         end
       end
 
       def inject_file_list(list, string)
-        list.inject(string) { |acc, elem| acc << "  #{elem}\n" }
+        list.reduce(string) { |acc, elem| acc << "  #{elem}\n" }
       end
       ############# END HELPERS
+
+      def fatal_install_checks
+        %w[
+          check_access_directories
+        ].freeze
+      end
 
       def development_tools_checks
         %w[
@@ -270,6 +278,7 @@ module Homebrew
 
         Keg::PRUNEABLE_DIRECTORIES.each do |d|
           next unless d.directory?
+
           d.find do |path|
             if path.symlink? && !path.resolved_path_exists?
               broken_symlinks << path
@@ -293,112 +302,32 @@ module Homebrew
         EOS
       end
 
-      def check_access_homebrew_repository
-        return if HOMEBREW_REPOSITORY.writable_real?
+      def check_exist_directories
+        not_exist_dirs = Keg::MUST_EXIST_DIRECTORIES.reject(&:exist?)
+        return if not_exist_dirs.empty?
 
         <<~EOS
-          #{HOMEBREW_REPOSITORY} is not writable.
+          The following directories do not exist:
+          #{not_exist_dirs.join("\n")}
 
-          You should change the ownership and permissions of #{HOMEBREW_REPOSITORY}
-          back to your user account.
-            sudo chown -R $(whoami) #{HOMEBREW_REPOSITORY}
+          You should create these directories and change their ownership to your account.
+            sudo mkdir -p #{not_exist_dirs.join(" ")}
+            sudo chown -R $(whoami) #{not_exist_dirs.join(" ")}
         EOS
       end
 
-      def check_access_prefix_directories
-        not_writable_dirs = []
-
-        Keg::ALL_TOP_LEVEL_DIRECTORIES.each do |dir|
-          path = HOMEBREW_PREFIX/dir
-          next unless path.exist?
-          next if path.writable_real?
-          not_writable_dirs << path
-        end
-
+      def check_access_directories
+        not_writable_dirs =
+          Keg::MUST_BE_WRITABLE_DIRECTORIES.select(&:exist?)
+                                           .reject(&:writable_real?)
         return if not_writable_dirs.empty?
 
         <<~EOS
-          The following directories are not writable:
+          The following directories are not writable by your user:
           #{not_writable_dirs.join("\n")}
 
-          This can happen if you "sudo make install" software that isn't managed
-          by Homebrew. If a formula tries to write a file to this directory, the
-          install will fail during the link step.
-
-          You should change the ownership of these directories to your account.
+          You should change the ownership of these directories to your user.
             sudo chown -R $(whoami) #{not_writable_dirs.join(" ")}
-        EOS
-      end
-
-      def check_access_site_packages
-        return unless Language::Python.homebrew_site_packages.exist?
-        return if Language::Python.homebrew_site_packages.writable_real?
-
-        <<~EOS
-          #{Language::Python.homebrew_site_packages} isn't writable.
-          This can happen if you "sudo pip install" software that isn't managed
-          by Homebrew. If you install a formula with Python modules, the install
-          will fail during the link step.
-
-          You should change the ownership and permissions of #{Language::Python.homebrew_site_packages}
-          back to your user account.
-            sudo chown -R $(whoami) #{Language::Python.homebrew_site_packages}
-        EOS
-      end
-
-      def check_access_lock_dir
-        return unless HOMEBREW_LOCK_DIR.exist?
-        return if HOMEBREW_LOCK_DIR.writable_real?
-
-        <<~EOS
-          #{HOMEBREW_LOCK_DIR} isn't writable.
-          Homebrew writes lock files to this location.
-
-          You should change the ownership and permissions of #{HOMEBREW_LOCK_DIR}
-          back to your user account.
-            sudo chown -R $(whoami) #{HOMEBREW_LOCK_DIR}
-        EOS
-      end
-
-      def check_access_logs
-        return unless HOMEBREW_LOGS.exist?
-        return if HOMEBREW_LOGS.writable_real?
-
-        <<~EOS
-          #{HOMEBREW_LOGS} isn't writable.
-          Homebrew writes debugging logs to this location.
-
-          You should change the ownership and permissions of #{HOMEBREW_LOGS}
-          back to your user account.
-            sudo chown -R $(whoami) #{HOMEBREW_LOGS}
-        EOS
-      end
-
-      def check_access_cache
-        return unless HOMEBREW_CACHE.exist?
-        return if HOMEBREW_CACHE.writable_real?
-
-        <<~EOS
-          #{HOMEBREW_CACHE} isn't writable.
-          This can happen if you run `brew install` or `brew fetch` as another user.
-          Homebrew caches downloaded files to this location.
-
-          You should change the ownership and permissions of #{HOMEBREW_CACHE}
-          back to your user account.
-            sudo chown -R $(whoami) #{HOMEBREW_CACHE}
-        EOS
-      end
-
-      def check_access_cellar
-        return unless HOMEBREW_CELLAR.exist?
-        return if HOMEBREW_CELLAR.writable_real?
-
-        <<~EOS
-          #{HOMEBREW_CELLAR} isn't writable.
-
-          You should change the ownership and permissions of #{HOMEBREW_CELLAR}
-          back to your user account.
-            sudo chown -R $(whoami) #{HOMEBREW_CELLAR}
         EOS
       end
 
@@ -482,6 +411,7 @@ module Homebrew
 
       def check_for_config_scripts
         return unless HOMEBREW_CELLAR.exist?
+
         real_cellar = HOMEBREW_CELLAR.realpath
 
         scripts = []
@@ -559,16 +489,16 @@ module Homebrew
       end
 
       def check_git_version
-        # https://help.github.com/articles/https-cloning-errors
+        # System Git version on macOS Sierra.
+        minimum_version = "2.14.3".freeze
         return unless Utils.git_available?
-        return unless Version.create(Utils.git_version) < Version.create("1.8.5")
+        return if Version.create(Utils.git_version) >= Version.create(minimum_version)
 
         git = Formula["git"]
         git_upgrade_cmd = git.any_version_installed? ? "upgrade" : "install"
         <<~EOS
           An outdated version (#{Utils.git_version}) of Git was detected in your PATH.
-          Git 1.8.5 or newer is required to perform checkouts over HTTPS from GitHub and
-          to support the 'git -C <path>' option.
+          Git #{minimum_version} or newer is required for Homebrew.
           Please upgrade:
             brew #{git_upgrade_cmd} git
         EOS
@@ -678,6 +608,7 @@ module Homebrew
         f.installed_prefixes.each do |prefix|
           prefix.find do |src|
             next if src == prefix
+
             dst = HOMEBREW_PREFIX + src.relative_path_from(prefix)
             return true if dst.symlink? && src == dst.resolved_path
           end
@@ -716,6 +647,7 @@ module Homebrew
 
       def check_missing_deps
         return unless HOMEBREW_CELLAR.exist?
+
         missing = Set.new
         Homebrew::Diagnostic.missing_deps(Formula.installed).each_value do |deps|
           missing.merge(deps)
@@ -733,6 +665,7 @@ module Homebrew
 
       def check_git_status
         return unless Utils.git_available?
+
         HOMEBREW_REPOSITORY.cd do
           return if `git status --untracked-files=all --porcelain -- Library/Homebrew/ 2>/dev/null`.chomp.empty?
         end
@@ -748,6 +681,7 @@ module Homebrew
 
       def check_for_bad_python_symlink
         return unless which "python"
+
         `python -V 2>&1` =~ /Python (\d+)\./
         # This won't be the right warning if we matched nothing at all
         return if Regexp.last_match(1).nil?
@@ -838,14 +772,17 @@ module Homebrew
           unused_formula_dirs = tap.potential_formula_dirs - [tap.formula_dir]
           unused_formula_dirs.each do |dir|
             next unless dir.exist?
+
             dir.children.each do |path|
               next unless path.extname == ".rb"
+
               bad_tap_files[tap] ||= []
               bad_tap_files[tap] << path
             end
           end
         end
         return if bad_tap_files.empty?
+
         bad_tap_files.keys.map do |tap|
           <<~EOS
             Found Ruby file outside #{tap} tap formula directory

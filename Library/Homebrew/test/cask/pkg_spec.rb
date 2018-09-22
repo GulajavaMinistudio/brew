@@ -1,4 +1,4 @@
-describe Hbc::Pkg, :cask do
+describe Cask::Pkg, :cask do
   describe "#uninstall" do
     let(:fake_system_command) { NeverSudoSystemCommand }
     let(:empty_response) { double(stdout: "", plist: { "volume" => "/", "install-location" => "", "paths" => {} }) }
@@ -57,7 +57,9 @@ describe Hbc::Pkg, :cask do
     it "removes broken symlinks" do
       fake_root = mktmpdir
       fake_dir  = mktmpdir
-      fake_file = fake_dir.join("ima_file").tap { |path| FileUtils.touch(path) }
+      fake_file = fake_dir.join("ima_file").tap do |path|
+        FileUtils.touch(path)
+      end
 
       intact_symlink = fake_dir.join("intact_symlink").tap { |path| path.make_symlink(fake_file) }
       broken_symlink = fake_dir.join("broken_symlink").tap { |path| path.make_symlink("im_nota_file") }
@@ -142,13 +144,13 @@ describe Hbc::Pkg, :cask do
     end
 
     it "correctly parses a Property List" do
-      pkg = Hbc::Pkg.new(pkg_id, fake_system_command)
+      pkg = Cask::Pkg.new(pkg_id, fake_system_command)
 
       expect(fake_system_command).to receive(:run!).with(
         "/usr/sbin/pkgutil",
         args: ["--pkg-info-plist", pkg_id],
       ).and_return(
-        SystemCommand::Result.new(nil, pkg_info_plist, nil, instance_double(Process::Status, exitstatus: 0)),
+        SystemCommand::Result.new(nil, [[:stdout, pkg_info_plist]], instance_double(Process::Status, exitstatus: 0)),
       )
 
       info = pkg.info

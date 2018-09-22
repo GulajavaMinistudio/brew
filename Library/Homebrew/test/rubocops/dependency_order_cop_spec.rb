@@ -1,6 +1,6 @@
-require_relative "../../rubocops/dependency_order_cop"
+require "rubocops/dependency_order_cop"
 
-describe RuboCop::Cop::NewFormulaAudit::DependencyOrder do
+describe RuboCop::Cop::FormulaAudit::DependencyOrder do
   subject(:cop) { described_class.new }
 
   context "depends_on" do

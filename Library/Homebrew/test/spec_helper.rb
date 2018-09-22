@@ -1,10 +1,14 @@
 if ENV["HOMEBREW_TESTS_COVERAGE"]
   require "simplecov"
 
-  if ENV["CODECOV_TOKEN"] || ENV["TRAVIS"]
+  formatters = [SimpleCov::Formatter::HTMLFormatter]
+  if ENV["HOMEBREW_CODECOV_TOKEN"] || ENV["HOMEBREW_TRAVIS_CI"]
     require "codecov"
-    SimpleCov.formatter = SimpleCov::Formatter::Codecov
+    formatters << SimpleCov::Formatter::Codecov
+    ENV["CODECOV_TOKEN"] = ENV["HOMEBREW_CODECOV_TOKEN"]
   end
+
+  SimpleCov.formatters = SimpleCov::Formatter::MultiFormatter.new(formatters)
 end
 
 require "rspec/its"
@@ -32,7 +36,7 @@ TEST_DIRECTORIES = [
   HOMEBREW_CACHE,
   HOMEBREW_CACHE_FORMULA,
   HOMEBREW_CELLAR,
-  HOMEBREW_LOCK_DIR,
+  HOMEBREW_LOCKS,
   HOMEBREW_LOGS,
   HOMEBREW_TEMP,
 ].freeze
@@ -82,6 +86,10 @@ RSpec.configure do |config|
 
   config.before(:each, :needs_network) do
     skip "Requires network connection." unless ENV["HOMEBREW_TEST_ONLINE"]
+  end
+
+  config.around(:each, :needs_network) do |example|
+    example.run_with_retry retry: 3, retry_wait: 1
   end
 
   config.before(:each, :needs_svn) do
@@ -134,13 +142,9 @@ RSpec.configure do |config|
 
       FileUtils.rm_rf [
         TEST_DIRECTORIES.map(&:children),
+        *Keg::MUST_EXIST_DIRECTORIES,
         HOMEBREW_LINKED_KEGS,
         HOMEBREW_PINNED_KEGS,
-        HOMEBREW_PREFIX/".git",
-        HOMEBREW_PREFIX/"bin",
-        HOMEBREW_PREFIX/"etc",
-        HOMEBREW_PREFIX/"share",
-        HOMEBREW_PREFIX/"opt",
         HOMEBREW_PREFIX/"Caskroom",
         HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-cask",
         HOMEBREW_LIBRARY/"Taps/homebrew/homebrew-bar",
@@ -171,3 +175,14 @@ end
 RSpec::Matchers.define_negated_matcher :not_to_output, :output
 RSpec::Matchers.alias_matcher :have_failed, :be_failed
 RSpec::Matchers.alias_matcher :a_string_containing, :include
+
+RSpec::Matchers.define :a_json_string do
+  match do |actual|
+    begin
+      JSON.parse(actual)
+      true
+    rescue JSON::ParseError
+      false
+    end
+  end
+end

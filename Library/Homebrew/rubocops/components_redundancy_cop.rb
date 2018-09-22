@@ -1,4 +1,4 @@
-require_relative "./extend/formula_cop"
+require "rubocops/extend/formula_cop"
 
 module RuboCop
   module Cop
@@ -32,6 +32,7 @@ module RuboCop
           return if method_called?(body_node, :head) ||
                     find_block(body_node, :head) ||
                     find_block(body_node, :devel)
+
           problem STABLE_MSG if stable_block
         end
       end

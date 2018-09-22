@@ -406,6 +406,13 @@ EOS
     QUIET_ARGS=()
   fi
 
+  if [[ -z "$HOMEBREW_CURLRC" ]]
+  then
+    CURL_DISABLE_CURLRC_ARGS=(-q)
+  else
+    CURL_DISABLE_CURLRC_ARGS=()
+  fi
+
   # only allow one instance of brew update
   lock update
 
@@ -481,8 +488,10 @@ EOS
           GITHUB_API_ENDPOINT="commits/$UPSTREAM_BRANCH_DIR"
         fi
 
-        UPSTREAM_SHA_HTTP_CODE="$("$HOMEBREW_CURL" --silent --max-time 3 \
-           --output /dev/null --write-out "%{http_code}" \
+        UPSTREAM_SHA_HTTP_CODE="$("$HOMEBREW_CURL" \
+           "${CURL_DISABLE_CURLRC_ARGS[@]}" \
+           --silent --max-time 3 \
+           --location --output /dev/null --write-out "%{http_code}" \
            --dump-header "$DIR/.git/GITHUB_HEADERS" \
            --user-agent "$HOMEBREW_USER_AGENT_CURL" \
            --header "Accept: $GITHUB_API_ACCEPT" \

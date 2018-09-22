@@ -1,5 +1,5 @@
-require_relative "./extend/formula_cop"
-require_relative "../extend/string"
+require "rubocops/extend/formula_cop"
+require "extend/string"
 
 module RuboCop
   module Cop
@@ -29,6 +29,7 @@ module RuboCop
           desc_length = "#{@formula_name}: #{string_content(desc)}".length
           max_desc_length = 80
           return if desc_length <= max_desc_length
+
           problem "Description is too long. \"name: desc\" should be less than #{max_desc_length} characters. " \
                   "Length is calculated as #{@formula_name} + desc. (currently #{desc_length})"
         end
@@ -98,6 +99,7 @@ module RuboCop
 
           # Check if a full stop is used at the end of a formula's desc (apart from in the case of "etc.")
           return unless regex_match_group(desc, /\.$/) && !string_content(desc).end_with?("etc.")
+
           problem "Description shouldn't end with a full stop"
         end
 

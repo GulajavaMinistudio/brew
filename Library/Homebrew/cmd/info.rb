@@ -1,8 +1,11 @@
 #:  * `info`:
 #:    Display brief statistics for your Homebrew installation.
 #:
-#:  * `info` <formula>:
-#:    Display information about <formula>.
+#:  * `info` <formula>  (`--verbose`):
+#:    Display information about <formula> and analytics data (provided neither
+#:    `HOMEBREW_NO_ANALYTICS` or `HOMEBREW_NO_GITHUB_API` are set)
+#:
+#:    Pass `--verbose` to see more detailed analytics data.
 #:
 #:  * `info` `--github` <formula>:
 #:    Open a browser to the GitHub History page for <formula>.
@@ -168,6 +171,7 @@ module Homebrew
       %w[build required recommended optional].map do |type|
         reqs = f.requirements.select(&:"#{type}?")
         next if reqs.to_a.empty?
+
         puts "#{type.capitalize}: #{decorate_requirements(reqs)}"
       end
     end
@@ -179,10 +183,48 @@ module Homebrew
 
     caveats = Caveats.new(f)
     ohai "Caveats", caveats.to_s unless caveats.empty?
+
+    output_analytics(f)
+  end
+
+  def output_analytics(f)
+    return if ENV["HOMEBREW_NO_ANALYTICS"]
+    return if ENV["HOMEBREW_NO_GITHUB_API"]
+
+    formulae_json_url = "https://formulae.brew.sh/api/formula/#{f}.json"
+    output, = curl_output("--max-time", "3", formulae_json_url)
+    return if output.empty?
+
+    json = begin
+      JSON.parse(output)
+    rescue JSON::ParserError
+      nil
+    end
+    return if json.nil? || json.empty? || json["analytics"].empty?
+
+    ohai "Analytics"
+    if ARGV.verbose?
+      json["analytics"].each do |category, value|
+        value.each do |range, results|
+          oh1 "#{category} (#{range})"
+          results.each do |name_with_options, count|
+            puts "#{name_with_options}: #{number_readable(count)}"
+          end
+        end
+      end
+      return
+    end
+
+    json["analytics"].each do |category, value|
+      analytics = value.map do |range, results|
+        "#{number_readable(results.values.inject("+"))} (#{range})"
+      end
+      puts "#{category}: #{analytics.join(", ")}"
+    end
   end
 
   def decorate_dependencies(dependencies)
-    deps_status = dependencies.collect do |dep|
+    deps_status = dependencies.map do |dep|
       if dep.satisfied?([])
         pretty_installed(dep_display_s(dep))
       else
@@ -193,7 +235,7 @@ module Homebrew
   end
 
   def decorate_requirements(requirements)
-    req_status = requirements.collect do |req|
+    req_status = requirements.map do |req|
       req_s = req.display_s
       req.satisfied? ? pretty_installed(req_s) : pretty_uninstalled(req_s)
     end
@@ -202,6 +244,7 @@ module Homebrew
 
   def dep_display_s(dep)
     return dep.name if dep.option_tags.empty?
+
     "#{dep.name} #{dep.option_tags.map { |o| "--#{o}" }.join(" ")}"
   end
 end

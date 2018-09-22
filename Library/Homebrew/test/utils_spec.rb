@@ -118,18 +118,6 @@ describe "globally-scoped helper methods" do
     end
   end
 
-  describe "#run_as_not_developer" do
-    it "temporarily unsets HOMEBREW_DEVELOPER" do
-      ENV["HOMEBREW_DEVELOPER"] = "foo"
-
-      run_as_not_developer do
-        expect(ENV["HOMEBREW_DEVELOPER"]).to be nil
-      end
-
-      expect(ENV["HOMEBREW_DEVELOPER"]).to eq("foo")
-    end
-  end
-
   describe "#which" do
     let(:cmd) { dir/"foo" }
 
@@ -261,7 +249,10 @@ describe "globally-scoped helper methods" do
           caller: ["#{HOMEBREW_LIBRARY}/Taps/homebrew/homebrew-core/"],
           disable: true
         )
-      }.to raise_error(MethodDeprecatedError, %r{method.*replacement.*homebrew/core.*\/Taps\/homebrew\/homebrew-core\/}m)
+      }.to raise_error(
+        MethodDeprecatedError,
+        %r{method.*replacement.*homebrew/core.*\/Taps\/homebrew\/homebrew-core\/}m,
+      )
     end
   end
 

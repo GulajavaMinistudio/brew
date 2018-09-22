@@ -1,9 +1,9 @@
 # TODO: this test should be named after the corresponding class, once
 #       that class is abstracted from installer.rb.
 describe "Accessibility Access", :cask do
-  let(:cask) { Hbc::CaskLoader.load(cask_path("with-accessibility-access")) }
+  let(:cask) { Cask::CaskLoader.load(cask_path("with-accessibility-access")) }
   let(:fake_system_command) { class_double(SystemCommand) }
-  let(:installer) { Hbc::Installer.new(cask, command: fake_system_command) }
+  let(:installer) { Cask::Installer.new(cask, command: fake_system_command) }
 
   before do
     allow(MacOS).to receive(:version).and_return(MacOS::Version.new(macos_version))
@@ -26,7 +26,9 @@ describe "Accessibility Access", :cask do
     it "warns about disabling accessibility access on old macOS releases" do
       expect {
         installer.disable_accessibility_access
-      }.to output(/Warning: Accessibility access cannot be disabled automatically on this version of macOS\./).to_stderr
+      }.to output(
+        /Warning: Accessibility access cannot be disabled automatically on this version of macOS\./,
+      ).to_stderr
     end
   end
 
@@ -36,7 +38,10 @@ describe "Accessibility Access", :cask do
     it "can enable accessibility access" do
       expect(fake_system_command).to receive(:run!).with(
         "/usr/bin/sqlite3",
-        args: [MacOS.tcc_db, "INSERT OR REPLACE INTO access VALUES('kTCCServiceAccessibility','com.example.BasicCask',0,1,1,NULL);"],
+        args: [
+          MacOS.tcc_db,
+          "INSERT OR REPLACE INTO access VALUES('kTCCServiceAccessibility','com.example.BasicCask',0,1,1,NULL);",
+        ],
         sudo: true,
       )
 
@@ -62,13 +67,17 @@ describe "Accessibility Access", :cask do
         expect {
           installer.enable_accessibility_access
         }.to output.to_stdout
-      }.to output(/Warning: Accessibility access cannot be enabled automatically on this version of macOS\./).to_stderr
+      }.to output(
+        /Warning: Accessibility access cannot be enabled automatically on this version of macOS\./,
+      ).to_stderr
     end
 
     it "warns about disabling accessibility access on new macOS releases" do
       expect {
         installer.disable_accessibility_access
-      }.to output(/Warning: Accessibility access cannot be disabled automatically on this version of macOS\./).to_stderr
+      }.to output(
+        /Warning: Accessibility access cannot be disabled automatically on this version of macOS\./,
+      ).to_stderr
     end
   end
 end

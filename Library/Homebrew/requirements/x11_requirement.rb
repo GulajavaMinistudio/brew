@@ -40,11 +40,13 @@ class X11Requirement < Requirement
   end
 
   def message
-    "X11 is required to install this formula, either Xorg #{min_version} or xdpyinfo #{min_xdpyinfo_version}, or newer. #{super}"
+    "X11 is required to install this formula, either Xorg #{min_version} or " \
+    "xdpyinfo #{min_xdpyinfo_version}, or newer. #{super}"
   end
 
   def <=>(other)
     return unless other.is_a? X11Requirement
+
     0
   end
 

@@ -1,6 +1,6 @@
 require "open3"
 require "ostruct"
-require "vendor/plist/plist"
+require "plist"
 require "shellwords"
 
 require "extend/io"
@@ -19,6 +19,8 @@ end
 class SystemCommand
   extend Predicable
 
+  attr_reader :pid
+
   def self.run(executable, **options)
     new(executable, **options).run!
   end
@@ -30,16 +32,16 @@ class SystemCommand
   def run!
     puts command.shelljoin.gsub(/\\=/, "=") if verbose? || ARGV.debug?
 
-    @merged_output = []
+    @output = []
 
     each_output_line do |type, line|
       case type
       when :stdout
         $stdout << line if print_stdout?
-        @merged_output << [:stdout, line]
+        @output << [:stdout, line]
       when :stderr
         $stderr << line if print_stderr?
-        @merged_output << [:stderr, line]
+        @output << [:stderr, line]
       end
     end
 
@@ -92,15 +94,17 @@ class SystemCommand
 
   def sudo_prefix
     return [] unless sudo?
+
     askpass_flags = ENV.key?("SUDO_ASKPASS") ? ["-A"] : []
     ["/usr/bin/sudo", *askpass_flags, "-E", "--"]
   end
 
   def assert_success
     return if @status.success?
+
     raise ErrorDuringExecution.new(command,
                                    status: @status,
-                                   output: @merged_output)
+                                   output: @output)
   end
 
   def expanded_args
@@ -119,7 +123,8 @@ class SystemCommand
     executable, *args = command
 
     raw_stdin, raw_stdout, raw_stderr, raw_wait_thr =
-      Open3.popen3(env, executable, *args, **options)
+      Open3.popen3(env, [executable, executable], *args, **options)
+    @pid = raw_wait_thr.pid
 
     write_input_to(raw_stdin)
     raw_stdin.close_write
@@ -128,7 +133,7 @@ class SystemCommand
     @status = raw_wait_thr.value
   rescue SystemCallError => e
     @status = $CHILD_STATUS
-    @merged_output << [:stderr, e.message]
+    @output << [:stderr, e.message]
   end
 
   def write_input_to(raw_stdin)
@@ -158,25 +163,38 @@ class SystemCommand
   end
 
   def result
-    output = @merged_output.each_with_object(stdout: "", stderr: "") do |(type, line), hash|
-      hash[type] << line
-    end
-
-    Result.new(command, output[:stdout], output[:stderr], @status)
+    Result.new(command, @output, @status)
   end
 
   class Result
-    attr_accessor :command, :stdout, :stderr, :status, :exit_status
+    attr_accessor :command, :status, :exit_status
 
-    def initialize(command, stdout, stderr, status)
-      @command     = command
-      @stdout      = stdout
-      @stderr      = stderr
-      @status      = status
-      @exit_status = status.exitstatus
+    def initialize(command, output, status)
+      @command       = command
+      @output        = output
+      @status        = status
+      @exit_status   = status.exitstatus
+    end
+
+    def stdout
+      @stdout ||= @output.select { |type,| type == :stdout }
+                         .map { |_, line| line }
+                         .join
+    end
+
+    def stderr
+      @stderr ||= @output.select { |type,| type == :stderr }
+                         .map { |_, line| line }
+                         .join
+    end
+
+    def merged_output
+      @merged_output ||= @output.map { |_, line| line }
+                                .join
     end
 
     def success?
+      return false if @exit_status.nil?
       @exit_status.zero?
     end
 
@@ -205,6 +223,7 @@ class SystemCommand
     def warn_plist_garbage(garbage)
       return unless ARGV.verbose?
       return unless garbage =~ /\S/
+
       opoo "Received non-XML output from #{Formatter.identifier(command.first)}:"
       $stderr.puts garbage.strip
     end

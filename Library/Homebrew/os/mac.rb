@@ -31,17 +31,21 @@ module OS
 
     def latest_sdk_version
       # TODO: bump version when new Xcode macOS SDK is released
-      Version.new "10.13"
+      Version.new "10.14"
     end
 
     def latest_stable_version
-      # TODO: bump version when new macOS is released
-      Version.new "10.13"
+      # TODO: bump version when new macOS is released and also update
+      # references in docs/Installation.md and
+      # https://github.com/Homebrew/install/blob/master/install
+      Version.new "10.14"
     end
 
     def outdated_release?
-      # TODO: bump version when new macOS is released
-      version < "10.11"
+      # TODO: bump version when new macOS is released and also update
+      # references in docs/Installation.md and
+      # https://github.com/Homebrew/install/blob/master/install
+      version < "10.12"
     end
 
     def prerelease?
@@ -252,7 +256,6 @@ module OS
     end
 
     def mdfind(*ids)
-      return [] unless OS.mac?
       (@mdfind ||= {}).fetch(ids) do
         @mdfind[ids] = Utils.popen_read("/usr/bin/mdfind", mdfind_query(*ids)).split("\n")
       end

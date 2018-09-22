@@ -7,6 +7,7 @@ require "dependency_collector"
 require "utils/bottles"
 require "patch"
 require "compilers"
+require "global"
 require "os/mac/version"
 
 class SoftwareSpec
@@ -70,12 +71,14 @@ class SoftwareSpec
 
   def url(val = nil, specs = {})
     return @resource.url if val.nil?
+
     @resource.url(val, specs)
     dependency_collector.add(@resource)
   end
 
   def bottle_unneeded?
     return false unless @bottle_disable_reason
+
     @bottle_disable_reason.unneeded?
   end
 
@@ -109,6 +112,7 @@ class SoftwareSpec
   def resource(name, klass = Resource, &block)
     if block_given?
       raise DuplicateResourceError, name if resource_defined?(name)
+
       res = klass.new(name, &block)
       resources[name] = res
       dependency_collector.add(res)
@@ -137,6 +141,7 @@ class SoftwareSpec
       raise ArgumentError, "option name is required" if name.empty?
       raise ArgumentError, "option name must be longer than one character: #{name}" unless name.length > 1
       raise ArgumentError, "option name must not start with dashes: #{name}" if name.start_with?("-")
+
       Option.new(name, description)
     end
     options << opt
@@ -144,6 +149,7 @@ class SoftwareSpec
 
   def deprecated_option(hash)
     raise ArgumentError, "deprecated_option hash must not be empty" if hash.empty?
+
     hash.each do |old_options, new_options|
       Array(old_options).each do |old_option|
         Array(new_options).each do |new_option|
@@ -153,6 +159,7 @@ class SoftwareSpec
           old_flag = deprecated_option.old_flag
           new_flag = deprecated_option.current_flag
           next unless @flags.include? old_flag
+
           @flags -= [old_flag]
           @flags |= [new_flag]
           @deprecated_flags << deprecated_option
@@ -325,8 +332,7 @@ class Bottle
 end
 
 class BottleSpecification
-  DEFAULT_PREFIX = "/usr/local".freeze
-  DEFAULT_CELLAR = "/usr/local/Cellar".freeze
+  DEFAULT_PREFIX = Homebrew::DEFAULT_PREFIX
 
   attr_rw :prefix, :cellar, :rebuild
   attr_accessor :tap
@@ -334,8 +340,8 @@ class BottleSpecification
 
   def initialize
     @rebuild = 0
-    @prefix = DEFAULT_PREFIX
-    @cellar = DEFAULT_CELLAR
+    @prefix = Homebrew::DEFAULT_PREFIX
+    @cellar = Homebrew::DEFAULT_CELLAR
     @collector = Utils::Bottles::Collector.new
     @root_url_specs = {}
   end

@@ -11,6 +11,7 @@ module Homebrew
     path = tap.path/filename
     tap.path.mkpath
     raise "#{path} already exists" if path.exist?
+
     path.write content
   end
 
@@ -56,7 +57,7 @@ module Homebrew
       osx_image: xcode9.2
       cache:
         directories:
-          - /usr/local/Homebrew/Library/Homebrew/vendor/bundle
+          - #{Homebrew::DEFAULT_PREFIX}/Homebrew/Library/Homebrew/vendor/bundle
       branches:
         only:
           - master

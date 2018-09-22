@@ -14,6 +14,8 @@ end
 
 require_relative "global"
 
+require "update_migrator"
+
 begin
   trap("INT", std_trap) # restore default CTRL-C handler
 
@@ -49,8 +51,10 @@ begin
       internal_dev_cmd = require? HOMEBREW_LIBRARY_PATH/"dev-cmd"/cmd
       internal_cmd = internal_dev_cmd
       if internal_dev_cmd && !ARGV.homebrew_developer?
-        system "git", "config", "--file=#{HOMEBREW_REPOSITORY}/.git/config",
-                                "--replace-all", "homebrew.devcmdrun", "true"
+        if (HOMEBREW_REPOSITORY/".git/config").exist?
+          system "git", "config", "--file=#{HOMEBREW_REPOSITORY}/.git/config",
+                                  "--replace-all", "homebrew.devcmdrun", "true"
+        end
         ENV["HOMEBREW_DEV_CMD_RUN"] = "1"
       end
     end
@@ -76,7 +80,7 @@ begin
   end
 
   # Migrate LinkedKegs/PinnedKegs if update didn't already do so
-  migrate_legacy_keg_symlinks_if_necessary
+  UpdateMigrator.migrate_legacy_keg_symlinks_if_necessary
 
   # Uninstall old brew-cask if it's still around; we just use the tap now.
   if cmd == "cask" && (HOMEBREW_CELLAR/"brew-cask").exist?
@@ -126,6 +130,7 @@ rescue BuildError => e
   exit 1
 rescue RuntimeError, SystemCallError => e
   raise if e.message.empty?
+
   onoe e
   $stderr.puts e.backtrace if ARGV.debug?
   exit 1

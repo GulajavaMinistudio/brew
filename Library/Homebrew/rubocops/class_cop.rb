@@ -1,4 +1,4 @@
-require_relative "./extend/formula_cop"
+require "rubocops/extend/formula_cop"
 
 module RuboCop
   module Cop
@@ -13,6 +13,7 @@ module RuboCop
         def audit_formula(_node, _class_node, parent_class_node, _body_node)
           parent_class = class_name(parent_class_node)
           return unless DEPRECATED_CLASSES.include?(parent_class)
+
           problem "#{parent_class} is deprecated, use Formula instead"
         end
 
@@ -46,9 +47,16 @@ module RuboCop
           lambda do |corrector|
             case node.type
             when :str, :dstr
-              corrector.replace(node.source_range, node.source.to_s.sub(%r{(/usr/local/(s?bin))}, '#{\2}'))
+              corrector.replace(node.source_range,
+                                node.source.to_s.sub(%r{(/usr/local/(s?bin))},
+                                                     '#{\2}'))
             when :int
-              corrector.remove(range_with_surrounding_comma(range_with_surrounding_space(range: node.source_range, side: :left)))
+              corrector.remove(
+                range_with_surrounding_comma(
+                  range_with_surrounding_space(range: node.source_range,
+                                               side: :left),
+                ),
+              )
             end
           end
         end
@@ -77,6 +85,7 @@ module RuboCop
 
           return unless test.body.single_line? &&
                         test.body.source.to_s == "true"
+
           problem "`test do` should contain a real test"
         end
       end
