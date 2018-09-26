@@ -77,7 +77,7 @@ class CacheStoreDatabase
           args: [
             "-rdbm",
             "-e",
-            "DBM.open('#{dbm_file_path}', #{DATABASE_MODE}, DBM::READER).size",
+            "DBM.open('#{dbm_file_path}', #{DATABASE_MODE}, DBM::READER).values.size",
           ],
           print_stderr: false,
           must_succeed: true,
@@ -97,7 +97,6 @@ class CacheStoreDatabase
           end
           false
         end
-        Utils::Analytics.report_event("dbm_test_read", dbm_test_read_success.to_s)
         cache_path.delete unless dbm_test_read_success
       end
       DBM.open(dbm_file_path, DATABASE_MODE, DBM::WRCREAT)
