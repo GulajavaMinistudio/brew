@@ -642,7 +642,7 @@ module Homebrew
         end
       end
 
-      if formula.head || formula.devel
+      if @official_tap && (formula.head || formula.devel)
         unstable_spec_message = "Formulae should not have a `HEAD` or `devel` spec"
         if @new_formula
           new_formula_problem unstable_spec_message
@@ -650,7 +650,6 @@ module Homebrew
           versioned_unstable_spec = %w[
             bash-completion@2
             imagemagick@6
-            openssl@1.1
             python@2
           ]
           problem unstable_spec_message unless versioned_unstable_spec.include?(formula.name)
