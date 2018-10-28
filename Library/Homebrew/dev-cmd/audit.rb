@@ -496,7 +496,6 @@ module Homebrew
     end
 
     def audit_keg_only_style
-      return unless @strict
       return unless formula.keg_only?
 
       whitelist = %w[
@@ -705,14 +704,13 @@ module Homebrew
         next if formula.stable.nil?
 
         version = formula.stable.version.to_s.split(".").last.to_i
-        if @strict && a == formula.name && version.modulo(b.to_i).nonzero?
+        if a == formula.name && version.modulo(b.to_i).nonzero?
           problem "should only be updated every #{b} releases on multiples of #{b}"
         end
       end
 
       unstable_whitelist = %w[
         aalib 1.4rc5
-        angolmois 2.0.0alpha2
         automysqlbackup 3.0-rc6
         aview 1.3.0rc1
         distcc 3.2rc1
@@ -721,10 +719,8 @@ module Homebrew
         hidapi 0.8.0-rc1
         libcaca 0.99b19
         nethack4 4.3.0-beta2
-        opensyobon 1.0rc2
         premake 4.4-beta5
         pwnat 0.3-beta
-        pxz 4.999.9
         recode 3.7-beta2
         speexdsp 1.2rc3
         sqoop 1.4.6
