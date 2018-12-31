@@ -74,7 +74,7 @@ module Homebrew
         # `brew test-bot` runs `brew doctor` in the CI for the Homebrew/brew
         # repository. This only needs to support whatever CI providers
         # Homebrew/brew is currently using.
-        return if ENV["HOMEBREW_TRAVIS_CI"] || ENV["HOMEBREW_AZURE_PIPELINES"]
+        return if ENV["HOMEBREW_AZURE_PIPELINES"]
 
         message = <<~EOS
           Your Xcode (#{MacOS::Xcode.version}) is outdated.
@@ -101,7 +101,7 @@ module Homebrew
         # `brew test-bot` runs `brew doctor` in the CI for the Homebrew/brew
         # repository. This only needs to support whatever CI providers
         # Homebrew/brew is currently using.
-        return if ENV["HOMEBREW_TRAVIS_CI"] || ENV["HOMEBREW_AZURE_PIPELINES"]
+        return if ENV["HOMEBREW_AZURE_PIPELINES"]
 
         <<~EOS
           A newer Command Line Tools release is available.
@@ -281,6 +281,17 @@ module Homebrew
         <<~EOS
           The filesystem on #{case_sensitive_vols.join(",")} appears to be case-sensitive.
           The default macOS filesystem is case-insensitive. Please report any apparent problems.
+        EOS
+      end
+
+      def check_homebrew_prefix
+        return if HOMEBREW_PREFIX.to_s == "/usr/local"
+
+        <<~EOS
+          Your Homebrew's prefix is not /usr/local.
+          You can install Homebrew anywhere you want but some bottles (binary packages)
+          can only be used with a /usr/local prefix and some formulae (packages)
+          may not build correctly with a non-/usr/local prefix.
         EOS
       end
 
