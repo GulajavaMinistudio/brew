@@ -158,7 +158,6 @@ module Homebrew
 
     def self.install_formula_clean!(f)
       return if ENV["HOMEBREW_NO_INSTALL_CLEANUP"]
-      return unless ENV["HOMEBREW_INSTALL_CLEANUP"]
 
       cleanup = Cleanup.new
       if cleanup.periodic_clean_due?
@@ -170,7 +169,6 @@ module Homebrew
 
     def periodic_clean_due?
       return false if ENV["HOMEBREW_NO_INSTALL_CLEANUP"]
-      return unless ENV["HOMEBREW_INSTALL_CLEANUP"]
       return true unless PERIODIC_CLEAN_FILE.exist?
 
       PERIODIC_CLEAN_FILE.mtime < CLEANUP_DEFAULT_DAYS.days.ago
@@ -180,13 +178,13 @@ module Homebrew
       return false unless periodic_clean_due?
 
       ohai "`brew cleanup` has not been run in #{CLEANUP_DEFAULT_DAYS} days, running now..."
-      clean!
+      clean!(quiet: true)
     end
 
-    def clean!
+    def clean!(quiet: false)
       if args.empty?
         Formula.installed.sort_by(&:name).each do |formula|
-          cleanup_formula(formula)
+          cleanup_formula(formula, quiet: quiet)
         end
         cleanup_cache
         cleanup_logs
@@ -223,8 +221,9 @@ module Homebrew
       @unremovable_kegs ||= []
     end
 
-    def cleanup_formula(formula)
-      formula.eligible_kegs_for_cleanup.each(&method(:cleanup_keg))
+    def cleanup_formula(formula, quiet: false)
+      formula.eligible_kegs_for_cleanup(quiet: quiet)
+             .each(&method(:cleanup_keg))
       cleanup_cache(Pathname.glob(cache/"#{formula.name}--*"))
       rm_ds_store([formula.rack])
       cleanup_lockfiles(FormulaLock.new(formula.name).path)
@@ -277,6 +276,8 @@ module Homebrew
             # Skip incomplete downloads which are still in progress.
             next
           end
+        elsif download.directory?
+          FileUtils.rm_rf download
         else
           download.unlink
         end

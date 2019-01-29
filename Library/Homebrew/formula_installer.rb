@@ -33,7 +33,7 @@ class FormulaInstaller
   end
 
   attr_reader :formula
-  attr_accessor :options, :build_bottle, :invalid_option_names
+  attr_accessor :options, :build_bottle
   attr_accessor :installed_as_dependency, :installed_on_request, :link_keg
   mode_attr_accessor :show_summary_heading, :show_header
   mode_attr_accessor :build_from_source, :force_bottle, :include_test
@@ -46,7 +46,7 @@ class FormulaInstaller
     @show_header = false
     @ignore_deps = false
     @only_deps = false
-    @build_from_source = ARGV.build_from_source? || ARGV.build_all_from_source?
+    @build_from_source = ARGV.build_from_source?
     @build_bottle = false
     @force_bottle = ARGV.force_bottle?
     @include_test = ARGV.include?("--include-test")
@@ -58,7 +58,6 @@ class FormulaInstaller
     @installed_as_dependency = false
     @installed_on_request = true
     @options = Options.new
-    @invalid_option_names = []
     @requirement_messages = []
     @poured_bottle = false
     @pour_failed = false
@@ -265,10 +264,6 @@ class FormulaInstaller
       old_flag = deprecated_option.old_flag
       new_flag = deprecated_option.current_flag
       opoo "#{formula.full_name}: #{old_flag} was deprecated; using #{new_flag} instead!"
-    end
-
-    invalid_option_names.each do |option|
-      opoo "#{formula.full_name}: this formula has no #{option} option so it will be ignored!"
     end
 
     options = display_options(formula)

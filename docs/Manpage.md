@@ -171,8 +171,8 @@ these flags should only appear after a command.
 
     If `--deps` is passed, also download dependencies for any listed *`formulae`*.
 
-    If `--build-from-source` (or `-s`) is passed, download the source rather than a
-    bottle.
+    If `--build-from-source` (or `-s`) or `--build-bottle` is passed, download the
+    source rather than a bottle.
 
     If `--force-bottle` is passed, download a bottle if it exists for the
     current or newest version of macOS, even if it would not be used during
@@ -182,7 +182,7 @@ these flags should only appear after a command.
     Upload logs for a failed build of *`formula`* to a new Gist.
 
     *`formula`* is usually the name of the formula to install, but it can be specified
-    in several different ways. See [SPECIFYING FORMULAE](#specifying-formulae).
+    in several different ways.
 
     If `--with-hostname` is passed, include the hostname in the Gist.
 
@@ -240,7 +240,7 @@ these flags should only appear after a command.
     Install *`formula`*.
 
     *`formula`* is usually the name of the formula to install, but it can be specified
-    in several different ways. See [SPECIFYING FORMULAE](#specifying-formulae).
+    in several different ways.
 
     If `--debug` (or `-d`) is passed and brewing fails, open an interactive debugging
     session with access to IRB or a shell inside the temporary build directory.
@@ -269,10 +269,6 @@ these flags should only appear after a command.
     source even if a bottle is provided. Dependencies will still be installed
     from bottles if they are available.
 
-    If `HOMEBREW_BUILD_FROM_SOURCE` is set, regardless of whether `--build-from-source` was
-    passed, then both *`formula`* and the dependencies installed as part of this process
-    are built from source even if bottles are available.
-
     If `--force-bottle` is passed, install from a bottle if it exists for the
     current or newest version of macOS, even if it would not normally be used
     for installation.
@@ -283,7 +279,7 @@ these flags should only appear after a command.
     If `--devel` is passed, and *`formula`* defines it, install the development version.
 
     If `--HEAD` is passed, and *`formula`* defines it, install the HEAD version,
-    aka master, trunk, unstable.
+    aka. master, trunk, unstable.
 
     If `--keep-tmp` is passed, the temporary files created during installation
     are not deleted.
@@ -418,14 +414,33 @@ these flags should only appear after a command.
 
     If `--syntax` is passed, also syntax-check all of Homebrew's Ruby files.
 
-  * `reinstall` [`--display-times`] *`formula`*:
-    Uninstall and then install *`formula`* (with existing install options).
+  * `reinstall` [`--debug`] [`--build-from-source`|`--force-bottle`] [`--keep-tmp`] [`--force`] [`--verbose`] [`--display-times`]  *`formula`*:
+    Uninstall and then install *`formula`* (with existing and any appended install options).
+
+    If `--debug` (or `-d`) is passed and brewing fails, open an interactive debugging
+    session with access to IRB or a shell inside the temporary build directory.
+
+    If `--build-from-source` (or `-s`) is passed, compile the specified *`formula`* from
+    source even if a bottle is provided. Dependencies will still be installed
+    from bottles if they are available.
+
+    If `--force-bottle` is passed, install from a bottle if it exists for the
+    current or newest version of macOS, even if it would not normally be used
+    for installation.
+
+    If `--keep-tmp` is passed, the temporary files created during installation
+    are not deleted.
+
+    If `--force` (or `-f`) is passed, install without checking for previously
+    installed keg-only or non-migrated versions
+
+    If `--verbose` (or `-v`) is passed, print the verification and postinstall steps.
 
     If `--display-times` is passed, install times for each formula are printed
     at the end of the run.
 
-    If `HOMEBREW_INSTALL_CLEANUP` is set then remove previously installed versions
-    of upgraded *`formulae`* as well as the HOMEBREW_CACHE for that formula.
+    Installation options specific to *`formula`* may be appended to the command,
+    and can be listed with `brew options` *`formula`*.
 
   * `search`, `-S`:
     Display all locally available formulae (including tapped ones).
@@ -595,10 +610,22 @@ these flags should only appear after a command.
     `repositories`) using `git`(1) to their latest `origin/master`. Note this
     will destroy all your uncommitted or committed changes.
 
-  * `upgrade` [*`install-options`*] [`--fetch-HEAD`] [`--ignore-pinned`] [`--display-times`] [*`formulae`*]:
-    Upgrade outdated, unpinned brews (with existing install options).
+  * `upgrade` [`--debug`] [`--build-from-source`|`--force-bottle`] [`--fetch-HEAD`] [`--ignore-pinned`] [`--keep-tmp`] [`--force`] [`--verbose`] [`--display-times`] [*`formula`*] [*`options`* ...]:
+    Upgrade outdated, unpinned brews (with existing and any appended install options).
 
-    Options for the `install` command are also valid here.
+    If *`formula`* are given, upgrade only the specified brews (unless they
+    are pinned; see `pin`, `unpin`).
+
+    If `--debug` (or `-d`) is passed and brewing fails, open an interactive debugging
+    session with access to IRB or a shell inside the temporary build directory.
+
+    If `--build-from-source` (or `-s`) is passed, compile the specified *`formula`* from
+    source even if a bottle is provided. Dependencies will still be installed
+    from bottles if they are available.
+
+    If `--force-bottle` is passed, install from a bottle if it exists for the
+    current or newest version of macOS, even if it would not normally be used
+    for installation.
 
     If `--fetch-HEAD` is passed, fetch the upstream repository to detect if
     the HEAD installation of the formula is outdated. Otherwise, the
@@ -608,11 +635,19 @@ these flags should only appear after a command.
     If `--ignore-pinned` is passed, set a 0 exit code even if pinned formulae
     are not upgraded.
 
+    If `--keep-tmp` is passed, the temporary files created during installation
+    are not deleted.
+
+    If `--force` (or `-f`) is passed, install without checking for previously
+    installed keg-only or non-migrated versions
+
+    If `--verbose` (or `-v`) is passed, print the verification and postinstall steps.
+
     If `--display-times` is passed, install times for each formula are printed
     at the end of the run.
 
-    If *`formulae`* are given, upgrade only the specified brews (unless they
-    are pinned; see `pin`, `unpin`).
+    Additional options specific to *`formula`* may be appended to the command,
+    and can be listed with `brew options` *`formula`*.
 
   * `uses` [`--installed`] [`--recursive`] [`--include-build`] [`--include-test`] [`--include-optional`] [`--skip-recommended`] [`--devel`|`--HEAD`] *`formulae`*:
     Show the formulae that specify *`formulae`* as a dependency. When given
@@ -1184,16 +1219,6 @@ Note that environment variables must have a value set to be detected. For exampl
     Text printed before the installation summary of each successful build.
 
     *Default:* the beer emoji.
-
-  * `HOMEBREW_INSTALL_CLEANUP`:
-    If set, `brew install`, `brew upgrade` and `brew reinstall` will remove
-    previously installed version(s) of the installed/upgraded formulae.
-
-    If `brew cleanup` has not been run in 30 days then it will be run at this
-    time.
-
-    This will become the default in a later version of Homebrew. To opt-out see
-    `HOMEBREW_NO_INSTALL_CLEANUP`.
 
   * `HOMEBREW_LOGS`:
     If set, Homebrew will use the specified directory to store log files.
