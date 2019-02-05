@@ -259,6 +259,9 @@ Install \fIformula\fR\.
 .P
 \fIformula\fR is usually the name of the formula to install, but it can be specified in several different ways\.
 .
+.P
+Unless \fBHOMEBREW_NO_INSTALL_CLEANUP\fR is set, \fBbrew cleanup\fR will be run for the installed formulae or, every 30 days, for all formulae\.
+.
 .TP
 \fB\-\-env\fR
 If \fBstd\fR is passed, use the standard build environment instead of superenv\.If \fBsuper\fR is passed, use superenv even if the formula specifies the standard build environment\.
@@ -452,6 +455,9 @@ Syntax\-check all of Homebrew\'s Ruby files\.
 .
 .SS "\fBreinstall\fR [\fIoptions\fR] \fIformula\fR"
 Uninstall and then install \fIformula\fR (with existing and any appended install options)\.
+.
+.P
+Unless \fBHOMEBREW_NO_INSTALL_CLEANUP\fR is set, \fBbrew cleanup\fR will be run for the reinstalled formulae or, every 30 days, for all formulae\.
 .
 .TP
 \fB\-s\fR, \fB\-\-build\-from\-source\fR
@@ -651,6 +657,9 @@ Upgrade outdated, unpinned brews (with existing and any appended install options
 .
 .P
 If \fIformula\fR are given, upgrade only the specified brews (unless they are pinned; see \fBpin\fR, \fBunpin\fR)\.
+.
+.P
+Unless \fBHOMEBREW_NO_INSTALL_CLEANUP\fR is set, \fBbrew cleanup\fR will be run for the upgraded formulae or, every 30 days, for all formulae\.
 .
 .TP
 \fB\-s\fR, \fB\-\-build\-from\-source\fR
@@ -1336,7 +1345,7 @@ If set, Homebrew will not use the GitHub API, e\.g\. for searches or fetching re
 .
 .TP
 \fBHOMEBREW_NO_INSTALL_CLEANUP\fR
-If set, \fBbrew install\fR, \fBbrew upgrade\fR and \fBbrew reinstall\fR will never automatically remove the previously installed version(s) of the installed/upgraded formulae\.
+If set, \fBbrew install\fR, \fBbrew upgrade\fR and \fBbrew reinstall\fR will never automatically cleanup the installed/upgraded/reinstalled formulae or all formulae every 30 days\.
 .
 .TP
 \fBHOMEBREW_PRY\fR
@@ -1422,19 +1431,19 @@ Homebrew Documentation: \fIhttps://docs\.brew\.sh\fR
 \fBbrew\-cask\fR(1), \fBgit\fR(1), \fBgit\-log\fR(1)
 .
 .SH "AUTHORS"
-Homebrew\'s lead maintainer is Mike McQuaid\.
+Homebrew\'s project lead is Mike McQuaid\.
 .
 .P
-Homebrew\'s project leadership committee is Mike McQuaid, Misty De Meo and Markus Reiter\.
+Homebrew\'s project leadership committee is Misty De Meo, Shaun Jackman, Jonathan Chang, Mike McQuaid and Markus Reiter\.
 .
 .P
-Homebrew/brew\'s other current maintainers are Claudia Pellegrino, Michka Popoff, Shaun Jackman, Chongyu Zhu, Vitor Galvao, Misty De Meo, Gautham Goli, Markus Reiter, Steven Peters, Jonathan Chang and William Woodruff\.
+Homebrew\'s technical steering committee is Michka Popoff, FX Coudert, Markus Reiter, Misty De Meo and Mike McQuaid\.
 .
 .P
 Homebrew/brew\'s Linux support (and Linuxbrew) maintainers are Michka Popoff and Shaun Jackman\.
 .
 .P
-Homebrew/homebrew\-core\'s other current maintainers are Claudia Pellegrino, Igor Kapkov, Michka Popoff, Shaun Jackman, Chongyu Zhu, Izaak Beekman, Sean Molenaar, Jan Viljanen, Jason Tedor, Viktor Szakats, FX Coudert, Thierry Moisan, Steven Peters, Misty De Meo and Tom Schoonjans\.
+Homebrew\'s other current maintainers are Claudia Pellegrino, Chongyu Zhu, Vitor Galvao, Gautham Goli, Steven Peters, William Woodruff, Igor Kapkov, Izaak Beekman, Sean Molenaar, Jan Viljanen, Jason Tedor, Eric Knibbe, Viktor Szakats, Thierry Moisan, Steven Peters and Tom Schoonjans\.
 .
 .P
 Former maintainers with significant contributions include JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs and Homebrew\'s creator: Max Howell\.

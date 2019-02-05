@@ -18,6 +18,8 @@ module Homebrew
 
         If <formula> are given, upgrade only the specified brews (unless they
         are pinned; see `pin`, `unpin`).
+
+        Unless `HOMEBREW_NO_INSTALL_CLEANUP` is set, `brew cleanup` will be run for the upgraded formulae or, every 30 days, for all formulae.
       EOS
       switch :debug,
         description: "If brewing fails, open an interactive debugging session with access to IRB "\
@@ -53,6 +55,8 @@ module Homebrew
     elsif ENV["HOMEBREW_UPGRADE_CLEANUP"]
       odisabled("'HOMEBREW_UPGRADE_CLEANUP'")
     end
+
+    upgrade_args.parse
 
     FormulaInstaller.prevent_build_flags unless DevelopmentTools.installed?
 

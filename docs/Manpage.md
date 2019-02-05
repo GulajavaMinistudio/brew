@@ -217,6 +217,8 @@ Install *`formula`*.
 *`formula`* is usually the name of the formula to install, but it can be specified
 in several different ways.
 
+Unless `HOMEBREW_NO_INSTALL_CLEANUP` is set, `brew cleanup` will be run for the installed formulae or, every 30 days, for all formulae.
+
 * `--env`:
   If `std` is passed, use the standard build environment instead of superenv.If `super` is passed, use superenv even if the formula specifies the standard build environment.
 * `--ignore-dependencies`:
@@ -361,6 +363,8 @@ all formulae or to determine if any current formulae have Ruby issues.
 ### `reinstall` [*`options`*] *`formula`*
 
 Uninstall and then install *`formula`* (with existing and any appended install options).
+
+Unless `HOMEBREW_NO_INSTALL_CLEANUP` is set, `brew cleanup` will be run for the reinstalled formulae or, every 30 days, for all formulae.
 
 * `-s`, `--build-from-source`:
   Compile *`formula`* from source even if a bottle is available.
@@ -537,6 +541,8 @@ Upgrade outdated, unpinned brews (with existing and any appended install options
 
 If *`formula`* are given, upgrade only the specified brews (unless they
 are pinned; see `pin`, `unpin`).
+
+Unless `HOMEBREW_NO_INSTALL_CLEANUP` is set, `brew cleanup` will be run for the upgraded formulae or, every 30 days, for all formulae.
 
 * `-s`, `--build-from-source`:
   Compile *`formula`* from source even if a bottle is available.
@@ -1107,8 +1113,8 @@ Note that environment variables must have a value set to be detected. For exampl
 
   * `HOMEBREW_NO_INSTALL_CLEANUP`:
     If set, `brew install`, `brew upgrade` and `brew reinstall` will never
-    automatically remove the previously installed version(s) of the
-    installed/upgraded formulae.
+    automatically cleanup the installed/upgraded/reinstalled formulae or all
+    formulae every 30 days.
 
   * `HOMEBREW_PRY`:
     If set, Homebrew will use Pry for the `brew irb` command.
@@ -1177,15 +1183,15 @@ Homebrew Documentation: <https://docs.brew.sh>
 
 ## AUTHORS
 
-Homebrew's lead maintainer is Mike McQuaid.
+Homebrew's project lead is Mike McQuaid.
 
-Homebrew's project leadership committee is Mike McQuaid, Misty De Meo and Markus Reiter.
+Homebrew's project leadership committee is Misty De Meo, Shaun Jackman, Jonathan Chang, Mike McQuaid and Markus Reiter.
 
-Homebrew/brew's other current maintainers are Claudia Pellegrino, Michka Popoff, Shaun Jackman, Chongyu Zhu, Vitor Galvao, Misty De Meo, Gautham Goli, Markus Reiter, Steven Peters, Jonathan Chang and William Woodruff.
+Homebrew's technical steering committee is Michka Popoff, FX Coudert, Markus Reiter, Misty De Meo and Mike McQuaid.
 
 Homebrew/brew's Linux support (and Linuxbrew) maintainers are Michka Popoff and Shaun Jackman.
 
-Homebrew/homebrew-core's other current maintainers are Claudia Pellegrino, Igor Kapkov, Michka Popoff, Shaun Jackman, Chongyu Zhu, Izaak Beekman, Sean Molenaar, Jan Viljanen, Jason Tedor, Viktor Szakats, FX Coudert, Thierry Moisan, Steven Peters, Misty De Meo and Tom Schoonjans.
+Homebrew's other current maintainers are Claudia Pellegrino, Chongyu Zhu, Vitor Galvao, Gautham Goli, Steven Peters, William Woodruff, Igor Kapkov, Izaak Beekman, Sean Molenaar, Jan Viljanen, Jason Tedor, Eric Knibbe, Viktor Szakats, Thierry Moisan, Steven Peters and Tom Schoonjans.
 
 Former maintainers with significant contributions include JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs and Homebrew's creator: Max Howell.
 
