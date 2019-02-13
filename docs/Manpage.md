@@ -63,6 +63,8 @@ only do this for the specified formulae and casks.
   Show what would be removed, but do not actually remove anything.
 * `-s`:
   Scrub the cache, including downloads for even the latest versions. Note downloads for any installed formula or cask will still not be deleted. If you want to delete those too: `rm -rf "$(brew --cache)"`
+* `--prune-prefix`:
+  Only prune the symlinks and directories from the prefix and remove no other files.
 
 ### `command` *`cmd`*
 
@@ -1036,6 +1038,12 @@ Note that environment variables must have a value set to be detected. For exampl
   * `HOMEBREW_DEVELOPER`:
     If set, Homebrew will tweak behaviour to be more relevant for Homebrew
     developers (active or budding), e.g. turning warnings into errors.
+
+  * `HOMEBREW_DISPLAY`:
+    If set, Homebrew will use this X11 display when opening a page in a browser,
+    for example with `brew home`. Primarily useful on Linux.
+
+    *Default:* the value of the user's `DISPLAY` environment variable.
 
   * `HOMEBREW_EDITOR`:
     If set, Homebrew will use this editor when editing a single formula, or

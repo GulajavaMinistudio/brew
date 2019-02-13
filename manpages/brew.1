@@ -62,6 +62,10 @@ Show what would be removed, but do not actually remove anything\.
 \fB\-s\fR
 Scrub the cache, including downloads for even the latest versions\. Note downloads for any installed formula or cask will still not be deleted\. If you want to delete those too: \fBrm \-rf "$(brew \-\-cache)"\fR
 .
+.TP
+\fB\-\-prune\-prefix\fR
+Only prune the symlinks and directories from the prefix and remove no other files\.
+.
 .SS "\fBcommand\fR \fIcmd\fR"
 Display the path to the file which is used when invoking \fBbrew\fR \fIcmd\fR\.
 .
@@ -1264,6 +1268,13 @@ If set, any commands that can emit debugging information will do so\.
 .TP
 \fBHOMEBREW_DEVELOPER\fR
 If set, Homebrew will tweak behaviour to be more relevant for Homebrew developers (active or budding), e\.g\. turning warnings into errors\.
+.
+.TP
+\fBHOMEBREW_DISPLAY\fR
+If set, Homebrew will use this X11 display when opening a page in a browser, for example with \fBbrew home\fR\. Primarily useful on Linux\.
+.
+.IP
+\fIDefault:\fR the value of the user\'s \fBDISPLAY\fR environment variable\.
 .
 .TP
 \fBHOMEBREW_EDITOR\fR
