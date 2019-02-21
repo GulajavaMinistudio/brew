@@ -278,9 +278,7 @@ module Homebrew
           next unless d.directory?
 
           d.find do |path|
-            if path.symlink? && !path.resolved_path_exists?
-              broken_symlinks << path
-            end
+            broken_symlinks << path if path.symlink? && !path.resolved_path_exists?
           end
         end
         return if broken_symlinks.empty?
@@ -611,7 +609,7 @@ module Homebrew
 
         <<~EOS
           You have the following deprecated, official taps tapped:
-            Homebrew/homebrew-#{tapped_deprecated_taps.join("\n  ")}
+            Homebrew/homebrew-#{tapped_deprecated_taps.join("\n  Homebrew/homebrew-")}
           Untap them with `brew untap`.
         EOS
       end
