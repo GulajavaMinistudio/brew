@@ -84,37 +84,38 @@ report, you will likely be asked for this information if you do not provide it.
 
 ### `deps` [*`options`*] *`formula`*
 
-Show dependencies for *`formula`*. When given multiple formula arguments, show the
-intersection of dependencies for *`formula`*.
+Show dependencies for *`formula`*. Additional options specific to *`formula`* may be
+appended to the command. When given multiple formula arguments, show the
+intersection of dependencies for each formula.
 
-* `--1`:
-  Only show dependencies one level down, instead of recursing.
 * `-n`:
   Show dependencies in topological order.
+* `--1`:
+  Only show dependencies one level down, instead of recursing.
 * `--union`:
-  Show the union of dependencies for *`formula`*, instead of the intersection.
+  Show the union of dependencies for multiple *`formula`*, instead of the intersection.
 * `--full-name`:
   List dependencies by their full name.
-* `--installed`:
-  Only list those dependencies that are currently installed.
-* `--all`:
-  List all the dependencies for all available formulae.
 * `--include-build`:
-  Show `:build` type dependencies for *`formula`*.
+  Include `:build` dependencies for *`formula`*.
 * `--include-optional`:
-  Show `:optional` dependencies for *`formula`*.
+  Include `:optional` dependencies for *`formula`*.
 * `--include-test`:
-  Show `:test` dependencies for *`formula`* (non-recursive).
+  Include `:test` dependencies for *`formula`* (non-recursive).
 * `--skip-recommended`:
-  Skip `:recommended` type dependencies for *`formula`*.
+  Skip `:recommended` dependencies for *`formula`*.
 * `--include-requirements`:
   Include requirements in addition to dependencies for *`formula`*.
 * `--tree`:
-  Show dependencies as a tree. When given multiple formula arguments output individual trees for every formula.
+  Show dependencies as a tree. When given multiple formula arguments, show individual trees for each formula.
 * `--annotate`:
   Mark any build, test, optional, or recommended dependencies as such in the output.
+* `--installed`:
+  List dependencies for formulae that are currently installed. If *`formula`* is specified, list only its dependencies that are currently installed.
+* `--all`:
+  List dependencies for all available formulae.
 * `--for-each`:
-  Switch into the mode used by `deps --all`, but only list dependencies for specified formula one specified formula per line. This is used for debugging the `--installed`/`--all` display mode.
+  Switch into the mode used by the `--all` option, but only list dependencies for the specified *`formula`*, one formula per line. This is used for debugging the `--installed`/`--all` display mode.
 
 ### `desc` [*`options`*] (*`text`*|`/`*`text`*`/`|*`formula`*)
 
@@ -194,24 +195,26 @@ If no logs are found, an error message is presented.
 Open *`formula`*'s homepage in a browser. If no formula is provided, open
 Homebrew's own homepage in a browser.
 
-### `info` [*`formula`*]
+### `info` [*`options`*] [*`formula`*]
 
 Display brief statistics for your Homebrew installation.
 
+If *`formula`* is specified, show summary of information about *`formula`*.
+
 * `--analytics`:
-  Display Homebrew analytics data (provided neither `HOMEBREW_NO_ANALYTICS` or `HOMEBREW_NO_GITHUB_API` are set).
+  Display global Homebrew analytics data or, if specified, installation and build error data for *`formula`* (provided neither `HOMEBREW_NO_ANALYTICS` nor `HOMEBREW_NO_GITHUB_API` are set).
 * `--days`:
-  The value for `days` must be `30`, `90` or `365`. The default is `30`.
+  How many days of global analytics data to retrieve. The value for *`days`* must be `30`, `90` or `365`. The default is `30`.
 * `--category`:
-  The value for `category` must be `install`, `install-on-request`, `build-error` or `os-version`. The default is `install`.
+  Which type of global analytics data to retrieve. The value for *`category`* must be `install`, `install-on-request`, `cask-install`, `build-error` or `os-version`. The default is `install`.
 * `--github`:
-  Open a browser to the GitHub History page for provided *`formula`*. To view formula history locally: `brew log -p` *`formula`*
+  Open a browser to the GitHub source page for *`formula`*. To view formula history locally: `brew log -p` *`formula`*
 * `--json`:
   Print a JSON representation of *`formula`*. Currently the default and only accepted value for *`version`* is `v1`. See the docs for examples of using the JSON output: <https://docs.brew.sh/Querying-Brew>
-* `--all`:
-  Get information on all formulae.
 * `--installed`:
-  Get information on all installed formulae.
+  Print JSON of formulae that are currently installed.
+* `--all`:
+  Print JSON of all available formulae.
 
 ### `install` [*`options`*] *`formula`*
 
