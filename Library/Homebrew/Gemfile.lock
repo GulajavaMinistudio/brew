@@ -49,7 +49,7 @@ GEM
       mini_portile2 (~> 2.4.0)
     ntlm-http (0.1.1)
     parallel (1.17.0)
-    parallel_tests (2.29.0)
+    parallel_tests (2.29.1)
       parallel
     parser (2.6.3.0)
       ast (~> 2.4.0)
@@ -64,7 +64,7 @@ GEM
       rspec-core (~> 3.8.0)
       rspec-expectations (~> 3.8.0)
       rspec-mocks (~> 3.8.0)
-    rspec-core (3.8.0)
+    rspec-core (3.8.1)
       rspec-support (~> 3.8.0)
     rspec-expectations (3.8.4)
       diff-lcs (>= 1.2.0, < 2.0)
