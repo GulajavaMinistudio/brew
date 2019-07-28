@@ -557,6 +557,8 @@ upgraded formulae or, every 30 days, for all formulae.
   Don't delete the temporary files created during installation.
 * `--display-times`:
   Print install times for each formula at the end of the run.
+* `--dry-run`:
+  Show what would be upgraded, but do not actually upgrade anything.
 
 ### `uses` [*`options`*] *`formula`*
 
@@ -1060,6 +1062,9 @@ Note that environment variables must have a value set to be detected. For exampl
     for example with `brew home`. Primarily useful on Linux.
 
     *Default:* the value of the user's `DISPLAY` environment variable.
+
+  * `HOMEBREW_DISPLAY_INSTALL_TIMES`:
+    If set, Homebrew will print install times for each formula at the end of the run.
 
   * `HOMEBREW_EDITOR`:
     If set, Homebrew will use this editor when editing a single formula, or
