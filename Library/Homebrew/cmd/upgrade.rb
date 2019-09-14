@@ -105,7 +105,7 @@ module Homebrew
           "#{f.full_specified_name} #{f.pkg_version}"
         end
       end
-      puts formulae_upgrades.join(", ")
+      puts formulae_upgrades.join("\n")
     end
     return if args.dry_run?
 
@@ -162,7 +162,7 @@ module Homebrew
       tab = Tab.for_keg(keg)
     end
 
-    build_options = BuildOptions.new(Options.create(Homebrew.args.flags_only), f.options)
+    build_options = BuildOptions.new(Options.create(ARGV.flags_only), f.options)
     options = build_options.used_options
     options |= f.build.used_options
     options &= f.options
