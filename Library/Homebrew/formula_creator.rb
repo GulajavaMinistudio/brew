@@ -85,6 +85,10 @@ module Homebrew
         #                https://rubydoc.brew.sh/Formula
         # PLEASE REMOVE ALL GENERATED COMMENTS BEFORE SUBMITTING YOUR PULL REQUEST!
         class #{Formulary.class_s(name)} < Formula
+        <% if mode == :python %>
+          include Language::Python::Virtualenv
+
+        <% end %>
           desc "#{desc}"
           homepage "#{homepage}"
         <% if head? %>
@@ -104,10 +108,22 @@ module Homebrew
         <% elsif mode == :meson %>
           depends_on "meson" => :build
           depends_on "ninja" => :build
+        <% elsif mode == :python %>
+          depends_on "python"
+        <% elsif mode == :rust %>
+          depends_on "rust" => :build
         <% elsif mode.nil? %>
           # depends_on "cmake" => :build
         <% end %>
 
+        <% if mode == :python %>
+          # Additional Python dependency
+          # resource "" do
+          #   url ""
+          #   sha256 ""
+          # end
+
+        <% end %>
           def install
             # ENV.deparallelize  # if your formula fails when building in parallel
         <% if mode == :cmake %>
@@ -126,6 +142,10 @@ module Homebrew
               system "ninja", "-v"
               system "ninja", "install", "-v"
             end
+        <% elsif mode == :python %>
+            virtualenv_install_with_resources
+        <% elsif mode == :rust %>
+            system "cargo", "install", "--root", prefix, "--path", "."
         <% else %>
             # Remove unrecognized options if warned by configure
             system "./configure", "--disable-debug",
@@ -134,7 +154,7 @@ module Homebrew
                                   "--prefix=\#{prefix}"
             # system "cmake", ".", *std_cmake_args
         <% end %>
-        <% if mode != :meson and mode != :go %>
+        <% if mode == :autotools or mode == :cmake %>
             system "make", "install" # if this fails, try separate make/make install steps
         <% end %>
           end
