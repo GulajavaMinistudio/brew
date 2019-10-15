@@ -255,7 +255,7 @@ module Homebrew
     [formulae_to_upgrade, formulae_pinned]
   end
 
-  def broken_dependents(kegs, formulae)
+  def broken_dependents(kegs, formulae, scanned = Set.new)
     formulae_to_reinstall = Set.new
     formulae_pinned_and_outdated = Set.new
 
@@ -264,8 +264,9 @@ module Homebrew
         descendants = Set.new
 
         dependents = kegs.select do |keg|
-          keg.runtime_dependencies
-             .any? { |d| d["full_name"] == formula.full_name }
+          keg = keg.runtime_dependencies
+                   .any? { |d| d["full_name"] == formula.full_name }
+          keg unless scanned.include?(keg)
         end
 
         next if dependents.empty?
@@ -290,7 +291,9 @@ module Homebrew
           descendants << f
         end
 
-        descendants_to_reinstall, descendants_pinned = broken_dependents(kegs, descendants)
+        scanned.merge dependents
+
+        descendants_to_reinstall, descendants_pinned = broken_dependents(kegs, descendants, scanned)
 
         formulae_to_reinstall.merge descendants_to_reinstall
         formulae_pinned_and_outdated.merge descendants_pinned
@@ -382,21 +385,19 @@ module Homebrew
     end
 
     reinstallable.each do |f|
-      begin
-        reinstall_formula(f, build_from_source: true)
-      rescue FormulaInstallationAlreadyAttemptedError
-        # We already attempted to reinstall f as part of the dependency tree of
-        # another formula. In that case, don't generate an error, just move on.
-        nil
-      rescue CannotInstallFormulaError => e
-        ofail e
-      rescue BuildError => e
-        e.dump
-        puts
-        Homebrew.failed = true
-      rescue DownloadError => e
-        ofail e
-      end
+      reinstall_formula(f, build_from_source: true)
+    rescue FormulaInstallationAlreadyAttemptedError
+      # We already attempted to reinstall f as part of the dependency tree of
+      # another formula. In that case, don't generate an error, just move on.
+      nil
+    rescue CannotInstallFormulaError => e
+      ofail e
+    rescue BuildError => e
+      e.dump
+      puts
+      Homebrew.failed = true
+    rescue DownloadError => e
+      ofail e
     end
   end
 end
