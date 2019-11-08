@@ -124,16 +124,23 @@ RSpec.configure do |config|
   end
 
   config.before(:each, :needs_svn) do
-    homebrew_bin = File.dirname HOMEBREW_BREW_FILE
-    skip "subversion not installed." unless %W[/usr/bin/svn #{homebrew_bin}/svn].map { |x| File.executable?(x) }.any?
+    svn_paths = PATH.new(ENV["PATH"])
+    if OS.mac?
+      xcrun_svn = Utils.popen_read("xcrun", "-f", "svn")
+      svn_paths.append(File.dirname(xcrun_svn)) if $CHILD_STATUS.success? && xcrun_svn.present?
+    end
+
+    svn = which("svn", svn_paths)
+    svnadmin = which("svnadmin", svn_paths)
+    skip "subversion not installed." if !svn || !svnadmin
+
+    ENV["PATH"] = PATH.new(ENV["PATH"])
+                      .append(svn.dirname)
+                      .append(svnadmin.dirname)
   end
 
   config.before(:each, :needs_unzip) do
     skip "unzip not installed." unless which("unzip")
-  end
-
-  config.before(:each, :needs_no_bad_linux_portable_ruby) do
-    skip "using Linux portable-ruby." if OS.linux? && RUBY_PATH.to_s.end_with?("portable-ruby/2.6.3/bin/ruby")
   end
 
   config.around do |example|
@@ -145,7 +152,13 @@ RSpec.configure do |config|
 
     begin
       Homebrew.raise_deprecation_exceptions = true
+
+      Formulary.clear_cache
       Tap.clear_cache
+      DependencyCollector.clear_cache
+      Formula.clear_cache
+      Keg.clear_cache
+      Tab.clear_cache
       FormulaInstaller.clear_attempted
 
       TEST_DIRECTORIES.each(&:mkpath)
@@ -176,6 +189,11 @@ RSpec.configure do |config|
         @__stderr.close
       end
 
+      Formulary.clear_cache
+      Tap.clear_cache
+      DependencyCollector.clear_cache
+      Formula.clear_cache
+      Keg.clear_cache
       Tab.clear_cache
 
       FileUtils.rm_rf [
