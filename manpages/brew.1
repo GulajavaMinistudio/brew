@@ -251,11 +251,11 @@ List global Homebrew analytics data or, if specified, installation and build err
 .
 .TP
 \fB\-\-days\fR
-How many days of global analytics data to retrieve\. The value for \fIdays\fR must be \fB30\fR, \fB90\fR or \fB365\fR\. The default is \fB30\fR\.
+How many days of analytics data to retrieve\. The value for \fIdays\fR must be \fB30\fR, \fB90\fR or \fB365\fR\. The default is \fB30\fR\.
 .
 .TP
 \fB\-\-category\fR
-Which type of global analytics data to retrieve\. The value for \fIcategory\fR must be \fBinstall\fR, \fBinstall\-on\-request\fR, \fBcask\-install\fR, \fBbuild\-error\fR or \fBos\-version\fR\. The default is \fBinstall\fR\.
+Which type of analytics data to retrieve\. The value for \fIcategory\fR must be \fBinstall\fR, \fBinstall\-on\-request\fR or \fBbuild\-error\fR; \fBcask\-install\fR or \fBos\-version\fR may be specified if \fIformula\fR is not\. The default is \fBinstall\fR\.
 .
 .TP
 \fB\-\-github\fR
@@ -966,6 +966,10 @@ Run \fBbrew audit \-\-strict\fR before opening the PR\.
 Print the pull request URL instead of opening in a browser\.
 .
 .TP
+\fB\-\-no\-fork\fR
+Don\'t try to fork the repository\.
+.
+.TP
 \fB\-\-mirror\fR
 Use the specified \fIURL\fR as a mirror URL\.
 .
@@ -1067,6 +1071,9 @@ Extract the specified \fIversion\fR of \fIformula\fR instead of the most recent\
 .
 .SS "\fBformula\fR \fIformula\fR"
 Display the path where \fIformula\fR is located\.
+.
+.SS "\fBinstall\-bundler\-gems\fR"
+Install Homebrew\'s Bundler gems\.
 .
 .SS "\fBirb\fR [\fIoptions\fR]"
 Enter the interactive Homebrew Ruby shell\.
