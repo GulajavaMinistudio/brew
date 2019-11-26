@@ -667,6 +667,8 @@ module Homebrew
         problems.concat ra.problems.map { |problem| "#{name}: #{problem}" }
 
         spec.resources.each_value do |resource|
+          problem "Resource name should be different from the formula name" if resource.name == formula.name
+
           ra = ResourceAuditor.new(resource, spec_name, online: @online, strict: @strict).audit
           problems.concat ra.problems.map { |problem|
             "#{name} resource #{resource.name.inspect}: #{problem}"
@@ -756,6 +758,7 @@ module Homebrew
         gtk-mac-integration 2.1.3
         gtk-doc 1.31
         gcab 1.3
+        libepoxy 1.5.4
       ].each_slice(2).to_a.map do |formula, version|
         [formula, version.split(".")[0..1].join(".")]
       end
