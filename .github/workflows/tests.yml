@@ -56,10 +56,15 @@ jobs:
         export HOMEBREW_CI_BRANCH="$HEAD_GITHUB_REF"
         export HOMEBREW_GITHUB_REPOSITORY="$GITHUB_REPOSITORY"
 
-        export PATH="/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin"
-        brew tests --no-compat --online
-        brew tests --generic --online
-        brew tests --online --coverage
+        # don't bother running all tests on both platforms (for speed)
+        if [ "$RUNNER_OS" = "Linux" ]; then
+          export PATH="/home/linuxbrew/.linuxbrew/bin:/usr/bin:/bin"
+          brew tests --no-compat --online
+          brew tests --generic --online
+          brew tests --online
+        else
+          brew tests --online --coverage
+        fi
       env:
         HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -74,7 +79,7 @@ jobs:
     - name: Run brew style
       run: |
         export PATH="/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin"
-        brew style
+        brew style --display-cop-names
 
     - name: Run brew man
       run: |
@@ -89,6 +94,7 @@ jobs:
         brew update-test
         brew update-test --to-tag
         brew update-test --commit=HEAD
+      if: github.event_name == 'pull_request'
 
     - name: Run brew readall
       run: |
