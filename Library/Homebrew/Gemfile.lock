@@ -87,7 +87,7 @@ GEM
       rainbow (>= 2.2.2, < 4.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 1.4.0, < 1.7)
-    rubocop-performance (1.5.1)
+    rubocop-performance (1.5.2)
       rubocop (>= 0.71.0)
     rubocop-rspec (1.37.1)
       rubocop (>= 0.68.1)
@@ -103,7 +103,7 @@ GEM
     thor (1.0.1)
     thread_safe (0.3.6)
     tins (1.22.2)
-    tzinfo (1.2.5)
+    tzinfo (1.2.6)
       thread_safe (~> 0.1)
     unf (0.1.4)
       unf_ext
