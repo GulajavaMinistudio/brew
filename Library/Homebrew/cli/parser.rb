@@ -16,6 +16,18 @@ module Homebrew
         new(args, &block).parse(args)
       end
 
+      def self.from_cmd_path(cmd_path)
+        cmd_args_method_name = Commands.args_method_name(cmd_path)
+
+        begin
+          Homebrew.send(cmd_args_method_name) if require?(cmd_path)
+        rescue NoMethodError => e
+          raise if e.name != cmd_args_method_name
+
+          nil
+        end
+      end
+
       def self.global_options
         {
           quiet:   [["-q", "--quiet"], :quiet, "Suppress any warnings."],
@@ -64,9 +76,13 @@ module Homebrew
           set_constraints(name, required_for: required_for, depends_on: depends_on)
         end
 
-        enable_switch(*names, from: :env) if !env.nil? && !ENV["HOMEBREW_#{env.to_s.upcase}"].nil?
+        enable_switch(*names, from: :env) if env?(env)
       end
       alias switch_option switch
+
+      def env?(env)
+        env.present? && ENV["HOMEBREW_#{env.to_s.upcase}"].present?
+      end
 
       def usage_banner(text)
         @parser.banner = Formatter.wrap("#{text}\n", COMMAND_DESC_WIDTH)
@@ -155,7 +171,8 @@ module Homebrew
       end
 
       def generate_help_text
-        @parser.to_s.sub(/^/, "#{Tty.bold}Usage: brew#{Tty.reset} ")
+        @parser.to_s
+               .sub(/^/, "#{Tty.bold}Usage: brew#{Tty.reset} ")
                .gsub(/`(.*?)`/m, "#{Tty.bold}\\1#{Tty.reset}")
                .gsub(%r{<([^\s]+?://[^\s]+?)>}) { |url| Formatter.url(url) }
                .gsub(/<(.*?)>/m, "#{Tty.underline}\\1#{Tty.reset}")

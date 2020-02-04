@@ -258,18 +258,6 @@ class TapAlreadyTappedError < RuntimeError
   end
 end
 
-class TapAlreadyUnshallowError < RuntimeError
-  attr_reader :name
-
-  def initialize(name)
-    @name = name
-
-    super <<~EOS
-      Tap #{name} already a full clone.
-    EOS
-  end
-end
-
 class TapPinStatusError < RuntimeError
   attr_reader :name, :pinned
 
@@ -381,7 +369,7 @@ class BuildError < RuntimeError
   def dump
     puts
 
-    if ARGV.verbose?
+    if Homebrew.args.verbose?
       require "system_config"
       require "build_environment"
 
