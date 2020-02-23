@@ -1669,7 +1669,7 @@ class Formula
         "root_url" => bottle_spec.root_url,
       }
       bottle_info["files"] = {}
-      bottle_spec.collector.keys.each do |os|
+      bottle_spec.collector.each_key do |os|
         bottle_url = "#{bottle_spec.root_url}/#{Bottle::Filename.create(self, os, bottle_spec.rebuild).bintray}"
         checksum = bottle_spec.collector[os]
         bottle_info["files"][os] = {
@@ -1744,6 +1744,7 @@ class Formula
     }
 
     ENV.clear_sensitive_environment!
+    Utils.set_git_name_email!
 
     mktemp("#{name}-test") do |staging|
       staging.retain! if ARGV.keep_tmp?
@@ -1861,9 +1862,15 @@ class Formula
     # remove "boring" arguments so that the important ones are more likely to
     # be shown considering that we trim long ohai lines to the terminal width
     pretty_args = args.dup
-    if cmd == "./configure" && !verbose
-      pretty_args.delete "--disable-dependency-tracking"
-      pretty_args.delete "--disable-debug"
+    unless verbose
+      case cmd
+      when "./configure"
+        pretty_args -= %w[--disable-dependency-tracking --disable-debug --disable-silent-rules]
+      when "cmake"
+        pretty_args -= std_cmake_args
+      when "go"
+        pretty_args -= std_go_args
+      end
     end
     pretty_args.each_index do |i|
       pretty_args[i] = "import setuptools..." if pretty_args[i].to_s.start_with? "import setuptools"
