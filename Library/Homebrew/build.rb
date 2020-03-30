@@ -22,7 +22,7 @@ class Build
     @formula = formula
     @formula.build = BuildOptions.new(options, formula.options)
 
-    if ARGV.ignore_deps?
+    if Homebrew.args.ignore_deps?
       @deps = []
       @reqs = []
     else
@@ -119,19 +119,19 @@ class Build
         # which is not known until after the formula has been staged.
         ENV["HOMEBREW_FORMULA_PREFIX"] = formula.prefix
 
-        staging.retain! if ARGV.keep_tmp?
+        staging.retain! if Homebrew.args.keep_tmp?
         formula.patch
 
-        if ARGV.git?
+        if Homebrew.args.git?
           system "git", "init"
           system "git", "add", "-A"
         end
-        if ARGV.interactive?
+        if Homebrew.args.interactive?
           ohai "Entering interactive mode"
           puts "Type `exit` to return and finalize the installation."
           puts "Install to this prefix: #{formula.prefix}"
 
-          if ARGV.git?
+          if Homebrew.args.git?
             puts "This directory is now a git repo. Make your changes and then use:"
             puts "  git diff | pbcopy"
             puts "to copy the diff to the clipboard."

@@ -106,11 +106,40 @@ module Homebrew
         RUBY
 
         path = fa.formula.path
-        path.chmod 0400
 
+        path.chmod 0600
         fa.audit_file
         expect(fa.problems)
-          .to eq(["Incorrect file permissions (400): chmod 644 #{path}"])
+          .to eq([
+                   "Incorrect file permissions (600): chmod +r #{path}",
+                 ])
+        fa.problems.clear
+
+        path.chmod 0444
+        fa.audit_file
+        expect(fa.problems)
+          .to eq([
+                   "Incorrect file permissions (444): chmod u+w #{path}",
+                 ])
+        fa.problems.clear
+
+        path.chmod 0646
+        fa.audit_file
+        expect(fa.problems)
+          .to eq([
+                   "Incorrect file permissions (646): chmod o-w #{path}",
+                 ])
+        fa.problems.clear
+
+        path.chmod 0002
+        fa.audit_file
+        expect(fa.problems)
+          .to eq([
+                   "Incorrect file permissions (002): chmod +r #{path}",
+                   "Incorrect file permissions (002): chmod u+w #{path}",
+                   "Incorrect file permissions (002): chmod o-w #{path}",
+                 ])
+        fa.problems.clear
       end
 
       specify "DATA but no __END__" do
@@ -158,6 +187,8 @@ module Homebrew
       end
     end
 
+    # Intentionally outputted non-interpolated strings
+    # rubocop:disable Lint/InterpolationCheck
     describe "#line_problems" do
       specify "pkgshare" do
         fa = formula_auditor "foo", <<~RUBY, strict: true
@@ -208,6 +239,7 @@ module Homebrew
           .to eq('Use pkgshare instead of (share/"foolibc++")')
       end
     end
+    # rubocop:enable Lint/InterpolationCheck
 
     describe "#audit_github_repository" do
       specify "#audit_github_repository when HOMEBREW_NO_GITHUB_API is set" do

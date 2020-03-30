@@ -48,13 +48,13 @@ module GitHub
     def initialize(github_message)
       @github_message = github_message
       message = +"GitHub #{github_message}:"
-      if ENV["HOMEBREW_GITHUB_API_TOKEN"]
-        message << <<~EOS
+      message << if ENV["HOMEBREW_GITHUB_API_TOKEN"]
+        <<~EOS
           HOMEBREW_GITHUB_API_TOKEN may be invalid or expired; check:
             #{Formatter.url("https://github.com/settings/tokens")}
         EOS
       else
-        message << <<~EOS
+        <<~EOS
           The GitHub credentials in the macOS keychain may be invalid.
           Clear them with:
             printf "protocol=https\\nhost=github.com\\n" | git credential-osxkeychain erase
@@ -429,6 +429,13 @@ module GitHub
     return unless comments
 
     comments.any? { |comment| comment["body"].eql?(body) }
+  end
+
+  def dispatch_event(user, repo, event, **payload)
+    url = "#{API_URL}/repos/#{user}/#{repo}/dispatches"
+    open_api(url, data:           { event_type: event, client_payload: payload },
+                  request_method: :POST,
+                  scopes:         CREATE_ISSUE_FORK_OR_PR_SCOPES)
   end
 
   def api_errors

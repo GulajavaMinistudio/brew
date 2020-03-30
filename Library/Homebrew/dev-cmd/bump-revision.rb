@@ -33,7 +33,7 @@ module Homebrew
     # user path, too.
     ENV["PATH"] = ENV["HOMEBREW_PATH"]
 
-    formulae = Homebrew.args.formulae
+    formulae = args.formulae
     raise FormulaUnspecifiedError if formulae.empty?
 
     formula = formulae.first
@@ -45,14 +45,14 @@ module Homebrew
         [checksum.hash_type, checksum.hexdigest]
       end
 
-      if hash_type
+      old = if hash_type
         # insert replacement revision after hash
-        old = <<~EOS
+        <<~EOS
           #{hash_type} "#{old_hash}"
         EOS
       else
         # insert replacement revision after :revision
-        old = <<~EOS
+        <<~EOS
           :revision => "#{formula_spec.specs[:revision]}"
         EOS
       end
@@ -64,7 +64,7 @@ module Homebrew
     end
 
     if args.dry_run?
-      ohai "replace #{old.inspect} with #{replacement.inspect}" unless Homebrew.args.quiet?
+      ohai "replace #{old.inspect} with #{replacement.inspect}" unless args.quiet?
     else
       Utils::Inreplace.inreplace(formula.path) do |s|
         s.gsub!(old, replacement)

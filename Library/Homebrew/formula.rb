@@ -6,6 +6,7 @@ require "lock_file"
 require "formula_pin"
 require "hardware"
 require "utils/bottles"
+require "utils/shebang"
 require "utils/shell"
 require "build_environment"
 require "build_options"
@@ -50,6 +51,7 @@ require "find"
 class Formula
   include FileUtils
   include Utils::Inreplace
+  include Utils::Shebang
   include Utils::Shell
   extend Enumerable
   extend Forwardable
@@ -392,7 +394,7 @@ class Formula
       Formula[path.basename(".rb").to_s]
     rescue FormulaUnavailableError
       nil
-    end.compact.sort
+    end.compact.sort_by(&:version).reverse
   end
 
   # A named Resource for the currently active {SoftwareSpec}.
@@ -1126,13 +1128,13 @@ class Formula
   def brew
     @prefix_returns_versioned_prefix = true
     stage do |staging|
-      staging.retain! if ARGV.keep_tmp?
+      staging.retain! if Homebrew.args.keep_tmp?
       prepare_patches
 
       begin
         yield self, staging
       rescue
-        staging.retain! if ARGV.interactive? || ARGV.debug?
+        staging.retain! if Homebrew.args.interactive? || ARGV.debug?
         raise
       ensure
         cp Dir["config.log", "CMakeCache.txt"], logs
@@ -1335,12 +1337,27 @@ class Formula
     # CMake cache entries for other weak symbols may be added here as needed.
     args << "-DHAVE_CLOCK_GETTIME:INTERNAL=0" if MacOS.version == "10.11" && MacOS::Xcode.version >= "8.0"
 
+    # Ensure CMake is using the same SDK we are using.
+    sdk = MacOS.sdk_path_if_needed
+    args << "-DCMAKE_OSX_SYSROOT=#{sdk}" if sdk
+
     args
   end
 
   # Standard parameters for Go builds.
   def std_go_args
     ["-trimpath", "-o", bin/name]
+  end
+
+  # Standard parameters for cabal-v2 builds.
+  def std_cabal_v2_args
+    # cabal-install's dependency-resolution backtracking strategy can
+    # easily need more than the default 2,000 maximum number of
+    # "backjumps," since Hackage is a fast-moving, rolling-release
+    # target. The highest known needed value by a formula was 43,478
+    # for git-annex, so 100,000 should be enough to avoid most
+    # gratuitous backjumps build failures.
+    ["--jobs=#{ENV.make_jobs}", "--max-backjumps=100000", "--install-method=copy", "--installdir=#{bin}"]
   end
 
   # an array of all core {Formula} names
@@ -1690,10 +1707,13 @@ class Formula
     end
 
     hsh["requirements"] = requirements.map do |req|
+      req.name.prepend("maximum_") if req.try(:comparator) == "<="
       {
         "name"     => req.name,
         "cask"     => req.cask,
         "download" => req.download,
+        "version"  => req.try(:version),
+        "contexts" => req.tags,
       }
     end
 
@@ -1747,7 +1767,7 @@ class Formula
     Utils.set_git_name_email!
 
     mktemp("#{name}-test") do |staging|
-      staging.retain! if ARGV.keep_tmp?
+      staging.retain! if Homebrew.args.keep_tmp?
       @testpath = staging.tmpdir
       test_env[:HOME] = @testpath
       setup_home @testpath
@@ -2066,7 +2086,7 @@ class Formula
         HOMEBREW_PATH: nil,
       }
 
-      unless ARGV.interactive?
+      unless Homebrew.args.interactive?
         stage_env[:HOME] = env_home
         stage_env[:_JAVA_OPTIONS] =
           "#{ENV["_JAVA_OPTIONS"]&.+(" ")}-Duser.home=#{HOMEBREW_CACHE}/java_cache"
@@ -2387,8 +2407,6 @@ class Formula
     # depends_on "postgresql" if build.without? "sqlite"</pre>
     # <pre># Python 3.x if the `--with-python` is given to `brew install example`
     # depends_on "python3" => :optional</pre>
-    # <pre># Python 2.7:
-    # depends_on "python@2"</pre>
     def depends_on(dep)
       specs.each { |spec| spec.depends_on(dep) }
     end

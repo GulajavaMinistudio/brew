@@ -91,18 +91,15 @@ module Homebrew
              description: "Extract the specified <version> of <formula> instead of the most recent."
       switch :force
       switch :debug
-      max_named 2
+      named 2
     end
   end
 
   def extract
     extract_args.parse
 
-    # Expect exactly two named arguments: formula and tap
-    raise UsageError, "This command requires formula and tap arguments" if args.remaining.length != 2
-
-    if args.remaining.first !~ HOMEBREW_TAP_FORMULA_REGEX
-      name = args.remaining.first.downcase
+    if args.named.first !~ HOMEBREW_TAP_FORMULA_REGEX
+      name = args.named.first.downcase
       source_tap = CoreTap.instance
     else
       name = Regexp.last_match(3).downcase
@@ -110,9 +107,11 @@ module Homebrew
       raise TapFormulaUnavailableError.new(source_tap, name) unless source_tap.installed?
     end
 
-    destination_tap = Tap.fetch(args.remaining.second)
-    odie "Cannot extract formula to homebrew/core!" if destination_tap.core_tap?
-    odie "Cannot extract formula to the same tap!" if destination_tap == source_tap
+    destination_tap = Tap.fetch(args.named.second)
+    unless ARGV.homebrew_developer?
+      odie "Cannot extract formula to homebrew/core!" if destination_tap.core_tap?
+      odie "Cannot extract formula to the same tap!" if destination_tap == source_tap
+    end
     destination_tap.install unless destination_tap.installed?
 
     repo = source_tap.path
@@ -180,12 +179,15 @@ module Homebrew
     # The class name has to be renamed to match the new filename,
     # e.g. Foo version 1.2.3 becomes FooAT123 and resides in Foo@1.2.3.rb.
     class_name = Formulary.class_s(name)
+
+    # Remove any existing version suffixes, as a new one will be added later
+    name.sub!(/\b@(.*)\z\b/i, "")
     versioned_name = Formulary.class_s("#{name}@#{version}")
     result.gsub!("class #{class_name} < Formula", "class #{versioned_name} < Formula")
 
     path = destination_tap.path/"Formula/#{name}@#{version}.rb"
     if path.exist?
-      unless Homebrew.args.force?
+      unless args.force?
         odie <<~EOS
           Destination formula already exists: #{path}
           To overwrite it and continue anyways, run:

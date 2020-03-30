@@ -40,8 +40,9 @@ module Homebrew
              description: "Print the pull request URL instead of opening in a browser."
       switch "--no-fork",
              description: "Don't try to fork the repository."
-      flag   "--mirror=",
-             description: "Use the specified <URL> as a mirror URL."
+      comma_array "--mirror",
+                  description: "Use the specified <URL> as a mirror URL. If <URL> is a comma-separated list "\
+                               "of URLs, multiple mirrors will be added."
       flag   "--version=",
              description: "Use the specified <version> to override the value parsed from the URL or tag. Note "\
                           "that `--version=0` can be used to delete an existing version override from a "\
@@ -115,7 +116,7 @@ module Homebrew
     # Use the user's browser, too.
     ENV["BROWSER"] = ENV["HOMEBREW_BROWSER"]
 
-    formula = Homebrew.args.formulae.first
+    formula = args.formulae.first
 
     if formula
       tap_full_name, origin_branch, previous_branch = use_correct_linux_tap(formula)
@@ -146,7 +147,7 @@ module Homebrew
       if guesses.count == 1
         formula = guesses.shift
       elsif guesses.count > 1
-        odie "Couldn't guess formula for sure; could be one of these:\n#{guesses}"
+        odie "Couldn't guess formula for sure; could be one of these:\n#{guesses.map(&:name).join(", ")}"
       end
     end
     raise FormulaUnspecifiedError unless formula
@@ -168,7 +169,18 @@ module Homebrew
     new_hash = args[hash_type] if hash_type
     new_tag = args.tag
     new_revision = args.revision
-    new_mirror = args.mirror
+    new_mirrors ||= args.mirror
+    new_mirror ||= case new_url
+    when requested_spec != :devel && %r{.*ftp.gnu.org/gnu.*}
+      new_url.sub "ftp.gnu.org/gnu", "ftpmirror.gnu.org"
+    when %r{.*download.savannah.gnu.org/*}
+      new_url.sub "download.savannah.gnu.org", "download-mirror.savannah.gnu.org"
+    when %r{.*www.apache.org/dyn/closer.lua\?path=.*}
+      new_url.sub "www.apache.org/dyn/closer.lua?path=", "archive.apache.org/dist/"
+    when %r{.*mirrors.ocf.berkeley.edu/debian.*}
+      new_url.sub "mirrors.ocf.berkeley.edu/debian", "mirrorservice.org/sites/ftp.debian.org/debian"
+    end
+    new_mirrors ||= [new_mirror] unless new_mirror.nil?
     forced_version = args.version
     new_url_hash = if new_url && new_hash
       true
@@ -179,16 +191,16 @@ module Homebrew
     elsif !new_url
       odie "#{formula}: no --url= argument specified!"
     else
-      new_mirror ||= case new_url
-      when requested_spec != :devel && %r{.*ftp.gnu.org/gnu.*}
-        new_url.sub "ftp.gnu.org/gnu", "ftpmirror.gnu.org"
-      when %r{.*mirrors.ocf.berkeley.edu/debian.*}
-        new_url.sub "mirrors.ocf.berkeley.edu/debian", "mirrorservice.org/sites/ftp.debian.org/debian"
-      end
       resource = Resource.new { @url = new_url }
       resource.download_strategy = DownloadStrategyDetector.detect_from_url(new_url)
       resource.owner = Resource.new(formula.name)
-      resource.version = forced_version if forced_version
+      if forced_version
+        if forced_version == resource.version
+          forced_version = nil
+        else
+          resource.version = forced_version
+        end
+      end
       odie "No --version= argument specified!" unless resource.version
       resource_path = resource.fetch
       tar_file_extensions = %w[.tar .tb2 .tbz .tbz2 .tgz .tlz .txz .tZ]
@@ -249,10 +261,10 @@ module Homebrew
 
     backup_file = File.read(formula.path) unless args.dry_run?
 
-    if new_mirror
+    if new_mirrors
       replacement_pairs << [
         /^( +)(url \"#{Regexp.escape(new_url)}\"\n)/m,
-        "\\1\\2\\1mirror \"#{new_mirror}\"\n",
+        "\\1\\2\\1mirror \"#{new_mirrors.join("\"\n\\1mirror \"")}\"\n",
       ]
     end
 
@@ -269,19 +281,19 @@ module Homebrew
 
     if forced_version && forced_version != "0"
       if requested_spec == :stable
-        if File.read(formula.path).include?("version \"#{old_formula_version}\"")
-          replacement_pairs << [
+        replacement_pairs << if File.read(formula.path).include?("version \"#{old_formula_version}\"")
+          [
             old_formula_version.to_s,
             forced_version,
           ]
-        elsif new_mirror
-          replacement_pairs << [
-            /^( +)(mirror \"#{new_mirror}\"\n)/m,
+        elsif new_mirrors
+          [
+            /^( +)(mirror \"#{Regexp.escape(new_mirrors.last)}\"\n)/m,
             "\\1\\2\\1version \"#{forced_version}\"\n",
           ]
         else
-          replacement_pairs << [
-            /^( +)(url \"#{new_url}\"\n)/m,
+          [
+            /^( +)(url \"#{Regexp.escape(new_url)}\"\n)/m,
             "\\1\\2\\1version \"#{forced_version}\"\n",
           ]
         end
@@ -307,6 +319,17 @@ module Homebrew
     new_contents = inreplace_pairs(formula.path, replacement_pairs)
 
     new_formula_version = formula_version(formula, requested_spec, new_contents)
+
+    if !new_mirrors && !formula_spec.mirrors.empty?
+      if args.force?
+        opoo "#{formula}: Removing all mirrors because a --mirror= argument was not specified."
+      else
+        odie <<~EOS
+          #{formula}: a --mirror= argument for updating the mirror URL was not specified.
+          Use --force to remove all mirrors.
+        EOS
+      end
+    end
 
     if new_formula_version < old_formula_version
       formula.path.atomic_write(backup_file) unless args.dry_run?
@@ -403,7 +426,9 @@ module Homebrew
     remote_url = if system("git", "config", "--local", "--get-regexp", "remote\..*\.url", "git@github.com:.*")
       response.fetch("ssh_url")
     else
-      response.fetch("clone_url")
+      url = response.fetch("clone_url")
+      url.gsub!(%r{^https://github\.com/}, "https://#{GitHub.env_token}@github.com/") if GitHub.env_token
+      url
     end
     username = response.fetch("owner").fetch("login")
     [remote_url, username]
@@ -414,7 +439,7 @@ module Homebrew
       contents = path.open("r") { |f| Formulary.ensure_utf8_encoding(f).read }
       contents.extend(StringInreplaceExtension)
       replacement_pairs.each do |old, new|
-        ohai "replace #{old.inspect} with #{new.inspect}" unless Homebrew.args.quiet?
+        ohai "replace #{old.inspect} with #{new.inspect}" unless args.quiet?
         raise "No old value for new value #{new}! Did you pass the wrong arguments?" unless old
 
         contents.gsub!(old, new)
@@ -426,7 +451,7 @@ module Homebrew
     else
       Utils::Inreplace.inreplace(path) do |s|
         replacement_pairs.each do |old, new|
-          ohai "replace #{old.inspect} with #{new.inspect}" unless Homebrew.args.quiet?
+          ohai "replace #{old.inspect} with #{new.inspect}" unless args.quiet?
           raise "No old value for new value #{new}! Did you pass the wrong arguments?" unless old
 
           s.gsub!(old, new)
@@ -466,11 +491,11 @@ module Homebrew
       #{pull_requests.map { |pr| "#{pr["title"]} #{pr["html_url"]}" }.join("\n")}
     EOS
     error_message = "Duplicate PRs should not be opened. Use --force to override this error."
-    if Homebrew.args.force? && !Homebrew.args.quiet?
+    if args.force? && !args.quiet?
       opoo duplicates_message
-    elsif !Homebrew.args.force? && Homebrew.args.quiet?
+    elsif !args.force? && args.quiet?
       odie error_message
-    elsif !Homebrew.args.force?
+    elsif !args.force?
       odie <<~EOS
         #{duplicates_message.chomp}
         #{error_message}

@@ -62,6 +62,7 @@ module Homebrew
              description: "Pull the bottle block commit from the specified <user> on GitHub."
       switch :verbose
       switch :debug
+      min_named 1
     end
   end
 
@@ -69,10 +70,6 @@ module Homebrew
     odie "You meant `git pull --rebase`." if ARGV[0] == "--rebase"
 
     pull_args.parse
-
-    if ARGV.named.empty?
-      raise UsageError, "This command requires at least one argument containing a URL or pull request number"
-    end
 
     # Passthrough Git environment variables for e.g. git am
     ENV["GIT_COMMITTER_NAME"] = ENV["HOMEBREW_GIT_NAME"] if ENV["HOMEBREW_GIT_NAME"]
@@ -96,7 +93,7 @@ module Homebrew
 
     tap = nil
 
-    ARGV.named.each do |arg|
+    args.named.each do |arg|
       arg = "#{CoreTap.instance.default_remote}/pull/#{arg}" if arg.to_i.positive?
       if (testing_match = arg.match %r{/job/Homebrew.*Testing/(\d+)})
         tap = ARGV.value("tap")
@@ -357,10 +354,10 @@ module Homebrew
       patch_args = []
       # Normally we don't want whitespace errors, but squashing them can break
       # patches so an option is provided to skip this step.
-      if @args.ignore_whitespace? || @args.clean?
-        patch_args << "--whitespace=nowarn"
+      patch_args << if @args.ignore_whitespace? || @args.clean?
+        "--whitespace=nowarn"
       else
-        patch_args << "--whitespace=fix"
+        "--whitespace=fix"
       end
 
       # Fall back to three-way merge if patch does not apply cleanly

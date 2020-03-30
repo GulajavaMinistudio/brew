@@ -13,7 +13,7 @@ module Homebrew
 
   def update_preinstall_header
     @update_preinstall_header ||= begin
-      ohai "Auto-updated Homebrew!" if ARGV.include?("--preinstall")
+      ohai "Auto-updated Homebrew!" if args.preinstall?
       true
     end
   end
@@ -51,6 +51,7 @@ module Homebrew
       puts <<~EOS
         #{Tty.bold}Read the analytics documentation (and how to opt-out) here:
           #{Formatter.url("https://docs.brew.sh/Analytics")}#{Tty.reset}
+        No analytics have been recorded yet (or will be during this `brew` run).
 
       EOS
 
@@ -72,7 +73,6 @@ module Homebrew
 
     install_core_tap_if_necessary
 
-    hub = ReporterHub.new
     updated = false
 
     initial_revision = ENV["HOMEBREW_UPDATE_BEFORE"].to_s
@@ -84,6 +84,11 @@ module Homebrew
       puts "Updated Homebrew from #{shorten_revision(initial_revision)} to #{shorten_revision(current_revision)}."
       updated = true
     end
+
+    Homebrew.failed = true if ENV["HOMEBREW_UPDATE_FAILED"]
+    return if ENV["HOMEBREW_DISABLE_LOAD_FORMULA"]
+
+    hub = ReporterHub.new
 
     updated_taps = []
     Tap.each do |tap|
@@ -108,7 +113,7 @@ module Homebrew
     end
 
     if !updated
-      puts "Already up-to-date." if !ARGV.include?("--preinstall") && !ENV["HOMEBREW_UPDATE_FAILED"]
+      puts "Already up-to-date." if !args.preinstall? && !ENV["HOMEBREW_UPDATE_FAILED"]
     else
       if hub.empty?
         puts "No changes to formulae."
@@ -121,13 +126,11 @@ module Homebrew
                                .update_from_report!(hub)
         end
       end
-      puts if ARGV.include?("--preinstall")
+      puts if args.preinstall?
     end
 
     link_completions_manpages_and_docs
     Tap.each(&:link_completions_and_manpages)
-
-    Homebrew.failed = true if ENV["HOMEBREW_UPDATE_FAILED"]
   end
 
   def shorten_revision(revision)
@@ -198,6 +201,9 @@ class Reporter
         if status == "D"
           # Have a dedicated report array for deleted casks.
           @report[:DC] << tap.formula_file_to_name(src)
+        elsif status == "M"
+          # Report updated casks
+          @report[:MC] << tap.formula_file_to_name(src)
         end
       end
 
@@ -239,10 +245,10 @@ class Reporter
       new_name = tap.formula_renames[old_name]
       next unless new_name
 
-      if tap.core_tap?
-        new_full_name = new_name
+      new_full_name = if tap.core_tap?
+        new_name
       else
-        new_full_name = "#{tap}/#{new_name}"
+        "#{tap}/#{new_name}"
       end
 
       renamed_formulae << [old_full_name, new_full_name] if @report[:A].include? new_full_name
@@ -253,10 +259,10 @@ class Reporter
       old_name = tap.formula_renames.key(new_name)
       next unless old_name
 
-      if tap.core_tap?
-        old_full_name = old_name
+      old_full_name = if tap.core_tap?
+        old_name
       else
-        old_full_name = "#{tap}/#{old_name}"
+        "#{tap}/#{old_name}"
       end
 
       renamed_formulae << [old_full_name, new_full_name]
@@ -421,6 +427,8 @@ class ReporterHub
     dump_formula_report :M, "Updated Formulae"
     dump_formula_report :R, "Renamed Formulae"
     dump_formula_report :D, "Deleted Formulae"
+    dump_formula_report :MC, "Updated Casks"
+    dump_formula_report :DC, "Deleted Casks"
   end
 
   private
@@ -435,6 +443,9 @@ class ReporterHub
         "#{name} -> #{new_name}"
       when :A
         name unless installed?(name)
+      when :MC, :DC
+        name = name.split("/").last
+        cask_installed?(name) ? pretty_installed(name) : name
       else
         installed?(name) ? pretty_installed(name) : name
       end
@@ -449,5 +460,9 @@ class ReporterHub
 
   def installed?(formula)
     (HOMEBREW_CELLAR/formula.split("/").last).directory?
+  end
+
+  def cask_installed?(cask)
+    (Cask::Caskroom.path/cask).directory?
   end
 end

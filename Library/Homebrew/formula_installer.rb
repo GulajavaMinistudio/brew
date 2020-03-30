@@ -80,7 +80,7 @@ class FormulaInstaller
   # it's necessary to interrupt the user before any sort of installation
   # can proceed. Only invoked when the user has no developer tools.
   def self.prevent_build_flags
-    build_flags = ARGV.collect_build_flags
+    build_flags = Homebrew.args.collect_build_args
     return if build_flags.empty?
 
     all_bottled = ARGV.formulae.all?(&:bottled?)
@@ -228,7 +228,7 @@ class FormulaInstaller
       EOS
       if formula.outdated? && !formula.head?
         message += <<~EOS
-          To upgrade to #{formula.pkg_version}, run `brew upgrade #{formula.name}`.
+          To upgrade to #{formula.pkg_version}, run `brew upgrade #{formula.full_name}`.
         EOS
       elsif only_deps?
         message = nil
@@ -368,7 +368,7 @@ class FormulaInstaller
 
       raise if ARGV.homebrew_developer?
 
-      $stderr.puts "Please report this to the #{formula.tap} tap!"
+      $stderr.puts "Please report this issue to the #{formula.tap} tap (not Homebrew/brew or Homebrew/core)!"
       false
     else # rubocop:disable Layout/ElseAlignment
       f.linked_keg.exist? && f.opt_prefix.exist?
@@ -598,16 +598,16 @@ class FormulaInstaller
     oh1 "Installing #{formula.full_name} dependency: #{Formatter.identifier(dep.name)}"
     fi.install
     fi.finish
-  rescue FormulaInstallationAlreadyAttemptedError
-    # We already attempted to install f as part of the dependency tree of
-    # another formula. In that case, don't generate an error, just move on.
-    nil
-  rescue Exception # rubocop:disable Lint/RescueException
+  rescue Exception => e # rubocop:disable Lint/RescueException
     ignore_interrupts do
       tmp_keg.rename(installed_keg) if tmp_keg && !installed_keg.directory?
       linked_keg.link if keg_was_linked
     end
-    raise
+    raise unless e.is_a? FormulaInstallationAlreadyAttemptedError
+
+    # We already attempted to install f as part of another formula's
+    # dependency tree. In that case, don't generate an error, just move on.
+    nil
   else
     ignore_interrupts { tmp_keg.rmtree if tmp_keg&.directory? }
   end
@@ -703,7 +703,7 @@ class FormulaInstaller
     args << "--debug" if debug?
     args << "--cc=#{ARGV.cc}" if ARGV.cc
     args << "--default-fortran-flags" if ARGV.include? "--default-fortran-flags"
-    args << "--keep-tmp" if ARGV.keep_tmp?
+    args << "--keep-tmp" if Homebrew.args.keep_tmp?
 
     if ARGV.env
       args << "--env=#{ARGV.env}"
@@ -752,7 +752,7 @@ class FormulaInstaller
         sandbox = Sandbox.new
         formula.logs.mkpath
         sandbox.record_log(formula.logs/"build.sandbox.log")
-        sandbox.allow_write_path(ENV["HOME"]) if ARGV.interactive?
+        sandbox.allow_write_path(ENV["HOME"]) if Homebrew.args.interactive?
         sandbox.allow_write_temp_and_cache
         sandbox.allow_write_log(formula)
         sandbox.allow_cvs

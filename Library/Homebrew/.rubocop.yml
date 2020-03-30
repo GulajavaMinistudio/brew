@@ -22,6 +22,10 @@ Layout/MultilineMethodCallIndentation:
 Lint/AmbiguousRegexpLiteral:
   Enabled: true
 
+# TODO: add parentheses for these and remove
+Lint/AssignmentInCondition:
+  Enabled: false
+
 # `formula do` uses nested method definitions
 Lint/NestedMethodDefinition:
   Exclude:
@@ -60,12 +64,6 @@ Metrics/ModuleLength:
 Metrics/PerceivedComplexity:
   Enabled: true
   Max: 100
-
-# GitHub diff UI wraps beyond 118 characters
-Layout/LineLength:
-  Max: 118
-  # ignore manpage comments
-  IgnoredPatterns: ['#: ']
 
 # we won't change backward compatible predicate names
 Naming/PredicateName:
@@ -140,8 +138,4 @@ Style/MutableConstant:
 
 # LineLength is low enough here to re-enable it.
 Style/IfUnlessModifier:
-  Enabled: true
-
-# so many of these in formulae but none in here
-Style/TrailingBodyOnMethodDefinition:
   Enabled: true

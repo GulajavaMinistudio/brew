@@ -425,8 +425,10 @@ search for *`text`* is extended online to `homebrew/core` and `homebrew/cask`.
 If no *`text`* is provided, list all locally available formulae (including tapped
 ones). No online search is performed.
 
+* `--formulae`:
+  Without *`text`*, list all locally available formulae (no online search is performed). With *`text`*, search online and locally for formulae.
 * `--casks`:
-  List all locally available casks (including tapped ones). No online search is performed.
+  Without *`text`*, list all locally available casks (including tapped ones, no online search is performed). With *`text`*, search online and locally for casks.
 * `--desc`:
   Search for formulae with a description matching *`text`* and casks with a name matching *`text`*.
 * `--macports`:
@@ -767,7 +769,7 @@ uses.
 * `--no-fork`:
   Don't try to fork the repository.
 * `--mirror`:
-  Use the specified *`URL`* as a mirror URL.
+  Use the specified *`URL`* as a mirror URL. If *`URL`* is a comma-separated list of URLs, multiple mirrors will be added.
 * `--version`:
   Use the specified *`version`* to override the value parsed from the URL or tag. Note that `--version=0` can be used to delete an existing version override from a formula if it has become redundant.
 * `--message`:
@@ -811,6 +813,8 @@ a simple example. For the complete API, see:
   Create a basic template for a Perl build.
 * `--python`:
   Create a basic template for a Python build.
+* `--ruby`:
+  Create a basic template for a Ruby build.
 * `--rust`:
   Create a basic template for a Rust build.
 * `--no-fetch`:
@@ -877,6 +881,11 @@ Generate Homebrew's manpages.
   Return a failing status code if changes are detected in the manpage outputs. This can be used to notify CI when the manpages are out of date. Additionally, the date used in new manpages will match those in the existing manpages (to allow comparison without factoring in the date).
 * `--link`:
   This is now done automatically by `brew update`.
+
+### `pr-publish` *`pull_request`*
+
+Publishes bottles for a pull request with GitHub Actions. Requires write access
+to the repository.
 
 ### `prof` *`command`*
 
@@ -989,7 +998,7 @@ Install and commit Homebrew's vendored gems.
 
 ## GLOBAL OPTIONS
 
-These options are applicable across all sub-commands.
+These options are applicable across multiple subcommands.
 
 * `-q`, `--quiet`:
   Suppress any warnings.
@@ -1005,25 +1014,103 @@ These options are applicable across all sub-commands.
 
 ## OFFICIAL EXTERNAL COMMANDS
 
-### `bundle` *`subcommand`*:
-
-Bundler for non-Ruby dependencies from Homebrew, Homebrew Cask and the Mac App Store.
-See `brew bundle --help`.
-
-**Homebrew/homebrew-bundle**: <https://github.com/Homebrew/homebrew-bundle>
-
 ### `cask` *`subcommand`*:
 
 Install macOS applications distributed as binaries. See `brew-cask`(1).
 
 **Homebrew/homebrew-cask**: <https://github.com/Homebrew/homebrew-cask>
 
-### `services` *`subcommand`*:
+### `bundle` *`subcommand`*
+
+Bundler for non-Ruby dependencies from Homebrew, Homebrew Cask, Mac App Store
+and Whalebrew.
+
+`brew bundle` [`install`]
+
+Install or upgrade all dependencies in a `Brewfile`.
+
+`brew bundle dump`
+
+Write all installed casks/formulae/images/taps into a `Brewfile`.
+
+`brew bundle cleanup`
+
+Uninstall all dependencies not listed in a `Brewfile`.
+
+`brew bundle check`
+
+Check if all dependencies are installed in a `Brewfile`.
+
+`brew bundle exec` *`command`*
+
+Run an external command in an isolated build environment.
+
+`brew bundle list`
+
+List all dependencies present in a Brewfile. By default, only Homebrew
+dependencies are listed.
+
+* `--file`:
+  Read the `Brewfile` from this file. Use `--file=-` to pipe to stdin/stdout.
+* `--global`:
+  Read the `Brewfile` from `~/.Brewfile`.
+* `-v`, `--verbose`:
+  `install` output is printed from commands as they are run. `check` prints all missing dependencies.
+* `--no-upgrade`:
+  `install` won't run `brew upgrade` on outdated dependencies. Note they may still be upgraded by `brew install` if needed.
+* `-f`, `--force`:
+  `dump` overwrites an existing `Brewfile`. `cleanup` actually perform the cleanup operations.
+* `--no-lock`:
+  `install` won't output a `Brewfile.lock.json`.
+* `--all`:
+  `list` all dependencies.
+* `--brews`:
+  `list` Homebrew dependencies.
+* `--casks`:
+  `list` Homebrew Cask dependencies.
+* `--taps`:
+  `list` tap dependencies.
+* `--mas`:
+  `list` Mac App Store dependencies.
+* `--whalebrew`:
+  `list` Whalebrew dependencies.
+* `--describe`:
+  `dump` a description comment above each line, unless the dependency does not have a description.
+* `--no-restart`:
+  `dump` does not add `restart_service` to formula lines.
+* `--zap`:
+  `cleanup` casks using the `zap` command instead of `uninstall`.
+
+### `services` *`subcommand`*
 
 Manage background services with macOS' `launchctl`(1) daemon manager.
-See `brew services --help`.
 
-**Homebrew/homebrew-services**: <https://github.com/Homebrew/homebrew-services>
+If `sudo` is passed, operate on `/Library/LaunchDaemons` (started at boot).
+Otherwise, operate on `~/Library/LaunchAgents` (started at login).
+
+[`sudo`] `brew services` [`list`]
+  List all running services for the current user (or root).
+
+[`sudo`] `brew services run` (*`formula`*|`--all`)
+  Run the service *`formula`* without registering to launch at login (or boot).
+
+[`sudo`] `brew services start` (*`formula`*|`--all`)
+  Start the service *`formula`* immediately and register it to launch at login (or
+boot).
+
+[`sudo`] `brew services stop` (*`formula`*|`--all`)
+  Stop the service *`formula`* immediately and unregister it from launching at
+login (or boot).
+
+[`sudo`] `brew services restart` (*`formula`*|`--all`)
+  Stop (if necessary) and start the service *`formula`* immediately and register
+it to launch at login (or boot).
+
+[`sudo`] `brew services cleanup`
+  Remove all unused services.
+
+* `--all`:
+  Run *`subcommand`* on all services.
 
 ## CUSTOM EXTERNAL COMMANDS
 
@@ -1112,7 +1199,7 @@ Note that environment variables must have a value set to be detected. For exampl
     `git`(1) remote. If set, instructs Homebrew to instead use the specified URL.
 
   * `HOMEBREW_CURLRC`:
-    If set, Homebrew will not pass `-q` when invoking `curl`(1), which disables
+    If set, Homebrew will not pass `--disable` when invoking `curl`(1), which disables
     the use of `curlrc`.
 
   * `HOMEBREW_CURL_VERBOSE`:
@@ -1120,6 +1207,7 @@ Note that environment variables must have a value set to be detected. For exampl
 
   * `HOMEBREW_CURL_RETRIES`:
     If set, Homebrew will pass the given retry count to `--retry` when invoking `curl`(1).
+    By default, `curl`(1) is invoked with `--retry 3`.
 
   * `HOMEBREW_DEBUG`:
     If set, any commands that can emit debugging information will do so.

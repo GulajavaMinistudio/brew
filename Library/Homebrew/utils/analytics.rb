@@ -6,12 +6,13 @@ module Utils
   module Analytics
     class << self
       def report(type, metadata = {})
+        return if not_this_run?
         return if disabled?
 
         args = []
 
         # do not load .curlrc unless requested (must be the first argument)
-        args << "-q" unless ENV["HOMEBREW_CURLRC"]
+        args << "--disable" unless ENV["HOMEBREW_CURLRC"]
 
         args += %W[
           --max-time 3
@@ -77,9 +78,13 @@ module Utils
       end
 
       def disabled?
-        return true if ENV["HOMEBREW_NO_ANALYTICS"] || ENV["HOMEBREW_NO_ANALYTICS_THIS_RUN"]
+        return true if ENV["HOMEBREW_NO_ANALYTICS"]
 
         config_true?(:analyticsdisabled)
+      end
+
+      def not_this_run?
+        ENV["HOMEBREW_NO_ANALYTICS_THIS_RUN"].present?
       end
 
       def no_message_output?
