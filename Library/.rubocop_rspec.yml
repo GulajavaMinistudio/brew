@@ -2,12 +2,11 @@ inherit_from: ./.rubocop.yml
 
 AllCops:
   Include:
-    - '**/*_spec.rb'
+    - '**/cmd/**/*.rb'
+    - '**/lib/**/*.rb'
+    - '**/spec/**/*.rb'
   Exclude:
     - '**/vendor/**/*'
-
-NewFormulaAudit:
-  Enabled: true
 
 # Intentionally disabled as it doesn't fit with our code style.
 RSpec/AnyInstance:

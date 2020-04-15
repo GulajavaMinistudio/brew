@@ -1045,7 +1045,7 @@ class Formula
   def keg_only?
     return false unless keg_only_reason
 
-    keg_only_reason.valid?
+    keg_only_reason.applicable?
   end
 
   # @private
@@ -1103,6 +1103,20 @@ class Formula
         to_check.start_with?(p.chomp("/") + "/") ||
         to_check =~ /^#{Regexp.escape(p).gsub('\*', ".*?")}$/
     end
+  end
+
+  # Whether this {Formula} is deprecated (i.e. warns on installation).
+  # Defaults to false.
+  # @return [Boolean]
+  def deprecated?
+    self.class.deprecated?
+  end
+
+  # Whether this {Formula} is disabled (i.e. cannot be installed).
+  # Defaults to false.
+  # @return [Boolean]
+  def disabled?
+    self.class.disabled?
   end
 
   def skip_cxxstdlib_check?
@@ -1338,8 +1352,7 @@ class Formula
     args << "-DHAVE_CLOCK_GETTIME:INTERNAL=0" if MacOS.version == "10.11" && MacOS::Xcode.version >= "8.0"
 
     # Ensure CMake is using the same SDK we are using.
-    sdk = MacOS.sdk_path_if_needed
-    args << "-DCMAKE_OSX_SYSROOT=#{sdk}" if sdk
+    args << "-DCMAKE_OSX_SYSROOT=#{MacOS.sdk_for_formula(self).path}" if MacOS.sdk_root_needed?
 
     args
   end
@@ -1877,7 +1890,7 @@ class Formula
   # system "make", "install"</pre>
   def system(cmd, *args)
     verbose = Homebrew.args.verbose?
-    verbose_using_dots = !ENV["HOMEBREW_VERBOSE_USING_DOTS"].nil?
+    verbose_using_dots = Homebrew::EnvConfig.verbose_using_dots?
 
     # remove "boring" arguments so that the important ones are more likely to
     # be shown considering that we trim long ohai lines to the terminal width
@@ -1948,8 +1961,7 @@ class Formula
       $stdout.flush
 
       unless $CHILD_STATUS.success?
-        log_lines = ENV["HOMEBREW_FAIL_LOG_LINES"]
-        log_lines ||= "15"
+        log_lines = Homebrew::EnvConfig.fail_log_lines
 
         log.flush
         if !verbose || verbose_using_dots
@@ -2411,9 +2423,24 @@ class Formula
       specs.each { |spec| spec.depends_on(dep) }
     end
 
+    # Indicates use of dependencies provided by macOS.
+    # On macOS this is a no-op (as we use the system libraries there).
+    # On Linux this will act as `depends_on`.
     def uses_from_macos(dep)
       specs.each { |spec| spec.uses_from_macos(dep) }
     end
+
+    # Block executed only executed on macOS. No-op on Linux.
+    # <pre>on_macos do
+    #   depends_on "mac_only_dep"
+    # end</pre>
+    def on_macos(&_block); end
+
+    # Block executed only executed on Linux. No-op on macOS.
+    # <pre>on_linux do
+    #   depends_on "linux_only_dep"
+    # end</pre>
+    def on_linux(&_block); end
 
     # @!attribute [w] option
     # Options can be used as arguments to `brew install`.
@@ -2605,6 +2632,34 @@ class Formula
       @pour_bottle_check.instance_eval(&block)
     end
 
+    # Deprecates a {Formula} so a warning is shown on each installation.
+    def deprecate!(date: nil)
+      return if date.present? && Date.parse(date) > Date.today
+
+      @deprecated = true
+    end
+
+    # Whether this {Formula} is deprecated (i.e. warns on installation).
+    # Defaults to false.
+    # @return [Boolean]
+    def deprecated?
+      @deprecated == true
+    end
+
+    # Disables a {Formula} so it cannot be installed.
+    def disable!(date: nil)
+      return if date.present? && Date.parse(date) > Date.today
+
+      @disabled = true
+    end
+
+    # Whether this {Formula} is disabled (i.e. cannot be installed).
+    # Defaults to false.
+    # @return [Boolean]
+    def disabled?
+      @disabled == true
+    end
+
     # @private
     def link_overwrite(*paths)
       paths.flatten!
@@ -2617,3 +2672,5 @@ class Formula
     end
   end
 end
+
+require "extend/os/formula"

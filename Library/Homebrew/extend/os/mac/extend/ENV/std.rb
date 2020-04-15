@@ -60,9 +60,9 @@ module Stdenv
     return unless (sdk = MacOS.sdk_path_if_needed(version))
 
     delete("SDKROOT")
-    remove_from_cflags "-isysroot #{sdk}"
-    remove "CPPFLAGS", "-isysroot #{sdk}"
-    remove "LDFLAGS", "-isysroot #{sdk}"
+    remove_from_cflags "-isysroot#{sdk}"
+    remove "CPPFLAGS", "-isysroot#{sdk}"
+    remove "LDFLAGS", "-isysroot#{sdk}"
     if HOMEBREW_PREFIX.to_s == "/usr/local"
       delete("CMAKE_PREFIX_PATH")
     else
@@ -87,22 +87,24 @@ module Stdenv
     # Tell clang/gcc where system include's are:
     append_path "CPATH", "#{sdk}/usr/include"
     # The -isysroot is needed, too, because of the Frameworks
-    append_to_cflags "-isysroot #{sdk}"
-    append "CPPFLAGS", "-isysroot #{sdk}"
+    append_to_cflags "-isysroot#{sdk}"
+    append "CPPFLAGS", "-isysroot#{sdk}"
     # And the linker needs to find sdk/usr/lib
-    append "LDFLAGS", "-isysroot #{sdk}"
+    append "LDFLAGS", "-isysroot#{sdk}"
     # Needed to build cmake itself and perhaps some cmake projects:
     append_path "CMAKE_PREFIX_PATH", "#{sdk}/usr"
     append_path "CMAKE_FRAMEWORK_PATH", "#{sdk}/System/Library/Frameworks"
   end
 
   # Some configure scripts won't find libxml2 without help
+  # This is a no-op with macOS SDK 10.15.4 and later
   def libxml2
-    if !MacOS.sdk_path_if_needed
+    sdk = MacOS.sdk_path_if_needed
+    if !sdk
       append "CPPFLAGS", "-I/usr/include/libxml2"
-    else
+    elsif !(sdk/"usr/include/libxml").directory?
       # Use the includes form the sdk
-      append "CPPFLAGS", "-I#{MacOS.sdk_path}/usr/include/libxml2"
+      append "CPPFLAGS", "-I#{sdk}/usr/include/libxml2"
     end
   end
 

@@ -538,11 +538,11 @@ module Homebrew
       end
 
       def check_brew_git_origin
-        examine_git_origin(HOMEBREW_REPOSITORY, HOMEBREW_BREW_GIT_REMOTE)
+        examine_git_origin(HOMEBREW_REPOSITORY, Homebrew::EnvConfig.brew_git_remote)
       end
 
       def check_coretap_git_origin
-        examine_git_origin(CoreTap.instance.path, HOMEBREW_CORE_GIT_REMOTE)
+        examine_git_origin(CoreTap.instance.path, Homebrew::EnvConfig.core_git_remote)
       end
 
       def check_casktap_git_origin
@@ -637,6 +637,20 @@ module Homebrew
             brew install #{missing.sort_by(&:full_name) * " "}
 
           Run `brew missing` for more details.
+        EOS
+      end
+
+      def check_deprecated_disabled
+        return unless HOMEBREW_CELLAR.exist?
+
+        deprecated_or_disabled = Formula.installed.select(&:deprecated?)
+        deprecated_or_disabled += Formula.installed.select(&:disabled?)
+        return if deprecated_or_disabled.empty?
+
+        <<~EOS
+          Some installed formulae are deprecated or disabled.
+          You should find replacements for the following formulae:
+            #{deprecated_or_disabled.sort_by(&:full_name).uniq * "\n  "}
         EOS
       end
 

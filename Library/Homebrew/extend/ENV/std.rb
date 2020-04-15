@@ -112,9 +112,11 @@ module Stdenv
   def clang
     super
     replace_in_cflags(/-Xarch_#{Hardware::CPU.arch_32_bit} (-march=\S*)/, '\1')
-    # Clang mistakenly enables AES-NI on plain Nehalem
     map = Hardware::CPU.optimization_flags
-                       .merge(nehalem: "-march=nehalem -Xclang -target-feature -Xclang -aes")
+    if DevelopmentTools.clang_build_version < 700
+      # Clang mistakenly enables AES-NI on plain Nehalem
+      map[:nehalem] = "-march=nehalem -Xclang -target-feature -Xclang -aes"
+    end
     set_cpu_cflags map
   end
 
@@ -169,7 +171,7 @@ module Stdenv
   # Sets architecture-specific flags for every environment variable
   # given in the list `flags`.
   # @private
-  def set_cpu_flags(flags, map = Hardware::CPU.optimization_flags) # rubocop:disable Naming/AccessorMethodName
+  def set_cpu_flags(flags, map = Hardware::CPU.optimization_flags)
     cflags =~ /(-Xarch_#{Hardware::CPU.arch_32_bit} )-march=/
     xarch = Regexp.last_match(1).to_s
     remove flags, /(-Xarch_#{Hardware::CPU.arch_32_bit} )?-march=\S*/
@@ -188,12 +190,7 @@ module Stdenv
   end
 
   def make_jobs
-    # '-j' requires a positive integral argument
-    if (jobs = self["HOMEBREW_MAKE_JOBS"].to_i).positive?
-      jobs
-    else
-      Hardware::CPU.cores
-    end
+    Homebrew::EnvConfig.make_jobs.to_i
   end
 
   # This method does nothing in stdenv since there's no arg refurbishment

@@ -7,8 +7,22 @@ module RuboCop
     module FormulaAudit
       # This cop audits URLs and mirrors in Formulae.
       class Urls < FormulaCop
+        # These are parts of URLs that look like binaries but actually aren't.
+        NOT_A_BINARY_URL_PREFIX_WHITELIST = %w[
+          https://downloads.sourceforge.net/project/astyle/astyle/
+          https://downloads.sourceforge.net/project/bittwist/
+          https://downloads.sourceforge.net/project/launch4j/
+          https://github.com/ChrisJohnsen/tmux-MacOSX-pasteboard/archive/
+          https://github.com/obihann/archey-osx/archive/
+          https://github.com/sindresorhus/macos-wallpaper/archive/
+          https://raw.githubusercontent.com/liyanage/macosx-shell-scripts/
+          https://osxbook.com/book/bonus/chapter8/core/download/gcore
+          https://naif.jpl.nasa.gov/pub/naif/toolkit/C/MacIntel_OSX_AppleC_64bit/packages/
+        ].freeze
+
         # These are formulae that, sadly, require an upstream binary to bootstrap.
-        BINARY_FORMULA_URLS_WHITELIST = %w[
+        BINARY_BOOTSTRAP_FORMULA_URLS_WHITELIST = %w[
+          clozure-cl
           crystal
           fpc
           ghc
@@ -22,6 +36,10 @@ module RuboCop
           haskell-stack
           ldc
           mlton
+          openjdk
+          openjdk@11
+          pypy
+          sbcl
           rust
         ].freeze
 
@@ -234,9 +252,11 @@ module RuboCop
           return if formula_tap != "homebrew-core"
 
           # Check for binary URLs
-          audit_urls(urls, /(darwin|macos|osx)/i) do |_, url|
-            next if url !~ /x86_64/i && url !~ /amd64/i
-            next if BINARY_FORMULA_URLS_WHITELIST.include?(@formula_name)
+          audit_urls(urls, /(darwin|macos|osx)/i) do |match, url|
+            next if @formula_name.include?(match.to_s.downcase)
+            next if url.match?(/.(patch|diff)(\?full_index=1)?$/)
+            next if NOT_A_BINARY_URL_PREFIX_WHITELIST.any? { |prefix| url.start_with?(prefix) }
+            next if BINARY_BOOTSTRAP_FORMULA_URLS_WHITELIST.include?(@formula_name)
 
             problem "#{url} looks like a binary package, not a source archive; " \
                     "homebrew/core is source-only."

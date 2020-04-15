@@ -12,7 +12,7 @@ module RuboCop
             problem "Please set plist_options when using a formula-defined plist."
           end
 
-          if depends_on?("openssl") && depends_on?("libressl")
+          if (depends_on?("openssl") || depends_on?("openssl@1.1")) && depends_on?("libressl")
             problem "Formulae should not depend on both OpenSSL and LibreSSL (even optionally)."
           end
 
@@ -54,6 +54,7 @@ module RuboCop
 
           find_method_with_args(body_node, :system, "dep", "ensure") do |d|
             next if parameters_passed?(d, /vendor-only/)
+            next if @formula_name == "goose" # needed in 2.3.0
 
             problem "use \"dep\", \"ensure\", \"-vendor-only\""
           end
@@ -64,6 +65,7 @@ module RuboCop
         end
       end
     end
+
     module FormulaAuditStrict
       class Text < FormulaCop
         def audit_formula(_node, _class_node, _parent_class_node, body_node)

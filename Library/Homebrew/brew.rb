@@ -35,6 +35,13 @@ rescue MissingEnvironmentVariables => e
   exec ENV["HOMEBREW_BREW_FILE"], *ARGV
 end
 
+def output_unsupported_error
+  $stderr.puts <<~EOS
+    Please create pull requests instead of asking for help on Homebrew's GitHub,
+    Discourse, Twitter or IRC.
+  EOS
+end
+
 begin
   trap("INT", std_trap) # restore default CTRL-C handler
 
@@ -69,7 +76,7 @@ begin
     internal_cmd = Commands.valid_internal_cmd?(cmd)
     internal_cmd ||= begin
       internal_dev_cmd = Commands.valid_internal_dev_cmd?(cmd)
-      if internal_dev_cmd && !ARGV.homebrew_developer?
+      if internal_dev_cmd && !Homebrew::EnvConfig.developer?
         if (HOMEBREW_REPOSITORY/".git/config").exist?
           system "git", "config", "--file=#{HOMEBREW_REPOSITORY}/.git/config",
                  "--replace-all", "homebrew.devcmdrun", "true"
@@ -141,12 +148,18 @@ rescue Interrupt
 rescue BuildError => e
   Utils::Analytics.report_build_error(e)
   e.dump
+
+  output_unsupported_error if Homebrew.args.HEAD? || e.formula.deprecated? || e.formula.disabled?
+
   exit 1
 rescue RuntimeError, SystemCallError => e
   raise if e.message.empty?
 
   onoe e
   $stderr.puts e.backtrace if ARGV.debug?
+
+  output_unsupported_error if Homebrew.args.HEAD?
+
   exit 1
 rescue MethodDeprecatedError => e
   onoe e
@@ -159,7 +172,7 @@ rescue MethodDeprecatedError => e
 rescue Exception => e # rubocop:disable Lint/RescueException
   onoe e
   if internal_cmd && defined?(OS::ISSUES_URL) &&
-     !ENV["HOMEBREW_NO_AUTO_UPDATE"]
+     !Homebrew::EnvConfig.no_auto_update?
     $stderr.puts "#{Tty.bold}Please report this issue:#{Tty.reset}"
     $stderr.puts "  #{Formatter.url(OS::ISSUES_URL)}"
   end

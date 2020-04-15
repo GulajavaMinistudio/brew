@@ -68,10 +68,10 @@ module Homebrew
       if keg_only
         if Homebrew.default_prefix?
           f = keg.to_formula
-          if f.keg_only_reason.reason == :provided_by_macos
+          if f.keg_only_reason.by_macos?
             caveats = Caveats.new(f)
             opoo <<~EOS
-              Refusing to link macOS-provided software: #{keg.name}
+              Refusing to link macOS provided/shadowed software: #{keg.name}
               #{caveats.keg_only_text(skip_reason: true).strip}
             EOS
             next
@@ -98,7 +98,7 @@ module Homebrew
           puts "#{n} symlinks created"
         end
 
-        puts_keg_only_path_message(keg) if keg_only && !ARGV.homebrew_developer?
+        puts_keg_only_path_message(keg) if keg_only && !Homebrew::EnvConfig.developer?
       end
     end
   end

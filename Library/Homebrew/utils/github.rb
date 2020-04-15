@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "uri"
 require "tempfile"
+require "uri"
 
 module GitHub
   module_function
@@ -48,7 +48,7 @@ module GitHub
     def initialize(github_message)
       @github_message = github_message
       message = +"GitHub #{github_message}:"
-      message << if ENV["HOMEBREW_GITHUB_API_TOKEN"]
+      message << if Homebrew::EnvConfig.github_api_token
         <<~EOS
           HOMEBREW_GITHUB_API_TOKEN may be invalid or expired; check:
             #{Formatter.url("https://github.com/settings/tokens")}
@@ -79,15 +79,11 @@ module GitHub
     end
   end
 
-  def env_token
-    ENV["HOMEBREW_GITHUB_API_TOKEN"].presence
-  end
-
   def env_username_password
-    return if ENV["HOMEBREW_GITHUB_API_USERNAME"].blank?
-    return if ENV["HOMEBREW_GITHUB_API_PASSWORD"].blank?
+    return unless Homebrew::EnvConfig.github_api_username
+    return unless Homebrew::EnvConfig.github_api_password
 
-    [ENV["HOMEBREW_GITHUB_API_PASSWORD"], ENV["HOMEBREW_GITHUB_API_USERNAME"]]
+    [Homebrew::EnvConfig.github_api_password, Homebrew::EnvConfig.github_api_username]
   end
 
   def keychain_username_password
@@ -116,12 +112,12 @@ module GitHub
 
   def api_credentials
     @api_credentials ||= begin
-      env_token || env_username_password || keychain_username_password
+      Homebrew::EnvConfig.github_api_token || env_username_password || keychain_username_password
     end
   end
 
   def api_credentials_type
-    if env_token
+    if Homebrew::EnvConfig.github_api_token
       :env_token
     elsif env_username_password
       :env_username_password
@@ -171,9 +167,9 @@ module GitHub
     end
   end
 
-  def open_api(url, data: nil, request_method: nil, scopes: [].freeze)
+  def open_api(url, data: nil, request_method: nil, scopes: [].freeze, parse_json: true)
     # This is a no-op if the user is opting out of using the GitHub API.
-    return block_given? ? yield({}) : {} if ENV["HOMEBREW_NO_GITHUB_API"]
+    return block_given? ? yield({}) : {} if Homebrew::EnvConfig.no_github_api?
 
     args = ["--header", "Accept: application/vnd.github.v3+json", "--write-out", "\n%\{http_code}"]
     args += ["--header", "Accept: application/vnd.github.antiope-preview+json"]
@@ -226,11 +222,11 @@ module GitHub
 
       return if http_code == "204" # No Content
 
-      json = JSON.parse output
+      output = JSON.parse output if parse_json
       if block_given?
-        yield json
+        yield output
       else
-        json
+        output
       end
     rescue JSON::ParserError => e
       raise Error, "Failed to parse JSON response\n#{e.message}", e.backtrace
@@ -436,6 +432,52 @@ module GitHub
     open_api(url, data:           { event_type: event, client_payload: payload },
                   request_method: :POST,
                   scopes:         CREATE_ISSUE_FORK_OR_PR_SCOPES)
+  end
+
+  def get_artifact_url(user, repo, pr, workflow_id: "tests.yml", artifact_name: "bottles")
+    scopes = CREATE_ISSUE_FORK_OR_PR_SCOPES
+    base_url = "#{API_URL}/repos/#{user}/#{repo}"
+    pr_payload = open_api("#{base_url}/pulls/#{pr}", scopes: scopes)
+    pr_sha = pr_payload["head"]["sha"]
+    pr_branch = URI.encode_www_form_component(pr_payload["head"]["ref"])
+
+    workflow = open_api("#{base_url}/actions/workflows/#{workflow_id}/runs?branch=#{pr_branch}", scopes: scopes)
+    workflow_run = workflow["workflow_runs"].select do |run|
+      run["head_sha"] == pr_sha
+    end
+
+    if workflow_run.empty?
+      raise Error, <<~EOS
+        No matching workflow run found for these criteria!
+          Commit SHA:   #{pr_sha}
+          Branch ref:   #{pr_branch}
+          Pull request: #{pr}
+          Workflow:     #{workflow_id}
+      EOS
+    end
+
+    status = workflow_run.first["status"].sub("_", " ")
+    if status != "completed"
+      raise Error, <<~EOS
+        The newest workflow run for ##{pr} is still #{status}!
+          #{Formatter.url workflow_run.first["html_url"]}
+      EOS
+    end
+
+    artifacts = open_api(workflow_run.first["artifacts_url"], scopes: scopes)
+
+    artifact = artifacts["artifacts"].select do |art|
+      art["name"] == artifact_name
+    end
+
+    if artifact.empty?
+      raise Error, <<~EOS
+        No artifact with the name `#{artifact_name}` was found!
+          #{Formatter.url workflow_run.first["html_url"]}
+      EOS
+    end
+
+    artifact.first["archive_download_url"]
   end
 
   def api_errors

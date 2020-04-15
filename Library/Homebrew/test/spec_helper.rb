@@ -52,6 +52,7 @@ require "test/support/helper/output_as_tty"
 
 require "test/support/helper/spec/shared_context/homebrew_cask" if OS.mac?
 require "test/support/helper/spec/shared_context/integration_test"
+require "test/support/helper/spec/shared_examples/formulae_exist"
 
 TEST_DIRECTORIES = [
   CoreTap.instance.path/"Formula",
@@ -173,24 +174,25 @@ RSpec.configure do |config|
       @__argv = ARGV.dup
       @__env = ENV.to_hash # dup doesn't work on ENV
 
+      @__stdout = $stdout.clone
+      @__stderr = $stderr.clone
+
       unless example.metadata.key?(:focus) || ENV.key?("VERBOSE_TESTS")
-        @__stdout = $stdout.clone
-        @__stderr = $stderr.clone
         $stdout.reopen(File::NULL)
         $stderr.reopen(File::NULL)
       end
 
       example.run
+    rescue SystemExit => e
+      raise "Unexpected exit with status #{e.status}."
     ensure
       ARGV.replace(@__argv)
       ENV.replace(@__env)
 
-      unless example.metadata.key?(:focus) || ENV.key?("VERBOSE_TESTS")
-        $stdout.reopen(@__stdout)
-        $stderr.reopen(@__stderr)
-        @__stdout.close
-        @__stderr.close
-      end
+      $stdout.reopen(@__stdout)
+      $stderr.reopen(@__stderr)
+      @__stdout.close
+      @__stderr.close
 
       Formulary.clear_cache
       Tap.clear_cache

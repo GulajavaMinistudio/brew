@@ -8,10 +8,6 @@ FormulaAudit:
 FormulaAuditStrict:
   Enabled: true
 
-# disable all formulae strict audits by default
-NewFormulaAudit:
-  Enabled: false
-
 # make our hashes consistent
 Layout/HashAlignment:
   EnforcedHashRocketStyle: table
@@ -49,6 +45,12 @@ Lint/AmbiguousRegexpLiteral:
 # so many of these in formulae and can't be autocorrected
 Lint/ParenthesesAsGroupedExpression:
   Enabled: false
+
+# not enabled by default but nice to have
+Lint/RaiseException:
+  Enabled: true
+Lint/StructNewOverride:
+  Enabled: true
 
 # most metrics don't make sense to apply for formulae/taps
 Metrics/AbcSize:
