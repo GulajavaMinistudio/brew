@@ -12,7 +12,7 @@ RSpec/ExampleLength:
   Exclude:
     - 'rubocops/patches_spec.rb'
 
-# Offense count: 37
+# Offense count: 41
 # Configuration parameters: CustomTransform, IgnoreMethods.
 RSpec/FilePath:
   Exclude:
@@ -45,6 +45,7 @@ RSpec/FilePath:
     - 'rubocops/components_redundancy_spec.rb'
     - 'rubocops/conflicts_spec.rb'
     - 'rubocops/dependency_order_spec.rb'
+    - 'rubocops/files_spec.rb'
     - 'rubocops/homepage_spec.rb'
     - 'rubocops/options_spec.rb'
     - 'rubocops/patches_spec.rb'
@@ -53,6 +54,7 @@ RSpec/FilePath:
     - 'rubocops/formula_desc_spec.rb'
     - 'search_spec.rb'
     - 'string_spec.rb'
+    - 'style_spec.rb'
     - 'system_command_result_spec.rb'
     - 'unpack_strategy/p7zip_spec.rb'
     - 'utils/github_spec.rb'
