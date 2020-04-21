@@ -40,7 +40,6 @@ require "cli/args"
 require "messages"
 require "system_command"
 
-ARGV_WITHOUT_MONKEY_PATCHING = ARGV.dup.freeze
 ARGV.extend(HomebrewArgvExtension)
 
 HOMEBREW_PRODUCT = ENV["HOMEBREW_PRODUCT"]
@@ -86,7 +85,7 @@ module Homebrew
     end
 
     def args
-      @args ||= CLI::Args.new(argv: ARGV)
+      @args ||= CLI::Args.new
     end
 
     def messages
