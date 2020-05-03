@@ -34,6 +34,7 @@ class Bintray
   def open_api(url, *extra_curl_args, auth: true)
     args = extra_curl_args
     args += ["--user", "#{@bintray_user}:#{@bintray_key}"] if auth
+    args += ["--output", "/dev/null"] unless Homebrew.args.verbose?
     curl(*args, url,
          show_output: Homebrew.args.verbose?,
          secrets:     @bintray_key)
@@ -66,9 +67,10 @@ class Bintray
   def package_exists?(repo:, package:)
     url = "#{API_URL}/packages/#{@bintray_org}/#{repo}/#{package}"
     begin
-      open_api url, "--silent", "--output", "/dev/null", auth: false
+      open_api url, "--fail", "--silent", auth: false
     rescue ErrorDuringExecution => e
-      stderr = e.output.select { |type,| type == :stderr }
+      stderr = e.output
+                .select { |type,| type == :stderr }
                 .map { |_, line| line }
                 .join
       raise if e.status.exitstatus != 22 && !stderr.include?("404 Not Found")
@@ -82,9 +84,10 @@ class Bintray
   def file_published?(repo:, remote_file:)
     url = "https://dl.bintray.com/#{@bintray_org}/#{repo}/#{remote_file}"
     begin
-      curl "--silent", "--head", "--output", "/dev/null", url
+      curl "--fail", "--silent", "--head", "--output", "/dev/null", url
     rescue ErrorDuringExecution => e
-      stderr = e.output.select { |type,| type == :stderr }
+      stderr = e.output
+                .select { |type,| type == :stderr }
                 .map { |_, line| line }
                 .join
       raise if e.status.exitstatus != 22 && !stderr.include?("404 Not Found")

@@ -41,7 +41,7 @@ brew install hello
 
 If you're using an older distribution of Linux, installing your first package will also install a recent version of `glibc` and `gcc`. Use `brew doctor` to troubleshoot common issues.
 
-## Linux/WSL Requirements
+## Requirements
 
 + **GCC** 4.7.0 or newer
 + **Linux** 2.6.32 or newer
@@ -67,6 +67,8 @@ sudo yum install libxcrypt-compat # needed by Fedora 30 and up
 ### ARM
 
 Homebrew can run on 32-bit ARM (Raspberry Pi and others) and 64-bit ARM (AArch64), but no binary packages (bottles) are available. Support for ARM is on a best-effort basis. Pull requests are welcome to improve the experience on ARM platforms.
+
+You may need to install your own Ruby using your system package manager, a PPA, or `rbenv/ruby-build` as in the future we will no longer distribute a Homebrew Portable Ruby for ARM.
 
 ### 32-bit x86
 

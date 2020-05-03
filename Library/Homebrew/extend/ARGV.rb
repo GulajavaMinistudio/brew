@@ -1,26 +1,6 @@
 # frozen_string_literal: true
 
 module HomebrewArgvExtension
-  def flags_only
-    select { |arg| arg.start_with?("--") }
-  end
-
-  def formulae
-    require "formula"
-    (downcased_unique_named - casks).map do |name|
-      if name.include?("/") || File.exist?(name)
-        Formulary.factory(name, spec)
-      else
-        Formulary.find_with_priority(name, spec)
-      end
-    end.uniq(&:name)
-  end
-
-  def casks
-    # TODO: use @instance variable to ||= cache when moving to CLI::Parser
-    downcased_unique_named.grep HOMEBREW_CASK_TAP_CASK_REGEX
-  end
-
   def value(name)
     arg_prefix = "--#{name}="
     flag_with_value = find { |arg| arg.start_with?(arg_prefix) }
@@ -29,10 +9,6 @@ module HomebrewArgvExtension
 
   def debug?
     flag?("--debug") || !ENV["HOMEBREW_DEBUG"].nil?
-  end
-
-  def build_bottle?
-    include?("--build-bottle")
   end
 
   def bottle_arch
