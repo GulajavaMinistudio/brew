@@ -13,6 +13,10 @@ module Homebrew
 
         @processed_options = []
 
+        # Can set these because they will be overwritten by freeze_named_args!
+        # (whereas other values below will only be overwritten if passed).
+        self[:named_args] = argv.reject { |arg| arg.start_with?("-") }
+
         # Set values needed before Parser#parse has been run.
         return unless set_default_args
 
@@ -22,15 +26,24 @@ module Homebrew
         self[:HEAD?] = argv.include?("--HEAD")
         self[:devel?] = argv.include?("--devel")
         self[:universal?] = argv.include?("--universal")
-        self[:named_args] = argv.reject { |arg| arg.start_with?("-") }
       end
 
       def freeze_named_args!(named_args)
+        # Reset cache values reliant on named_args
+        @formulae = nil
+        @resolved_formulae = nil
+        @formulae_paths = nil
+        @casks = nil
+        @kegs = nil
+
         self[:named_args] = named_args
         self[:named_args].freeze
       end
 
       def freeze_processed_options!(processed_options)
+        # Reset cache values reliant on processed_options
+        @cli_args = nil
+
         @processed_options += processed_options
         @processed_options.freeze
       end
@@ -79,8 +92,7 @@ module Homebrew
           else
             Formulary.find_with_priority(name, spec)
           end
-        end.uniq(&:name)
-                                                      .freeze
+        end.uniq(&:name).freeze
       end
 
       def resolved_formulae
@@ -88,15 +100,13 @@ module Homebrew
 
         @resolved_formulae ||= (downcased_unique_named - casks).map do |name|
           Formulary.resolve(name, spec: spec(nil))
-        end.uniq(&:name)
-                                                               .freeze
+        end.uniq(&:name).freeze
       end
 
       def formulae_paths
         @formulae_paths ||= (downcased_unique_named - casks).map do |name|
           Formulary.path(name)
-        end.uniq
-                                                            .freeze
+        end.uniq.freeze
       end
 
       def casks
