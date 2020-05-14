@@ -25,6 +25,7 @@ class FormulaInstaller
 
   def self.mode_attr_accessor(*names)
     attr_accessor(*names)
+
     private(*names)
     names.each do |name|
       predicate = "#{name}?"
@@ -38,6 +39,7 @@ class FormulaInstaller
   attr_reader :formula
   attr_accessor :options, :build_bottle
   attr_accessor :installed_as_dependency, :installed_on_request, :link_keg
+
   mode_attr_accessor :show_summary_heading, :show_header
   mode_attr_accessor :build_from_source, :force_bottle, :include_test
   mode_attr_accessor :ignore_deps, :only_deps, :interactive, :git
@@ -52,7 +54,7 @@ class FormulaInstaller
     @build_from_source = Homebrew.args.build_from_source?
     @build_bottle = false
     @force_bottle = Homebrew.args.force_bottle?
-    @include_test = ARGV.include?("--include-test")
+    @include_test = Homebrew.args.include_test?
     @interactive = false
     @git = false
     @verbose = Homebrew.args.verbose?
@@ -267,7 +269,7 @@ class FormulaInstaller
 
     return if only_deps?
 
-    if build_bottle? && (arch = ARGV.bottle_arch) && !Hardware::CPU.optimization_flags.include?(arch)
+    if build_bottle? && (arch = Homebrew.args.bottle_arch) && !Hardware::CPU.optimization_flags.include?(arch)
       raise "Unrecognized architecture for --bottle-arch: #{arch}"
     end
 
@@ -561,6 +563,22 @@ class FormulaInstaller
     @show_header = true unless deps.empty?
   end
 
+  def fetch_dependency(dep)
+    df = dep.to_formula
+    fi = FormulaInstaller.new(df)
+
+    fi.build_from_source       = Homebrew.args.build_formula_from_source?(df)
+    fi.force_bottle            = false
+    fi.verbose                 = verbose?
+    fi.quiet                   = quiet?
+    fi.debug                   = debug?
+    # When fetching we don't need to recurse the dependency tree as it's already
+    # been done for us in `compute_dependencies` and there's no requirement to
+    # fetch in a particular order.
+    fi.ignore_deps             = true
+    fi.fetch
+  end
+
   def install_dependency(dep, inherited_options)
     df = dep.to_formula
     tab = Tab.for_formula(df)
@@ -699,7 +717,7 @@ class FormulaInstaller
 
     if build_bottle?
       args << "--build-bottle"
-      args << "--bottle-arch=#{ARGV.bottle_arch}" if ARGV.bottle_arch
+      args << "--bottle-arch=#{Homebrew.args.bottle_arch}" if Homebrew.args.bottle_arch
     end
 
     args << "--git" if git?
@@ -707,7 +725,6 @@ class FormulaInstaller
     args << "--verbose" if verbose?
     args << "--debug" if debug?
     args << "--cc=#{ARGV.cc}" if ARGV.cc
-    args << "--default-fortran-flags" if ARGV.include? "--default-fortran-flags"
     args << "--keep-tmp" if Homebrew.args.keep_tmp?
 
     if ARGV.env
@@ -947,14 +964,38 @@ class FormulaInstaller
     @show_summary_heading = true
   end
 
-  def pour
-    if (bottle_path = formula.local_bottle_path)
-      downloader = LocalBottleDownloadStrategy.new(bottle_path)
-    else
-      downloader = formula.bottle
-      downloader.fetch
+  def fetch_dependencies
+    deps = compute_dependencies
+
+    return if deps.empty? || ignore_deps?
+
+    deps.each { |dep, _options| fetch_dependency(dep) }
+  end
+
+  def fetch
+    fetch_dependencies
+
+    return if only_deps?
+
+    unless pour_bottle?
+      formula.fetch_patches
+      formula.resources.each(&:fetch)
     end
 
+    downloader.fetch
+  end
+
+  def downloader
+    if (bottle_path = formula.local_bottle_path)
+      LocalBottleDownloadStrategy.new(bottle_path)
+    elsif pour_bottle?
+      formula.bottle
+    else
+      formula
+    end
+  end
+
+  def pour
     HOMEBREW_CELLAR.cd do
       downloader.stage
     end
