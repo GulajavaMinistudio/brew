@@ -269,7 +269,7 @@ class FormulaInstaller
 
     return if only_deps?
 
-    if build_bottle? && (arch = Homebrew.args.bottle_arch) && !Hardware::CPU.optimization_flags.include?(arch)
+    if build_bottle? && (arch = Homebrew.args.bottle_arch) && !Hardware::CPU.optimization_flags.include?(arch.to_sym)
       raise "Unrecognized architecture for --bottle-arch: #{arch}"
     end
 
@@ -279,7 +279,7 @@ class FormulaInstaller
       opoo "#{formula.full_name}: #{old_flag} was deprecated; using #{new_flag} instead!"
     end
 
-    options = display_options(formula)
+    options = display_options(formula).join(" ")
     oh1 "Installing #{Formatter.identifier(formula.full_name)} #{options}".strip if show_header?
 
     unless formula.tap&.private?
@@ -488,10 +488,11 @@ class FormulaInstaller
 
       if dep.prune_from_option?(build)
         Dependency.prune
-      elsif include_test? && dep.test? && !dep.installed?
-        Dependency.keep_but_prune_recursive_deps
-      elsif dep.build? && install_bottle_for?(dependent, build)
-        Dependency.prune
+      elsif dep.test? || (dep.build? && install_bottle_for?(dependent, build))
+        keep = false
+        keep ||= dep.test? && include_test? && dependent == formula
+        keep ||= dep.build? && !install_bottle_for?(dependent, build)
+        Dependency.prune unless keep
       elsif dep.prune_if_build_and_not_dependent?(dependent)
         Dependency.prune
       elsif dep.satisfied?(inherited_options[dep.name])
@@ -529,16 +530,15 @@ class FormulaInstaller
   end
 
   def display_options(formula)
-    options = []
-    if formula.head?
-      options << "--HEAD"
+    options = if formula.head?
+      ["--HEAD"]
     elsif formula.devel?
-      options << "--devel"
+      ["--devel"]
+    else
+      []
     end
     options += effective_build_options_for(formula).used_options.to_a
-    return if options.empty?
-
-    options.join(" ")
+    options
   end
 
   def inherited_options_for(dep)
@@ -793,7 +793,7 @@ class FormulaInstaller
   rescue Exception => e # rubocop:disable Lint/RescueException
     if e.is_a? BuildError
       e.formula = formula
-      e.options = options
+      e.options = display_options(formula)
     end
 
     ignore_interrupts do
