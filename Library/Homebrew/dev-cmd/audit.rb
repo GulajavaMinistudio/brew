@@ -134,19 +134,8 @@ module Homebrew
       end
     end
 
-    created_pr_comment = false
-    if new_formula && !new_formula_problem_lines.empty?
-      begin
-        created_pr_comment = true if GitHub.create_issue_comment(new_formula_problem_lines.join("\n"))
-      rescue *GitHub.api_errors => e
-        opoo "Unable to create issue comment: #{e.message}"
-      end
-    end
-
-    unless created_pr_comment
-      new_formula_problem_count += new_formula_problem_lines.size
-      puts new_formula_problem_lines.map { |s| "  #{s}" }
-    end
+    new_formula_problem_count += new_formula_problem_lines.size
+    puts new_formula_problem_lines.map { |s| "  #{s}" }
 
     total_problems_count = problem_count + new_formula_problem_count
     problem_plural = "#{total_problems_count} #{"problem".pluralize(total_problems_count)}"
@@ -984,7 +973,7 @@ module Homebrew
       except_audits = @except
 
       methods.map(&:to_s).grep(/^audit_/).each do |audit_method_name|
-        name = audit_method_name.gsub(/^audit_/, "")
+        name = audit_method_name.delete_prefix("audit_")
         if only_audits
           next unless only_audits.include?(name)
         elsif except_audits
@@ -1052,15 +1041,9 @@ module Homebrew
     end
 
     def audit_download_strategy
-      if url =~ %r{^(cvs|bzr|hg|fossil)://} || url =~ %r{^(svn)\+http://}
-        # TODO: check could be in RuboCop
-        problem "Use of the #{$&} scheme is deprecated, pass `:using => :#{Regexp.last_match(1)}` instead"
-      end
-
       url_strategy = DownloadStrategyDetector.detect(url)
 
       if using == :git || url_strategy == GitDownloadStrategy
-        # TODO: check could be in RuboCop
         problem "Git should specify :revision when a :tag is specified." if specs[:tag] && !specs[:revision]
       end
 
