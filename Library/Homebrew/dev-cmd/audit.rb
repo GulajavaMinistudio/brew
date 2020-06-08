@@ -3,6 +3,7 @@
 require "formula"
 require "formula_versions"
 require "utils/curl"
+require "utils/notability"
 require "extend/ENV"
 require "formula_cellar_checks"
 require "cmd/search"
@@ -144,10 +145,7 @@ module Homebrew
     errors_summary = "#{problem_plural} in #{formula_plural} detected"
     errors_summary += ", #{corrected_problem_plural} corrected" if corrected_problem_count.positive?
 
-    if problem_count.positive? ||
-       (new_formula_problem_count.positive? && !created_pr_comment)
-      ofail errors_summary
-    end
+    ofail errors_summary if problem_count.positive? || new_formula_problem_count.positive?
   end
 
   def format_problem_lines(problems)
@@ -311,7 +309,7 @@ module Homebrew
 
       name = formula.name
 
-      problem "'#{name}' is blacklisted from homebrew/core." if MissingFormula.blacklisted_reason(name)
+      problem "'#{name}' is not allowed in homebrew/core." if MissingFormula.disallowed_reason(name)
 
       if Formula.aliases.include? name
         problem "Formula name conflicts with existing aliases in homebrew/core."
@@ -329,7 +327,7 @@ module Homebrew
       problem "Formula name conflicts with existing core formula."
     end
 
-    USES_FROM_MACOS_WHITELIST = %w[
+    USES_FROM_MACOS_ALLOWLIST = %w[
       apr
       apr-util
       openblas
@@ -371,7 +369,7 @@ module Homebrew
              dep_f.keg_only? &&
              dep_f.keg_only_reason.provided_by_macos? &&
              dep_f.keg_only_reason.applicable? &&
-             !USES_FROM_MACOS_WHITELIST.include?(dep.name)
+             !USES_FROM_MACOS_ALLOWLIST.include?(dep.name)
             new_formula_problem(
               "Dependency '#{dep.name}' is provided by macOS; " \
               "please replace 'depends_on' with 'uses_from_macos'.",
@@ -443,13 +441,14 @@ module Homebrew
       end
     end
 
-    VERSIONED_KEG_ONLY_WHITELIST = %w[
+    VERSIONED_KEG_ONLY_ALLOWLIST = %w[
       autoconf@2.13
       bash-completion@2
       gnupg@1.4
+      libsigc++@2
       lua@5.1
       numpy@1.16
-      libsigc++@2
+      python@3.8
     ].freeze
 
     def audit_versioned_keg_only
@@ -464,7 +463,7 @@ module Homebrew
         end
       end
 
-      return if VERSIONED_KEG_ONLY_WHITELIST.include?(formula.name) || formula.name.start_with?("gcc@")
+      return if VERSIONED_KEG_ONLY_ALLOWLIST.include?(formula.name) || formula.name.start_with?("gcc@")
 
       problem "Versioned formulae in homebrew/core should use `keg_only :versioned_formula`"
     end
@@ -513,79 +512,30 @@ module Homebrew
       user, repo = get_repo_data(%r{https?://github\.com/([^/]+)/([^/]+)/?.*})
       return if user.nil?
 
-      begin
-        metadata = GitHub.repository(user, repo)
-      rescue GitHub::HTTPNotFoundError
-        return
-      end
+      warning = SharedAudits.github(user, repo)
+      return if warning.nil?
 
-      return if metadata.nil?
-
-      new_formula_problem "GitHub fork (not canonical repository)" if metadata["fork"]
-      if (metadata["forks_count"] < 30) && (metadata["subscribers_count"] < 30) &&
-         (metadata["stargazers_count"] < 75)
-        new_formula_problem "GitHub repository not notable enough (<30 forks, <30 watchers and <75 stars)"
-      end
-
-      return if Date.parse(metadata["created_at"]) <= (Date.today - 30)
-
-      new_formula_problem "GitHub repository too new (<30 days old)"
+      new_formula_problem warning
     end
 
     def audit_gitlab_repository
       user, repo = get_repo_data(%r{https?://gitlab\.com/([^/]+)/([^/]+)/?.*})
       return if user.nil?
 
-      out, _, status= curl_output("--request", "GET", "https://gitlab.com/api/v4/projects/#{user}%2F#{repo}")
-      return unless status.success?
+      warning = SharedAudits.gitlab(user, repo)
+      return if warning.nil?
 
-      metadata = JSON.parse(out)
-      return if metadata.nil?
-
-      new_formula_problem "GitLab fork (not canonical repository)" if metadata["fork"]
-      if (metadata["forks_count"] < 30) && (metadata["star_count"] < 75)
-        new_formula_problem "GitLab repository not notable enough (<30 forks and <75 stars)"
-      end
-
-      return if Date.parse(metadata["created_at"]) <= (Date.today - 30)
-
-      new_formula_problem "GitLab repository too new (<30 days old)"
+      new_formula_problem warning
     end
 
     def audit_bitbucket_repository
       user, repo = get_repo_data(%r{https?://bitbucket\.org/([^/]+)/([^/]+)/?.*})
       return if user.nil?
 
-      api_url = "https://api.bitbucket.org/2.0/repositories/#{user}/#{repo}"
-      out, _, status= curl_output("--request", "GET", api_url)
-      return unless status.success?
+      warning = SharedAudits.bitbucket(user, repo)
+      return if warning.nil?
 
-      metadata = JSON.parse(out)
-      return if metadata.nil?
-
-      new_formula_problem "Uses deprecated mercurial support in Bitbucket" if metadata["scm"] == "hg"
-
-      new_formula_problem "Bitbucket fork (not canonical repository)" unless metadata["parent"].nil?
-
-      if Date.parse(metadata["created_on"]) >= (Date.today - 30)
-        new_formula_problem "Bitbucket repository too new (<30 days old)"
-      end
-
-      forks_out, _, forks_status= curl_output("--request", "GET", "#{api_url}/forks")
-      return unless forks_status.success?
-
-      watcher_out, _, watcher_status= curl_output("--request", "GET", "#{api_url}/watchers")
-      return unless watcher_status.success?
-
-      forks_metadata = JSON.parse(forks_out)
-      return if forks_metadata.nil?
-
-      watcher_metadata = JSON.parse(watcher_out)
-      return if watcher_metadata.nil?
-
-      return if (forks_metadata["size"] < 30) && (watcher_metadata["size"] < 75)
-
-      new_formula_problem "Bitbucket repository not notable enough (<30 forks and <75 watchers)"
+      new_formula_problem warning
     end
 
     def get_repo_data(regex)
@@ -597,24 +547,24 @@ module Homebrew
       _, user, repo = *regex.match(formula.homepage) unless user
       return if !user || !repo
 
-      repo.gsub!(/.git$/, "")
+      repo.delete_suffix!(".git")
 
       [user, repo]
     end
 
-    VERSIONED_HEAD_SPEC_WHITELIST = %w[
+    VERSIONED_HEAD_SPEC_ALLOWLIST = %w[
       bash-completion@2
       imagemagick@6
     ].freeze
 
-    THROTTLED_BLACKLIST = {
+    THROTTLED_DENYLIST = {
       "aws-sdk-cpp" => "10",
       "awscli@1"    => "10",
       "quicktype"   => "10",
       "vim"         => "50",
     }.freeze
 
-    UNSTABLE_WHITELIST = {
+    UNSTABLE_ALLOWLIST = {
       "aalib"           => "1.4rc",
       "automysqlbackup" => "3.0-rc",
       "aview"           => "1.3.0rc",
@@ -632,7 +582,7 @@ module Homebrew
       "vbindiff"        => "3.0_beta",
     }.freeze
 
-    GNOME_DEVEL_WHITELIST = {
+    GNOME_DEVEL_ALLOWLIST = {
       "libart"              => "2.3",
       "gtk-mac-integration" => "2.1",
       "gtk-doc"             => "1.31",
@@ -696,10 +646,10 @@ module Homebrew
 
       if formula.head && @versioned_formula
         head_spec_message = "Formulae should not have a `HEAD` spec"
-        problem head_spec_message unless VERSIONED_HEAD_SPEC_WHITELIST.include?(formula.name)
+        problem head_spec_message unless VERSIONED_HEAD_SPEC_ALLOWLIST.include?(formula.name)
       end
 
-      THROTTLED_BLACKLIST.each do |f, v|
+      THROTTLED_DENYLIST.each do |f, v|
         next if formula.stable.nil?
 
         version = formula.stable.version.to_s.split(".").last.to_i
@@ -719,15 +669,15 @@ module Homebrew
                                                        .map(&:to_i)
 
       case (url = stable.url)
-      when /[\d\._-](alpha|beta|rc\d)/
+      when /[\d._-](alpha|beta|rc\d)/
         matched = Regexp.last_match(1)
         version_prefix = stable_version_string.sub(/\d+$/, "")
-        return if UNSTABLE_WHITELIST[formula.name] == version_prefix
+        return if UNSTABLE_ALLOWLIST[formula.name] == version_prefix
 
         problem "Stable version URLs should not contain #{matched}"
       when %r{download\.gnome\.org/sources}, %r{ftp\.gnome\.org/pub/GNOME/sources}i
         version_prefix = stable_version_string.split(".")[0..1].join(".")
-        return if GNOME_DEVEL_WHITELIST[formula.name] == version_prefix
+        return if GNOME_DEVEL_ALLOWLIST[formula.name] == version_prefix
         return if stable_url_version < Version.create("1.0")
         return if stable_url_minor_version.even?
 
@@ -747,7 +697,7 @@ module Homebrew
                    .second
 
         begin
-          if (release = GitHub.open_api("#{GitHub::API_URL}/repos/#{owner}/#{repo}/releases/tags/#{tag}"))
+          if @online && (release = GitHub.open_api("#{GitHub::API_URL}/repos/#{owner}/#{repo}/releases/tags/#{tag}"))
             problem "#{tag} is a GitHub prerelease" if release["prerelease"]
             problem "#{tag} is a GitHub draft" if release["draft"]
           end
@@ -853,7 +803,7 @@ module Homebrew
       end
       bin_names.each do |name|
         ["system", "shell_output", "pipe_output"].each do |cmd|
-          if text.to_s.match?(/test do.*#{cmd}[\(\s]+['"]#{Regexp.escape(name)}[\s'"]/m)
+          if text.to_s.match?(/test do.*#{cmd}[(\s]+['"]#{Regexp.escape(name)}[\s'"]/m)
             problem %Q(fully scope test #{cmd} calls, e.g. #{cmd} "\#{bin}/#{name}")
           end
         end

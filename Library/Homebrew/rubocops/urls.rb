@@ -8,20 +8,21 @@ module RuboCop
       # This cop audits URLs and mirrors in Formulae.
       class Urls < FormulaCop
         # These are parts of URLs that look like binaries but actually aren't.
-        NOT_A_BINARY_URL_PREFIX_WHITELIST = %w[
+        NOT_A_BINARY_URL_PREFIX_ALLOWLIST = %w[
           https://downloads.sourceforge.net/project/astyle/astyle/
           https://downloads.sourceforge.net/project/bittwist/
           https://downloads.sourceforge.net/project/launch4j/
           https://github.com/ChrisJohnsen/tmux-MacOSX-pasteboard/archive/
-          https://github.com/obihann/archey-osx/archive/
+          https://github.com/obihann/archey-osx
           https://github.com/sindresorhus/macos-wallpaper/archive/
           https://raw.githubusercontent.com/liyanage/macosx-shell-scripts/
           https://osxbook.com/book/bonus/chapter8/core/download/gcore
           https://naif.jpl.nasa.gov/pub/naif/toolkit/C/MacIntel_OSX_AppleC_64bit/packages/
+          https://artifacts.videolan.org/x264/release-macos/
         ].freeze
 
         # These are formulae that, sadly, require an upstream binary to bootstrap.
-        BINARY_BOOTSTRAP_FORMULA_URLS_WHITELIST = %w[
+        BINARY_BOOTSTRAP_FORMULA_URLS_ALLOWLIST = %w[
           clozure-cl
           crystal
           fpc
@@ -48,6 +49,12 @@ module RuboCop
           urls = find_every_func_call_by_name(body_node, :url)
           mirrors = find_every_func_call_by_name(body_node, :mirror)
 
+          # Identify livecheck urls, to skip some checks for them
+          livecheck_url = if (livecheck = find_every_func_call_by_name(body_node, :livecheck).first) &&
+                             (livecheck_url = find_every_func_call_by_name(livecheck.parent, :url).first)
+            string_content(parameters(livecheck_url).first)
+          end
+
           # GNU urls; doesn't apply to mirrors
           gnu_pattern = %r{^(?:https?|ftp)://ftpmirror.gnu.org/(.*)}
           audit_urls(urls, gnu_pattern) do |match, url|
@@ -63,6 +70,8 @@ module RuboCop
 
           apache_pattern = %r{^https?://(?:[^/]*\.)?apache\.org/(?:dyn/closer\.cgi\?path=/?|dist/)(.*)}i
           audit_urls(urls, apache_pattern) do |match, url|
+            next if url == livecheck_url
+
             problem "#{url} should be `https://www.apache.org/dyn/closer.lua?path=#{match[1]}`"
           end
 
@@ -158,7 +167,7 @@ module RuboCop
 
             problem "Don't use /download in SourceForge urls (url is #{url})." if url.end_with?("/download")
 
-            if url.match?(%r{^https?://sourceforge\.})
+            if url.match?(%r{^https?://sourceforge\.}) && url != livecheck_url
               problem "Use https://downloads.sourceforge.net to get geolocation (url is #{url})."
             end
 
@@ -266,8 +275,8 @@ module RuboCop
           audit_urls(urls, /(darwin|macos|osx)/i) do |match, url|
             next if @formula_name.include?(match.to_s.downcase)
             next if url.match?(/.(patch|diff)(\?full_index=1)?$/)
-            next if NOT_A_BINARY_URL_PREFIX_WHITELIST.any? { |prefix| url.start_with?(prefix) }
-            next if BINARY_BOOTSTRAP_FORMULA_URLS_WHITELIST.include?(@formula_name)
+            next if NOT_A_BINARY_URL_PREFIX_ALLOWLIST.any? { |prefix| url.start_with?(prefix) }
+            next if BINARY_BOOTSTRAP_FORMULA_URLS_ALLOWLIST.include?(@formula_name)
 
             problem "#{url} looks like a binary package, not a source archive; " \
                     "homebrew/core is source-only."

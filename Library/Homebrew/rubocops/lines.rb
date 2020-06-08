@@ -153,7 +153,7 @@ module RuboCop
 
           find_instance_method_call(body_node, :build, :include?) do |method|
             arg = parameters(method).first
-            next unless match = regex_match_group(arg, /^\-\-(.*)$/)
+            next unless match = regex_match_group(arg, /^--(.*)$/)
 
             problem "Reference '#{match[1]}' without dashes"
           end
@@ -403,7 +403,7 @@ module RuboCop
 
             path = parameters(method).first
             next unless path.str_type?
-            next unless match = regex_match_group(path, /^[^\*{},]+$/)
+            next unless match = regex_match_group(path, /^[^*{},]+$/)
 
             problem "Dir([\"#{string_content(path)}\"]) is unnecessary; just use \"#{match[0]}\""
           end
@@ -457,7 +457,7 @@ module RuboCop
 
     module FormulaAuditStrict
       class MakeCheck < FormulaCop
-        MAKE_CHECK_WHITELIST = %w[
+        MAKE_CHECK_ALLOWLIST = %w[
           beecrypt
           ccrypt
           git
@@ -483,7 +483,7 @@ module RuboCop
           # Avoid build-time checks in homebrew/core
           find_every_method_call_by_name(body_node, :system).each do |method|
             next if @formula_name.start_with?("lib")
-            next if MAKE_CHECK_WHITELIST.include?(@formula_name)
+            next if MAKE_CHECK_ALLOWLIST.include?(@formula_name)
 
             params = parameters(method)
             next unless node_equals?(params[0], "make")

@@ -221,7 +221,7 @@ class AbstractFileDownloadStrategy < AbstractDownloadStrategy
   end
 
   def basename
-    cached_location.basename.sub(/^[\da-f]{64}\-\-/, "")
+    cached_location.basename.sub(/^[\da-f]{64}--/, "")
   end
 
   private
@@ -390,7 +390,7 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
     filenames = lines.map(&parse_content_disposition).compact
 
     time =
-      lines.map { |line| line[/^Last\-Modified:\s*(.+)/i, 1] }
+      lines.map { |line| line[/^Last-Modified:\s*(.+)/i, 1] }
            .compact
            .map { |t| t.match?(/^\d+$/) ? Time.at(t.to_i) : Time.parse(t) }
            .last
@@ -603,7 +603,7 @@ class SubversionDownloadStrategy < VCSDownloadStrategy
 end
 
 class GitDownloadStrategy < VCSDownloadStrategy
-  SHALLOW_CLONE_WHITELIST = [
+  SHALLOW_CLONE_ALLOWLIST = [
     %r{git://},
     %r{https://github\.com},
     %r{http://git\.sv\.gnu\.org},
@@ -654,7 +654,7 @@ class GitDownloadStrategy < VCSDownloadStrategy
   end
 
   def support_depth?
-    @ref_type != :revision && SHALLOW_CLONE_WHITELIST.any? { |regex| @url =~ regex }
+    @ref_type != :revision && SHALLOW_CLONE_ALLOWLIST.any? { |regex| @url =~ regex }
   end
 
   def git_dir
@@ -820,7 +820,7 @@ class GitHubGitDownloadStrategy < GitDownloadStrategy
 
     return unless status.success?
 
-    commit = output[/^ETag: \"(\h+)\"/, 1]
+    commit = output[/^ETag: "(\h+)"/, 1]
     version.update_commit(commit) if commit
     commit
   end

@@ -15,6 +15,7 @@ module Homebrew
 
   def pull_args
     Homebrew::CLI::Parser.new do
+      hide_from_man_page!
       usage_banner <<~EOS
         `pull` [<options>] <patch>
 
@@ -43,6 +44,8 @@ module Homebrew
   end
 
   def pull
+    odeprecated "brew pull", "hub checkout"
+
     odie "You meant `git pull --rebase`." if ARGV[0] == "--rebase"
 
     pull_args.parse
@@ -333,7 +336,7 @@ module Homebrew
 
   def check_bintray_mirror(name, url)
     headers, = curl_output("--connect-timeout", "15", "--location", "--head", url)
-    status_code = headers.scan(%r{^HTTP\/.* (\d+)}).last.first
+    status_code = headers.scan(%r{^HTTP/.* (\d+)}).last.first
     return if status_code.start_with?("2")
 
     opoo "The Bintray mirror #{url} is not reachable (HTTP status code #{status_code})."
