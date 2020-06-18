@@ -19,6 +19,7 @@
 /Library/Taps
 /Library/PinnedTaps
 /Library/Homebrew/.byebug_history
+/Library/Homebrew/sorbet/rbi/hidden-definitions/errors.txt
 
 # Ignore Bundler files
 **/.bundle/bin
@@ -130,6 +131,7 @@
 **/vendor/bundle/ruby/*/gems/simplecov-html-*/
 **/vendor/bundle/ruby/*/gems/sorbet-*/
 **/vendor/bundle/ruby/*/gems/sorbet-runtime-*/
+**/vendor/bundle/ruby/*/gems/tapioca-*/
 **/vendor/bundle/ruby/*/gems/term-ansicolor-*/
 **/vendor/bundle/ruby/*/gems/thor-*/
 **/vendor/bundle/ruby/*/gems/tins-*/
