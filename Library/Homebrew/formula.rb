@@ -1354,6 +1354,11 @@ class Formula
     "#<Formula #{name} (#{active_spec_sym}) #{path}>"
   end
 
+  # Standard parameters for cargo builds.
+  def std_cargo_args
+    ["--locked", "--root", prefix, "--path", "."]
+  end
+
   # Standard parameters for CMake builds.
   # Setting `CMAKE_FIND_FRAMEWORK` to "LAST" tells CMake to search for our
   # libraries before trying to utilize Frameworks, many of which will be from
@@ -1400,6 +1405,10 @@ class Formula
   # Standard parameters for meson builds.
   def std_meson_args
     ["--prefix=#{prefix}", "--libdir=#{lib}"]
+  end
+
+  def shared_library(name, version = nil)
+    "#{name}.#{version}#{"." unless version.nil?}dylib"
   end
 
   # an array of all core {Formula} names
@@ -1930,6 +1939,8 @@ class Formula
       case cmd
       when "./configure"
         pretty_args -= %w[--disable-dependency-tracking --disable-debug --disable-silent-rules]
+      when "cargo"
+        pretty_args -= std_cargo_args
       when "cmake"
         pretty_args -= std_cmake_args
       when "go"
