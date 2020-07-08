@@ -167,7 +167,7 @@ module Language
       def needs_python?(python)
         return true if build.with?(python)
 
-        (requirements.to_a | deps).any? { |r| r.name == python && r.required? }
+        (requirements.to_a | deps).any? { |r| r.name.split("/").last == python && r.required? }
       end
 
       # Helper method for the common case of installing a Python application.
@@ -268,7 +268,7 @@ module Language
 
               t.stage { do_install Pathname.pwd }
             else
-              t = t.lines.map(&:strip) if t.respond_to?(:lines) && t =~ /\n/
+              t = t.lines.map(&:strip) if t.respond_to?(:lines) && t.include?("\n")
               do_install t
             end
           end

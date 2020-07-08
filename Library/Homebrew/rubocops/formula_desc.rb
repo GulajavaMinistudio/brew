@@ -47,7 +47,7 @@ module RuboCop
 
           # Check if command-line is wrongly used in formula's desc
           if match = regex_match_group(desc, /(command ?line)/i)
-            c = match.to_s.chars.first
+            c = match.to_s[0]
             problem "Description should use \"#{c}ommand-line\" instead of \"#{match}\""
           end
 
@@ -86,8 +86,8 @@ module RuboCop
             correction = node.source
             first_word = string_content(node).split.first
             unless VALID_LOWERCASE_WORDS.include?(first_word)
-              first_char = first_word.to_s.chars.first
-              correction.sub!(/^(['"]?)([a-z])/, "\\1#{first_char.upcase}")
+              first_char = first_word.to_s[0]
+              correction.sub!(/^(['"]?)([a-z])/, "\\1#{first_char.upcase}") if first_char
             end
             correction.sub!(/^(['"]?)an?\s/i, "\\1")
             correction.gsub!(/(ommand ?line)/i, "ommand-line")

@@ -29,14 +29,7 @@ class KegUnspecifiedError < UsageError
   end
 end
 
-class MultipleVersionsInstalledError < RuntimeError
-  attr_reader :name
-
-  def initialize(name)
-    @name = name
-    super "#{name} has multiple installed versions"
-  end
-end
+class MultipleVersionsInstalledError < RuntimeError; end
 
 class NotAKegError < RuntimeError; end
 
@@ -83,9 +76,7 @@ class FormulaUnavailableError < RuntimeError
 end
 
 module FormulaClassUnavailableErrorModule
-  attr_reader :path
-  attr_reader :class_name
-  attr_reader :class_list
+  attr_reader :path, :class_name, :class_list
 
   def to_s
     s = super
@@ -230,9 +221,7 @@ class TapUnavailableError < RuntimeError
 end
 
 class TapRemoteMismatchError < RuntimeError
-  attr_reader :name
-  attr_reader :expected_remote
-  attr_reader :actual_remote
+  attr_reader :name, :expected_remote, :actual_remote
 
   def initialize(name, expected_remote, actual_remote)
     @name = name
@@ -507,9 +496,7 @@ end
 
 # Raised by {#safe_system} in `utils.rb`.
 class ErrorDuringExecution < RuntimeError
-  attr_reader :cmd
-  attr_reader :status
-  attr_reader :output
+  attr_reader :cmd, :status, :output
 
   def initialize(cmd, status:, output: nil, secrets: [])
     @cmd = cmd
@@ -596,8 +583,7 @@ end
 
 # Raised when a child process sends us an exception over its error pipe.
 class ChildProcessError < RuntimeError
-  attr_reader :inner
-  attr_reader :inner_class
+  attr_reader :inner, :inner_class
 
   def initialize(inner)
     @inner = inner

@@ -561,7 +561,7 @@ module Homebrew
         return if !Utils.git_available? || !(coretap_path/".git").exist?
 
         branch = coretap_path.git_branch
-        return if branch.nil? || branch =~ /master/
+        return if branch.blank? || branch.include?("master")
 
         <<~EOS
           #{CoreTap.instance.full_name} is not on the master branch.
@@ -669,6 +669,11 @@ module Homebrew
             `git status --untracked-files=all --porcelain 2>/dev/null`
           end
           next if status.blank?
+
+          # these will result in uncommitted gems.
+          if path == HOMEBREW_REPOSITORY
+            next if ENV["HOMEBREW_SORBET"] || ENV["HOMEBREW_PATCHELF_RB"]
+          end
 
           message ||= ""
           message += "\n" unless message.empty?
@@ -842,12 +847,11 @@ module Homebrew
         end
         return if deleted_formulae.blank?
 
-        message = <<~EOS
+        <<~EOS
           Some installed formulae were deleted!
           You should find replacements for the following formulae:
             #{deleted_formulae.join("\n  ")}
         EOS
-        message
       end
 
       def all

@@ -1112,13 +1112,14 @@ class Formula
       return false if tab_tap.nil?
 
       begin
-        Formulary.factory(keg.name)
+        f = Formulary.factory(keg.name)
       rescue FormulaUnavailableError
         # formula for this keg is deleted, so defer to allowlist
       rescue TapFormulaAmbiguityError, TapFormulaWithOldnameAmbiguityError
         return false # this keg belongs to another formula
       else
-        return false # this keg belongs to another formula
+        # this keg belongs to another unrelated formula
+        return false unless (Array(f.aliases) + Array(f.oldname)).include?(keg.name)
       end
     end
     to_check = path.relative_path_from(HOMEBREW_PREFIX).to_s
@@ -1901,12 +1902,10 @@ class Formula
     keg = opt_or_installed_prefix_keg
     return [] unless keg
 
-    undeclared_deps = CacheStoreDatabase.use(:linkage) do |db|
+    CacheStoreDatabase.use(:linkage) do |db|
       linkage_checker = LinkageChecker.new(keg, self, cache_db: db)
       linkage_checker.undeclared_deps.map { |n| Dependency.new(n) }
     end
-
-    undeclared_deps
   end
 
   public

@@ -924,6 +924,8 @@ Apply the bottle commit and publish bottles to Bintray.
 
 * `--no-publish`:
   Apply the bottle commit and upload the bottles, but don't publish them.
+* `--keep-old`:
+  If the formula specifies a rebuild version, attempt to preserve its value in the generated DSL.
 * `-n`, `--dry-run`:
   Print what would be done rather than doing it.
 * `--warn-on-upload-failure`:
@@ -966,6 +968,11 @@ build systems would not find otherwise.
 
 * `--env`:
   Use the standard `PATH` instead of superenv's when `std` is passed.
+
+### `sponsors`
+
+Print a Markdown summary of Homebrew's GitHub Sponsors, suitable for pasting
+into a README.
 
 ### `style` [*`options`*] [*`file`*|*`tap`*|*`formula`*]
 

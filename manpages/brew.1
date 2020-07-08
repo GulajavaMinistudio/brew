@@ -1211,6 +1211,10 @@ Apply the bottle commit and publish bottles to Bintray\.
 Apply the bottle commit and upload the bottles, but don\'t publish them\.
 .
 .TP
+\fB\-\-keep\-old\fR
+If the formula specifies a rebuild version, attempt to preserve its value in the generated DSL\.
+.
+.TP
 \fB\-n\fR, \fB\-\-dry\-run\fR
 Print what would be done rather than doing it\.
 .
@@ -1253,6 +1257,9 @@ Start a Homebrew build environment shell\. Uses our years\-battle\-hardened Home
 .TP
 \fB\-\-env\fR
 Use the standard \fBPATH\fR instead of superenv\'s when \fBstd\fR is passed\.
+.
+.SS "\fBsponsors\fR"
+Print a Markdown summary of Homebrew\'s GitHub Sponsors, suitable for pasting into a README\.
 .
 .SS "\fBstyle\fR [\fIoptions\fR] [\fIfile\fR|\fItap\fR|\fIformula\fR]"
 Check formulae or files for conformance to Homebrew style guidelines\.

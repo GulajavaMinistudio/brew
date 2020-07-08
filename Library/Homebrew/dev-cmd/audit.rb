@@ -341,7 +341,7 @@ module Homebrew
           return if user.blank?
 
           github_license = GitHub.get_repo_license(user, repo)
-          return if github_license && (github_license == formula.license)
+          return if github_license && [formula.license, "NOASSERTION"].include?(github_license)
 
           problem "License mismatch - GitHub license is: #{github_license}, "\
                   "but Formulae license states: #{formula.license}."
@@ -873,15 +873,6 @@ module Homebrew
       # TODO: check could be in RuboCop
       problem "`env :userpaths` in formulae is deprecated" if line.include?("env :userpaths")
 
-      if line =~ /system ((["'])[^"' ]*(?:\s[^"' ]*)+\2)/
-        bad_system = Regexp.last_match(1)
-        unless %w[| < > & ; *].any? { |c| bad_system.include? c }
-          good_system = bad_system.gsub(" ", "\", \"")
-          # TODO: check could be in RuboCop
-          problem "Use `system #{good_system}` instead of `system #{bad_system}` "
-        end
-      end
-
       # TODO: check could be in RuboCop
       problem "`#{Regexp.last_match(1)}` is now unnecessary" if line =~ /(require ["']formula["'])/
 
@@ -973,8 +964,7 @@ module Homebrew
   end
 
   class ResourceAuditor
-    attr_reader :name, :version, :checksum, :url, :mirrors, :using, :specs, :owner
-    attr_reader :spec_name, :problems
+    attr_reader :name, :version, :checksum, :url, :mirrors, :using, :specs, :owner, :spec_name, :problems
 
     def initialize(resource, spec_name, options = {})
       @name     = resource.name
