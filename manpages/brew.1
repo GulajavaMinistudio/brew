@@ -393,6 +393,10 @@ Only show formulae with multiple versions installed\.
 Show the versions of pinned formulae, or only the specified (pinned) formulae if \fIformula\fR are provided\. See also \fBpin\fR, \fBunpin\fR\.
 .
 .TP
+\fB\-\-cask\fR
+List casks
+.
+.TP
 \fB\-1\fR
 Force output to be one entry per line\. This is the default when output is not to a terminal\.
 .
@@ -1797,6 +1801,10 @@ Output this many lines of output on formula \fBsystem\fR failures\.
 .
 .IP
 \fIDefault:\fR \fB15\fR\.
+.
+.TP
+\fBHOMEBREW_FORBIDDEN_LICENSES\fR
+A space\-separated list of licenses\. Homebrew will refuse to install a formula if that formula or any of its dependencies has a license on this list\.
 .
 .TP
 \fBHOMEBREW_FORCE_BREWED_CURL\fR

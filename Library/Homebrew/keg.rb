@@ -195,7 +195,7 @@ class Keg
 
   def initialize(path)
     path = path.resolved_path if path.to_s.start_with?("#{HOMEBREW_PREFIX}/opt/")
-    raise "#{path} is not a valid keg" unless path.parent.parent.realpath == HOMEBREW_CELLAR.realpath
+    raise "#{path} is not a valid keg" if path.parent.parent.realpath != HOMEBREW_CELLAR.realpath
     raise "#{path} is not a directory" unless path.directory?
 
     @path = path
@@ -281,11 +281,7 @@ class Keg
       end
 
       alias_linkedkegs_symlink = linkedkegs/a
-      if alias_linkedkegs_symlink.symlink? && alias_linkedkegs_symlink.exist?
-        alias_linkedkegs_symlink.delete if alias_linkedkegs_symlink.realpath == linked_keg_record.realpath
-      elsif alias_linkedkegs_symlink.symlink? || alias_linkedkegs_symlink.exist?
-        alias_linkedkegs_symlink.delete
-      end
+      alias_linkedkegs_symlink.delete if alias_linkedkegs_symlink.symlink? || alias_linkedkegs_symlink.exist?
     end
 
     Pathname.glob("#{opt_record}@*").each do |a|
@@ -298,9 +294,7 @@ class Keg
       end
 
       alias_linkedkegs_symlink = linkedkegs/a
-      if alias_linkedkegs_symlink.symlink? && alias_linkedkegs_symlink.exist?
-        alias_linkedkegs_symlink.delete if rack == alias_linkedkegs_symlink.realpath.parent
-      end
+      alias_linkedkegs_symlink.delete if alias_linkedkegs_symlink.symlink? || alias_linkedkegs_symlink.exist?
     end
   end
 
@@ -333,9 +327,9 @@ class Keg
 
     dirs = []
 
-    KEG_LINK_DIRECTORIES.map { |d| path/d }.each do |dir|
-      next unless dir.exist?
-
+    keg_directories = KEG_LINK_DIRECTORIES.map { |d| path/d }
+                                          .select(&:exist?)
+    keg_directories.each do |dir|
       dir.find do |src|
         dst = HOMEBREW_PREFIX + src.relative_path_from(path)
         dst.extend(ObserverPathnameExtension)
@@ -343,7 +337,8 @@ class Keg
         dirs << dst if dst.directory? && !dst.symlink?
 
         # check whether the file to be unlinked is from the current keg first
-        next unless dst.symlink? && src == dst.resolved_path
+        next unless dst.symlink?
+        next if src != dst.resolved_path
 
         if mode.dry_run
           puts dst
@@ -520,7 +515,7 @@ class Keg
 
   def remove_oldname_opt_record
     return unless oldname_opt_record
-    return unless oldname_opt_record.resolved_path == path
+    return if oldname_opt_record.resolved_path != path
 
     @oldname_opt_record.unlink
     @oldname_opt_record.parent.rmdir_if_possible
