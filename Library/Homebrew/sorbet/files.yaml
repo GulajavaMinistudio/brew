@@ -456,7 +456,6 @@ false:
   - ./utils/git.rb
   - ./utils/github.rb
   - ./utils/popen.rb
-  - ./utils/user.rb
 
 false:
   - ./PATH.rb
@@ -849,8 +848,6 @@ false:
   - ./unpack_strategy/uncompressed.rb
   - ./utils/gems.rb
   - ./utils/inreplace.rb
-  - ./utils/link.rb
-  - ./utils/shebang.rb
   - ./version.rb
 
 true:
@@ -891,10 +888,13 @@ true:
   - ./test/support/helper/fixtures.rb
   - ./test/support/lib/config.rb
   - ./utils/bottles.rb
+  - ./utils/link.rb
   - ./utils/notability.rb
+  - ./utils/shebang.rb
   - ./utils/shell.rb
   - ./utils/svn.rb
   - ./utils/tty.rb
+  - ./utils/user.rb
   - ./version/null.rb
 
 strict:
