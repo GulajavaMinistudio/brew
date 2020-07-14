@@ -559,6 +559,7 @@ module Homebrew
 
       _, user, repo = *regex.match(formula.stable.url) if formula.stable
       _, user, repo = *regex.match(formula.homepage) unless user
+      _, user, repo = *regex.match(formula.head.url) if !user && formula.head
       return if !user || !repo
 
       repo.delete_suffix!(".git")
@@ -606,7 +607,7 @@ module Homebrew
       "libepoxy"            => "1.5",
     }.freeze
 
-    GITHUB_PRERELEASE_ALLOWLIST = %w[cake].freeze
+    GITHUB_PRERELEASE_ALLOWLIST = %w[].freeze
 
     # version_prefix = stable_version_string.sub(/\d+$/, "")
     # version_prefix = stable_version_string.split(".")[0..1].join(".")
