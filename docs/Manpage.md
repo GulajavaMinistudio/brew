@@ -707,7 +707,12 @@ be specified. A best effort to determine the *`SHA-256`* and *`formula`* name wi
 be made if either or both values are not supplied by the user.
 
 If a *`tag`* is specified, the Git commit *`revision`* corresponding to that tag
-must also be specified.
+should also be specified. A best effort to determine the *`revision`* will be made
+if the value is not supplied by the user.
+
+If a *`version`* is specified, a best effort to determine the *`URL`* and *`SHA-256`*
+or the *`tag`* and *`revision`* will be made if both values are not supplied by the
+user.
 
 *Note:* this command cannot be used to transition a formula from a
 URL-and-SHA-256 style specification into a tag-and-revision style specification,
@@ -779,6 +784,8 @@ a simple example. For the complete API, see:
   Create a basic template for a Go build.
 * `--meson`:
   Create a basic template for a Meson-style build.
+* `--node`:
+  Create a basic template for a Node build.
 * `--perl`:
   Create a basic template for a Perl build.
 * `--python`:
@@ -1043,12 +1050,14 @@ directory.
 * `-g`, `--git`:
   Initialise a Git repository in the unpacked source. This is useful for creating patches for the software.
 
-### `update_license_data` *`cmd`*
+### `update-license-data` [*`options`*]
 
  Update SPDX license data in the Homebrew repository.
 
-* `--fail-if-changed`:
-  Return a failing status code if current license data's version is different from the upstream. This can be used to notify CI when the SPDX license data is out of date.
+* `--fail-if-not-changed`:
+  Return a failing status code if current license data's version is the same as the upstream. This can be used to notify CI when the SPDX license data is out of date.
+* `--commit`:
+  Commit changes to the SPDX license data.
 
 ### `update-test` [*`options`*]
 
@@ -1547,9 +1556,9 @@ Homebrew's Project Leadership Committee is Misty De Meo, Shaun Jackman, Jonathan
 
 Homebrew's Technical Steering Committee is Michka Popoff, FX Coudert, Markus Reiter, Misty De Meo and Mike McQuaid.
 
-Homebrew/brew's Linux maintainers are Michka Popoff, Shaun Jackman, Dawid Dziurla and Issy Long.
+Homebrew/brew's Linux maintainers are Michka Popoff, Shaun Jackman, Dawid Dziurla, Issy Long and Maxim Belkin.
 
-Homebrew's other current maintainers are Claudia Pellegrino, Zach Auten, Rui Chen, Vitor Galvao, Caleb Xu, Gautham Goli, Steven Peters, Bo Anderson, William Woodruff, Igor Kapkov, Sam Ford, Alexander Bayandin, Izaak Beekman, Eric Knibbe, Viktor Szakats, Thierry Moisan, Steven Peters, Tom Schoonjans and Issy Long.
+Homebrew's other current maintainers are Claudia Pellegrino, Zach Auten, Rui Chen, Vitor Galvao, Caleb Xu, Gautham Goli, Steven Peters, Bo Anderson, William Woodruff, Igor Kapkov, Sam Ford, Alexander Bayandin, Izaak Beekman, Eric Knibbe, Viktor Szakats, Thierry Moisan, Steven Peters, Tom Schoonjans, Issy Long, CoreCode, Randall, Rylan Polster and SeekingMeaning.
 
 Former maintainers with significant contributions include Jan Viljanen, JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs, Chongyu Zhu and Homebrew's creator: Max Howell.
 
