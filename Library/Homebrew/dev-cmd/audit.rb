@@ -320,9 +320,10 @@ module Homebrew
       problem "Formula name conflicts with existing core formula."
     end
 
-    USES_FROM_MACOS_ALLOWLIST = %w[
+    PROVIDED_BY_MACOS_DEPENDS_ON_ALLOWLIST = %w[
       apr
       apr-util
+      libressl
       openblas
       openssl@1.1
     ].freeze
@@ -383,7 +384,7 @@ module Homebrew
              dep_f.keg_only? &&
              dep_f.keg_only_reason.provided_by_macos? &&
              dep_f.keg_only_reason.applicable? &&
-             !USES_FROM_MACOS_ALLOWLIST.include?(dep.name)
+             !PROVIDED_BY_MACOS_DEPENDS_ON_ALLOWLIST.include?(dep.name)
             new_formula_problem(
               "Dependency '#{dep.name}' is provided by macOS; " \
               "please replace 'depends_on' with 'uses_from_macos'.",
@@ -520,6 +521,30 @@ module Homebrew
       return unless @core_tap
 
       problem "Formulae in homebrew/core should not use `bottle :disabled`"
+    end
+
+    def audit_github_repository_archived
+      return if formula.deprecated?
+
+      user, repo = get_repo_data(%r{https?://github\.com/([^/]+)/([^/]+)/?.*}) if @online
+      return if user.blank?
+
+      metadata = SharedAudits.github_repo_data(user, repo)
+      return if metadata.nil?
+
+      problem "GitHub repo is archived" if metadata["archived"]
+    end
+
+    def audit_gitlab_repository_archived
+      return if formula.deprecated?
+
+      user, repo = get_repo_data(%r{https?://gitlab\.com/([^/]+)/([^/]+)/?.*}) if @online
+      return if user.blank?
+
+      metadata = SharedAudits.gitlab_repo_data(user, repo)
+      return if metadata.nil?
+
+      problem "GitLab repo is archived" if metadata["archived"]
     end
 
     def audit_github_repository
