@@ -34,14 +34,13 @@ module Homebrew
   def pr_automerge
     pr_automerge_args.parse
 
-    ENV["HOMEBREW_FORCE_HOMEBREW_ON_LINUX"] = "1" unless OS.mac?
     without_labels = Homebrew.args.without_labels || ["do not merge", "new formula"]
     tap = Tap.fetch(Homebrew.args.tap || CoreTap.instance.name)
 
     query = "is:pr is:open repo:#{tap.full_name}"
     query += Homebrew.args.ignore_failures? ? " -status:pending" : " status:success"
     query += " review:approved" unless Homebrew.args.without_approval?
-    query += " label:\"#{with_label}\"" if Homebrew.args.with_label
+    query += " label:\"#{args.with_label}\"" if Homebrew.args.with_label
     without_labels&.each { |label| query += " -label:\"#{label}\"" }
     odebug "Searching: #{query}"
 
@@ -59,7 +58,9 @@ module Homebrew
     end
 
     if args.publish?
-      safe_system "#{HOMEBREW_PREFIX}/bin/brew", "pr-publish", *pr_urls
+      publish_args = ["pr-publish"]
+      publish_args << "--tap=#{tap}" if tap
+      safe_system HOMEBREW_BREW_FILE, *publish_args, *pr_urls
     else
       ohai "Now run:", "  brew pr-publish \\\n    #{pr_urls.join " \\\n    "}"
     end

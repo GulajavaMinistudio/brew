@@ -62,7 +62,8 @@ module Homebrew
       flag   "--revision=",
              depends_on:  "--tag=",
              description: "Specify the new git commit <revision> corresponding to the specified <tag>."
-      switch :force
+      switch "-f", "--force",
+             description: "Ignore duplicate open PRs. Remove all mirrors if --mirror= was not specified."
       switch :quiet
       switch :verbose
       switch :debug
@@ -445,8 +446,8 @@ module Homebrew
 
   def inreplace_pairs(path, replacement_pairs)
     if args.dry_run?
-      contents = path.open("r") { |f| Formulary.ensure_utf8_encoding(f).read }
-      contents.extend(StringInreplaceExtension)
+      str = path.open("r") { |f| Formulary.ensure_utf8_encoding(f).read }
+      contents = StringInreplaceExtension.new(str)
       replacement_pairs.each do |old, new|
         ohai "replace #{old.inspect} with #{new.inspect}" unless args.quiet?
         raise "No old value for new value #{new}! Did you pass the wrong arguments?" unless old
@@ -455,8 +456,8 @@ module Homebrew
       end
       raise Utils::InreplaceError, path => contents.errors unless contents.errors.empty?
 
-      path.atomic_write(contents) if args.write?
-      contents
+      path.atomic_write(contents.inreplace_string) if args.write?
+      contents.inreplace_string
     else
       Utils::Inreplace.inreplace(path) do |s|
         replacement_pairs.each do |old, new|

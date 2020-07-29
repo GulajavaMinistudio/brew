@@ -356,9 +356,15 @@ otherwise.
 * `-v`, `--verbose`:
   Include detailed version information.
 * `--json`:
-  Print output in JSON format. Currently the default and only accepted value for *`version`* is `v1`. See the docs for examples of using the JSON output: <https://docs.brew.sh/Querying-Brew>
+  Print output in JSON format. There are two versions: v1 and v2. v1 is deprecated and is currently the default if no version is specified. v2 prints outdated formulae and casks. 
 * `--fetch-HEAD`:
   Fetch the upstream repository to detect if the HEAD installation of the formula is outdated. Otherwise, the repository's HEAD will only be checked for updates when a new stable or development version has been released.
+* `--greedy`:
+  Print outdated casks with `auto_updates` or `version :latest`.
+* `--formula`:
+  Treat all arguments as formulae.
+* `--cask`:
+  Treat all arguments as casks.
 
 ### `pin` *`formula`*
 
@@ -511,12 +517,14 @@ also `pin`.
 
 Remove a tapped formula repository.
 
-### `update`, `up` [*`options`*]
+### `update` [*`options`*]
 
 Fetch the newest version of Homebrew and all formulae from GitHub using `git`(1) and perform any necessary migrations.
 
 * `--merge`:
   Use `git merge` to apply updates (rather than `git rebase`).
+* `--preinstall`:
+  Run on auto-updates (e.g. before `brew install`). Skips some slower steps.
 
 ### `update-reset` [*`repository`*]
 
@@ -556,6 +564,8 @@ the upgraded formulae or, every 30 days, for all formulae.
   Print install times for each formula at the end of the run.
 * `-n`, `--dry-run`:
   Show what would be upgraded, but do not actually upgrade anything.
+* `--greedy`:
+  Upgrade casks with `auto_updates` or `version :latest`
 
 ### `uses` [*`options`*] *`formula`*
 
@@ -745,6 +755,8 @@ uses.
   Specify the new git commit *`tag`* for the formula.
 * `--revision`:
   Specify the new git commit *`revision`* corresponding to the specified *`tag`*.
+* `-f`, `--force`:
+  Ignore duplicate open PRs. Remove all mirrors if --mirror= was not specified.
 
 ### `bump-revision` [*`options`*] *`formula`*
 
@@ -803,6 +815,8 @@ a simple example. For the complete API, see: <https://rubydoc.brew.sh/Formula>
   Explicitly set the *`license`* of the new formula.
 * `--tap`:
   Generate the new formula within the given tap, specified as *`user`*`/`*`repo`*.
+* `-f`, `--force`:
+  Ignore errors for disallowed formula names and named that shadow aliases.
 
 ### `diy` [*`options`*]
 
@@ -830,6 +844,8 @@ formula from a tap that is not `homebrew/core` use its fully-qualified form of
 
 * `--version`:
   Extract the specified *`version`* of *`formula`* instead of the most recent.
+* `-f`, `--force`:
+  Overwrite the destination formula if it already exists.
 
 ### `formula` *`formula`*
 
@@ -889,7 +905,12 @@ Find pull requests that can be automatically merged using `brew pr-publish`.
 ### `pr-publish` [*`options`*] *`pull_request`* [*`pull_request`* ...]
 
 Publish bottles for a pull request with GitHub Actions. Requires write access to
-the `homebrew/core` repository.
+the repository.
+
+* `--tap`:
+  Target tap repository (default: `homebrew/core`).
+* `--workflow`:
+  Target workflow filename (default: `publish-commit-bottles.yml`).
 
 ### `pr-pull` [*`options`*] *`pull_request`* [*`pull_request`* ...]
 
@@ -1015,6 +1036,8 @@ wrong with the installed formula.
   Test the head version of a formula.
 * `--keep-tmp`:
   Retain the temporary files created for the test.
+* `--retry`:
+  Retry if a testing fails.
 
 ### `tests` [*`options`*]
 
@@ -1046,6 +1069,8 @@ directory.
   Patches for *`formula`* will be applied to the unpacked source.
 * `-g`, `--git`:
   Initialise a Git repository in the unpacked source. This is useful for creating patches for the software.
+* `-f`, `--force`:
+  Overwrite the destination directory if it already exists.
 
 ### `update-license-data` [*`options`*]
 
@@ -1086,9 +1111,6 @@ These options are applicable across multiple subcommands.
 
 * `-d`, `--debug`:
   Display any debugging information.
-
-* `-f`, `--force`:
-  Override warnings and enable potentially unsafe operations.
 
 ## OFFICIAL EXTERNAL COMMANDS
 
