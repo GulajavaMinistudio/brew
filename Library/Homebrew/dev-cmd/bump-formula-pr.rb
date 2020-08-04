@@ -105,7 +105,10 @@ module Homebrew
         end
       end
     end
-    [formula.tap&.full_name, "origin/master", "-"]
+    origin_branch = Utils.popen_read("git", "-C", formula.tap.path.to_s, "symbolic-ref", "-q", "--short",
+                                     "refs/remotes/origin/HEAD").chomp.presence
+    origin_branch ||= "origin/master"
+    [formula.tap&.full_name, origin_branch, "-"]
   end
 
   def bump_formula_pr
@@ -246,7 +249,8 @@ module Homebrew
       ]
     end
 
-    old_contents = File.read(formula.path) unless args.dry_run?
+    read_only_run = args.dry_run? && !args.write?
+    old_contents = File.read(formula.path) unless read_only_run
 
     if new_mirrors
       replacement_pairs << [
@@ -310,13 +314,13 @@ module Homebrew
     end
 
     if new_formula_version < old_formula_version
-      formula.path.atomic_write(old_contents) unless args.dry_run?
+      formula.path.atomic_write(old_contents) unless read_only_run
       odie <<~EOS
         You need to bump this formula manually since changing the
         version from #{old_formula_version} to #{new_formula_version} would be a downgrade.
       EOS
     elsif new_formula_version == old_formula_version
-      formula.path.atomic_write(old_contents) unless args.dry_run?
+      formula.path.atomic_write(old_contents) unless read_only_run
       odie <<~EOS
         You need to bump this formula manually since the new version
         and old version are both #{new_formula_version}.
@@ -330,13 +334,14 @@ module Homebrew
     end
 
     ohai "brew update-python-resources #{formula.name}"
-    if !args.dry_run? || (args.dry_run? && args.write?)
+    unless read_only_run
       PyPI.update_python_resources! formula, new_formula_version, silent: true, ignore_non_pypi_packages: true
     end
 
     run_audit(formula, alias_rename, old_contents, args: args)
 
     formula.path.parent.cd do
+      _, base_branch = origin_branch.split("/")
       branch = "bump-#{formula.name}-#{new_formula_version}"
       git_dir = Utils.popen_read("git rev-parse --git-dir").chomp
       shallow = !git_dir.empty? && File.exist?("#{git_dir}/shallow")
@@ -352,7 +357,7 @@ module Homebrew
              "#{new_formula_version}' -- #{changed_files.join(" ")}"
         ohai "git push --set-upstream $HUB_REMOTE #{branch}:#{branch}"
         ohai "git checkout --quiet #{previous_branch}"
-        ohai "create pull request with GitHub API"
+        ohai "create pull request with GitHub API (base branch: #{base_branch})"
       else
 
         if args.no_fork?
@@ -385,7 +390,7 @@ module Homebrew
 
         begin
           url = GitHub.create_pull_request(tap_full_name, pr_title,
-                                           "#{username}:#{branch}", "master", pr_message)["html_url"]
+                                           "#{username}:#{branch}", base_branch, pr_message)["html_url"]
           if args.no_browse?
             puts url
           else
@@ -450,7 +455,8 @@ module Homebrew
   end
 
   def inreplace_pairs(path, replacement_pairs, args:)
-    if args.dry_run?
+    read_only_run = args.dry_run? && !args.write?
+    if read_only_run
       str = path.open("r") { |f| Formulary.ensure_utf8_encoding(f).read }
       contents = StringInreplaceExtension.new(str)
       replacement_pairs.each do |old, new|
