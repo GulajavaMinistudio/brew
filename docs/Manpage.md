@@ -610,6 +610,13 @@ If *`formula`* is provided, display the file or directory used to cache *`formul
 * `--cask`:
   Only show cache files for casks.
 
+### `--caskroom` [*`cask`*]
+
+Display Homebrew's Caskroom path.
+
+If *`cask`* is provided, display the location in the Caskroom where *`cask`* would
+be installed, without any sort of versioned directory as the last path.
+
 ### `--cellar` [*`formula`*]
 
 Display Homebrew's Cellar path. *Default:* `$(brew --prefix)/Cellar`, or if that
@@ -1390,6 +1397,9 @@ Note that environment variables must have a value set to be detected. For exampl
     Use the specified directory as the download cache.
 
     *Default:* macOS: `$HOME/Library/Caches/Homebrew`, Linux: `$XDG_CACHE_HOME/Homebrew` or `$HOME/.cache/Homebrew`.
+
+  * `HOMEBREW_CASK_OPTS`:
+    Options which should be used for all `cask` commands.
 
   * `HOMEBREW_CLEANUP_MAX_AGE_DAYS`:
     Cleanup all cached files older than this many days.
