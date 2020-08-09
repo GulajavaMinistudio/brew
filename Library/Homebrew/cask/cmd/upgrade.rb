@@ -59,10 +59,7 @@ module Cask
           end
         end
 
-        if outdated_casks.empty?
-          oh1 "No Casks to upgrade"
-          return
-        end
+        return if outdated_casks.empty?
 
         ohai "Casks with `auto_updates` or `version :latest` will not be upgraded" if casks.empty? && !greedy
 
@@ -75,7 +72,7 @@ module Cask
 
         puts upgradable_casks
           .map { |(old_cask, new_cask)| "#{new_cask.full_name} #{old_cask.version} -> #{new_cask.version}" }
-          .join(", ")
+          .join("\n")
         return if dry_run
 
         upgradable_casks.each do |(old_cask, new_cask)|

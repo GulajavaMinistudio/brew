@@ -4,6 +4,7 @@ require "formula"
 require "formula_versions"
 require "utils/curl"
 require "utils/notability"
+require "utils/spdx"
 require "extend/ENV"
 require "formula_cellar_checks"
 require "cmd/search"
@@ -37,6 +38,8 @@ module Homebrew
              description: "Run various additional style checks to determine if a new formula is eligible "\
                           "for Homebrew. This should be used when creating new formula and implies "\
                           "`--strict` and `--online`."
+      flag   "--tap=",
+             description: "Check the formulae within the given tap, specified as <user>`/`<repo>."
       switch "--fix",
              description: "Fix style violations automatically using RuboCop's auto-correct feature."
       switch "--display-cop-names",
@@ -46,7 +49,7 @@ module Homebrew
                           "make output easy to grep."
       switch "--skip-style",
              description: "Skip running non-RuboCop style checks. Useful if you plan on running "\
-                          "`brew style` separately."
+                          "`brew style` separately. Default unless a formula is specified by name"
       switch "-D", "--audit-debug",
              description: "Enable debugging and profiling of audit methods."
       comma_array "--only",
@@ -85,17 +88,23 @@ module Homebrew
     strict = new_formula || args.strict?
     online = new_formula || args.online?
     git = args.git?
-    skip_style = args.skip_style? || args.no_named?
+    skip_style = args.skip_style? || args.no_named? || args.tap
 
     ENV.activate_extensions!
     ENV.setup_build_environment
 
-    audit_formulae = args.no_named? ? Formula : args.resolved_formulae
+    audit_formulae = if args.tap
+      Tap.fetch(args.tap).formula_names.map { |name| Formula[name] }
+    elsif args.no_named?
+      Formula
+    else
+      args.resolved_formulae
+    end
     style_files = args.formulae_paths unless skip_style
 
     only_cops = args.only_cops
     except_cops = args.except_cops
-    options = { fix: args.fix? }
+    options = { fix: args.fix?, debug: args.debug?, verbose: args.verbose? }
 
     if only_cops
       options[:only_cops] = only_cops
@@ -110,8 +119,7 @@ module Homebrew
     # Check style in a single batch run up front for performance
     style_results = Style.check_style_json(style_files, options) if style_files
     # load licenses
-    spdx = HOMEBREW_LIBRARY_PATH/"data/spdx.json"
-    spdx_data = JSON.parse(spdx.read)
+    spdx_data = SPDX.spdx_data
     new_formula_problem_lines = []
     audit_formulae.sort.each do |f|
       only = only_cops ? ["style"] : args.only
