@@ -55,7 +55,12 @@ module Homebrew
         default:      HOMEBREW_DEFAULT_CACHE,
       },
       HOMEBREW_CASK_OPTS:                 {
-        description: "Options which should be used for all `cask` commands.",
+        description: "Options which should be used for all `cask` commands. All `--*dir` options, " \
+                     "`--language`, `--require-sha`, `--no-quarantine` and `--no-binaries` are supported." \
+                     "\n" \
+                     "For example, you might add something like the following to your " \
+                     "~/.profile, ~/.bash_profile, or ~/.zshenv:\n\n" \
+                     "`export HOMEBREW_CASK_OPTS='--appdir=~/Applications --fontdir=/Library/Fonts'`",
       },
       HOMEBREW_CLEANUP_MAX_AGE_DAYS:      {
         description: "Cleanup all cached files older than this many days.",
@@ -146,9 +151,9 @@ module Homebrew
         description: "Use this personal access token for the GitHub API, for features such as " \
                      "`brew search`. You can create one at <https://github.com/settings/tokens>. If set, " \
                      "GitHub will allow you a greater number of API requests. For more information, see: " \
-                     "<https://developer.github.com/v3/#rate-limiting>\n\n    *Note:* Homebrew doesn't " \
-                     "require permissions for any of the scopes, but some developer commands may require " \
-                     "additional permissions.",
+                     "<https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting>.\n\n" \
+                     "    *Note:* Homebrew doesn't require permissions for any of the scopes, but some developer " \
+                     "commands may require additional permissions.",
       },
       HOMEBREW_GITHUB_API_USERNAME:       {
         description: "Use this username for authentication with the GitHub API, for features " \
@@ -275,6 +280,9 @@ module Homebrew
       no_proxy:                           {
         description: "A comma-separated list of hostnames and domain names excluded " \
                      "from proxying by `curl`(1), `git`(1) and `svn`(1) when downloading through Homebrew.",
+      },
+      SUDO_ASKPASS:                       {
+        description: "When this variable is set, the `-A` option is passed when calling `sudo`(8)",
       },
     }.freeze
 
