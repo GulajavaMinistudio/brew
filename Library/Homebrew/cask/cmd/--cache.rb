@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "cask/download"
-
 module Cask
   class Cmd
     class Cache < AbstractCommand
@@ -18,15 +16,14 @@ module Cask
       end
 
       def run
-        # TODO: enable for next major/minor release
-        # odeprecated "brew cask --cache", "brew --cache --cask"
-
         casks.each do |cask|
           puts self.class.cached_location(cask)
         end
       end
 
       def self.cached_location(cask)
+        require "cask/download"
+
         Download.new(cask).downloader.cached_location
       end
     end

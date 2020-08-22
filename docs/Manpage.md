@@ -817,6 +817,14 @@ value, while `--no-rebuild` will remove it.
 * `--root-url`:
   Use the specified *`URL`* as the root of the bottle's URL instead of Homebrew's default.
 
+### `bump` [*`options`*] [*`formula`*]
+
+Display out-of-date brew formulae and the latest version available.
+Also displays whether a pull request has been opened with the URL.
+
+* `--limit`:
+  Limit number of package results returned.
+
 ### `bump-formula-pr` [*`options`*] [*`formula`*]
 
 Create a pull request to update *`formula`* with a new URL or a new tag.
@@ -1074,7 +1082,10 @@ Apply the bottle commit and publish bottles to Bintray.
 
 ### `prof` [*`command`*]
 
-Run Homebrew with the Ruby profiler, e.g. `brew prof readall`.
+Run Homebrew with a Ruby profiler, e.g. `brew prof readall`.
+
+* `--stackprof`:
+  Use `stackprof` instead of `ruby-prof` (the default).
 
 ### `release-notes` [*`options`*] [*`previous_tag`*] [*`end_ref`*]
 
@@ -1187,8 +1198,6 @@ working directory.
 
 * `--fail-if-not-changed`:
   Return a failing status code if current license data's version is the same as the upstream. This can be used to notify CI when the SPDX license data is out of date.
-* `--commit`:
-  Commit changes to the SPDX license data.
 
 ### `update-python-resources` [*`options`*] *`formula`*
 

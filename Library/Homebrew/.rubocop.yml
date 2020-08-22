@@ -61,9 +61,11 @@ Metrics/MethodLength:
 Metrics/ModuleLength:
   Enabled: true
   Max: 600
+  Exclude:
+    - 'test/**/*'
 Metrics/PerceivedComplexity:
   Enabled: true
-  Max: 80
+  Max: 90
 
 # we won't change backward compatible predicate names
 Naming/PredicateName:
@@ -139,3 +141,13 @@ Style/FrozenStringLiteralComment:
 # so many of these in formulae but none in here
 Style/GuardClause:
   Enabled: true
+
+# so many of these in formulae but none in here
+Style/StringConcatenation:
+  Enabled: true
+
+# don't want this for formulae but re-enabled for Library/Homebrew
+Style/HashAsLastArrayItem:
+  Enabled: true
+  Exclude:
+    - 'test/utils/spdx_spec.rb'

@@ -68,6 +68,10 @@ Style/HashTransformKeys:
 Style/HashTransformValues:
   Enabled: true
 
+# Allow for license expressions
+Style/HashAsLastArrayItem:
+  Enabled: false
+
 # Enabled now LineLength is lowish.
 Style/IfUnlessModifier:
   Enabled: true
@@ -211,6 +215,10 @@ Style/GuardClause:
 # avoid hash rockets where possible
 Style/HashSyntax:
   EnforcedStyle: ruby19
+
+# so many of these in formulae and can't be autocorrected
+Style/StringConcatenation:
+  Enabled: false
 
 # ruby style guide favorite
 Style/StringLiterals:

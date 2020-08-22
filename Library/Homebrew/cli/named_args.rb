@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
+require "cask/cask_loader"
 require "delegate"
+require "formulary"
 
 module Homebrew
   module CLI
@@ -11,7 +13,7 @@ module Homebrew
         @force_bottle = force_bottle
         @flags = flags
 
-        __setobj__(@args)
+        super(@args)
       end
 
       def to_formulae
@@ -132,6 +134,8 @@ module Homebrew
 
       def resolve_keg(name)
         raise UsageError if name.blank?
+
+        require "keg"
 
         rack = Formulary.to_rack(name.downcase)
 
