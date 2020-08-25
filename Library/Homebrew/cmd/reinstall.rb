@@ -61,7 +61,7 @@ module Homebrew
 
     Install.perform_preinstall_checks
 
-    resolved_formulae, casks = args.resolved_formulae_casks
+    resolved_formulae, casks = args.named.to_resolved_formulae_to_casks
     resolved_formulae.each do |f|
       if f.pinned?
         onoe "#{f.full_name} is pinned. You must unpin it to reinstall."
@@ -72,7 +72,7 @@ module Homebrew
       Cleanup.install_formula_clean!(f)
     end
 
-    check_installed_dependents(args: args)
+    Upgrade.check_installed_dependents(args: args)
 
     Homebrew.messages.display_messages(display_times: args.display_times?)
 
