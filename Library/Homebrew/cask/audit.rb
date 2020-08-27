@@ -5,9 +5,12 @@ require "cask/download"
 require "digest"
 require "utils/curl"
 require "utils/git"
-require "utils/notability"
+require "utils/shared_audits"
 
 module Cask
+  # Audit a cask for various problems.
+  #
+  # @api private
   class Audit
     extend Predicable
 

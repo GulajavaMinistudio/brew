@@ -2,6 +2,9 @@
 
 module Cask
   class Cmd
+    # Implementation of the `brew cask zap` command.
+    #
+    # @api private
     class Zap < AbstractCommand
       def self.min_named
         :cask
@@ -28,7 +31,14 @@ module Cask
         casks.each do |cask|
           odebug "Zapping Cask #{cask}"
 
-          raise CaskNotInstalledError, cask unless cask.installed? || args.force?
+          if cask.installed?
+            if installed_caskfile = cask.installed_caskfile
+              # Use the same cask file that was used for installation, if possible.
+              cask = CaskLoader.load(installed_caskfile) if installed_caskfile.exist?
+            end
+          else
+            raise CaskNotInstalledError, cask unless args.force?
+          end
 
           Installer.new(cask, verbose: args.verbose?, force: args.force?).zap
         end

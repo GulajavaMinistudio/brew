@@ -2,6 +2,9 @@
 
 module Cask
   class Cmd
+    # Implementation of the `brew cask uninstall` command.
+    #
+    # @api private
     class Uninstall < AbstractCommand
       def self.min_named
         :cask
@@ -40,11 +43,13 @@ module Cask
         casks.each do |cask|
           odebug "Uninstalling Cask #{cask}"
 
-          raise CaskNotInstalledError, cask unless cask.installed? || force
-
-          if cask.installed? && !cask.installed_caskfile.nil?
-            # use the same cask file that was used for installation, if possible
-            cask = CaskLoader.load(cask.installed_caskfile) if cask.installed_caskfile.exist?
+          if cask.installed?
+            if installed_caskfile = cask.installed_caskfile
+              # Use the same cask file that was used for installation, if possible.
+              cask = CaskLoader.load(installed_caskfile) if installed_caskfile.exist?
+            end
+          else
+            raise CaskNotInstalledError, cask unless force
           end
 
           Installer.new(cask, **options).uninstall
