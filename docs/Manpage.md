@@ -1106,16 +1106,18 @@ Run a Ruby instance with Homebrew's libraries loaded, e.g.
 * `-e`:
   Execute the given text string as a script.
 
-### `sh` [*`options`*]
+### `sh` [*`options`*] [*`file`*]
 
-Start a Homebrew build environment shell. Uses our years-battle-hardened
-Homebrew build logic to help your `./configure && make && make install`
-or even your `gem install` succeed. Especially handy if you run Homebrew
+Homebrew build environment that uses years-battle-hardened
+build logic to help your `./configure && make && make install`
+and even your `gem install` succeed. Especially handy if you run Homebrew
 in an Xcode-only configuration since it adds tools like `make` to your `PATH`
 which build systems would not find otherwise.
 
 * `--env`:
   Use the standard `PATH` instead of superenv's when `std` is passed.
+* `-c`, `--cmd`:
+  Execute commands in a non-interactive shell.
 
 ### `sponsors`
 
@@ -1177,6 +1179,23 @@ Run Homebrew's unit and integration tests.
   Run only *`test_script`*`_spec.rb`. Appending `:`*`line_number`* will start at a specific line.
 * `--seed`:
   Randomise tests with the specified *`value`* instead of a random seed.
+
+### `typecheck`
+
+Check for typechecking errors using Sorbet.
+
+* `-q`, `--quiet`:
+  Silence all non-critical errors.
+* `--update-definitions`:
+  Update Tapioca gem definitions of recently bumped gems
+* `--fail-if-not-changed`:
+  Return a failing status code if all gems are up to date and gem definitions do not need a tapioca update
+* `--dir`:
+  Typecheck all files in a specific directory.
+* `--file`:
+  Typecheck a single file.
+* `--ignore`:
+  Ignores input files that contain the given string in their paths (relative to the input path passed to Sorbet).
 
 ### `unpack` [*`options`*] *`formula`*
 
