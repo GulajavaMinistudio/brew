@@ -163,7 +163,7 @@ module Homebrew
               Formulary.from_rack(rack)
             end
 
-            unless (prefix = f.installed_prefix).directory?
+            unless (prefix = f.latest_installed_prefix).directory?
               raise MultipleVersionsInstalledError, "#{rack.basename} has multiple installed versions"
             end
 
@@ -180,8 +180,9 @@ module Homebrew
 
       def warn_if_cask_conflicts(ref, loaded_type)
         cask = Cask::CaskLoader.load ref
-
-        opoo "Treating #{ref} as a #{loaded_type}. For the cask, use #{cask.tap.name}/#{cask.token}"
+        message = "Treating #{ref} as a #{loaded_type}."
+        message += " For the cask, use #{cask.tap.name}/#{cask.token}" if cask.tap.present?
+        opoo message.freeze
       rescue Cask::CaskUnavailableError
         # No ref conflict with a cask, do nothing
       end

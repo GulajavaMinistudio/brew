@@ -518,6 +518,7 @@ module Homebrew
     VERSIONED_KEG_ONLY_ALLOWLIST = %w[
       autoconf@2.13
       bash-completion@2
+      clang-format@8
       gnupg@1.4
       libsigc++@2
       lua@5.1
@@ -1029,8 +1030,8 @@ module Homebrew
     def audit_download_strategy
       url_strategy = DownloadStrategyDetector.detect(url)
 
-      if using == :git || url_strategy == GitDownloadStrategy
-        problem "Git should specify :revision when a :tag is specified." if specs[:tag] && !specs[:revision]
+      if (using == :git || url_strategy == GitDownloadStrategy) && specs[:tag] && !specs[:revision]
+        problem "Git should specify :revision when a :tag is specified."
       end
 
       return unless using
