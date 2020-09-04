@@ -14,22 +14,32 @@ module Cask
   class Audit
     extend Predicable
 
-    attr_reader :cask, :commit_range, :download
+    attr_reader :cask, :download
 
-    attr_predicate :appcast?, :new_cask?, :strict?, :online?
+    attr_predicate :appcast?, :new_cask?, :strict?, :online?, :token_conflicts?
 
-    def initialize(cask, appcast: false, download: false, quarantine: nil,
-                   token_conflicts: false, online: false, strict: false,
-                   new_cask: false, commit_range: nil, command: SystemCommand)
+    def initialize(cask, appcast: nil, download: nil, quarantine: nil,
+                   token_conflicts: nil, online: nil, strict: nil,
+                   new_cask: nil)
+
+      # `new_cask` implies `online` and `strict`
+      online = new_cask if online.nil?
+      strict = new_cask if strict.nil?
+
+      # `online` implies `appcast` and `download`
+      appcast = online if appcast.nil?
+      download = online if download.nil?
+
+      # `strict` implies `token_conflicts`
+      token_conflicts = strict if token_conflicts.nil?
+
       @cask = cask
       @appcast = appcast
       @download = Download.new(cask, quarantine: quarantine) if download
       @online = online
       @strict = strict
       @new_cask = new_cask
-      @commit_range = commit_range
       @token_conflicts = token_conflicts
-      @command = command
     end
 
     def run!
@@ -345,7 +355,7 @@ module Cask
     end
 
     def check_token_conflicts
-      return unless @token_conflicts
+      return unless token_conflicts?
       return unless core_formula_names.include?(cask.token)
 
       add_warning "possible duplicate, cask token conflicts with Homebrew core formula: #{core_formula_url}"
@@ -460,9 +470,9 @@ module Cask
       return if metadata.nil?
 
       if metadata["prerelease"]
-        problem "#{cask.version} is a GitHub prerelease"
+        add_error "#{cask.version} is a GitHub prerelease"
       elsif metadata["draft"]
-        problem "#{cask.version} is a GitHub draft"
+        add_error "#{cask.version} is a GitHub draft"
       end
     end
 
@@ -475,7 +485,7 @@ module Cask
       metadata = SharedAudits.gitlab_release_data(user, repo, cask.version)
       return if metadata.nil?
 
-      problem "#{cask.version} is a GitLab prerelease" if Date.parse(metadata["released_at"]) > Date.today
+      add_error "#{cask.version} is a GitLab prerelease" if Date.parse(metadata["released_at"]) > Date.today
     end
 
     def check_github_repository_archived
@@ -487,7 +497,7 @@ module Cask
       metadata = SharedAudits.github_repo_data(user, repo)
       return if metadata.nil?
 
-      problem "GitHub repo is archived" if metadata["archived"]
+      add_error "GitHub repo is archived" if metadata["archived"]
     end
 
     def check_gitlab_repository_archived
@@ -499,7 +509,7 @@ module Cask
       metadata = SharedAudits.gitlab_repo_data(user, repo)
       return if metadata.nil?
 
-      problem "GitLab repo is archived" if metadata["archived"]
+      add_error "GitLab repo is archived" if metadata["archived"]
     end
 
     def check_github_repository

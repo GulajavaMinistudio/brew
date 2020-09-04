@@ -5483,22 +5483,8 @@ class Cask::Audit
   def online?(); end
 
   def strict?(); end
-end
 
-class Cask::Auditor
-  def audit_appcast?(); end
-
-  def audit_download?(); end
-
-  def audit_new_cask?(); end
-
-  def audit_online?(); end
-
-  def audit_strict?(); end
-
-  def audit_token_conflicts?(); end
-
-  def quarantine?(); end
+  def token_conflicts?(); end
 end
 
 class Cask::Cask
@@ -8099,6 +8085,8 @@ module Homebrew::EnvConfig
   def self.curl_verbose?(); end
 
   def self.curlrc?(); end
+
+  def self.debug?(); end
 
   def self.developer?(); end
 
@@ -13385,6 +13373,7 @@ class Object
   HOMEBREW_PULL_API_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_PULL_OR_COMMIT_URL_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_REPOSITORY = ::T.let(nil, ::T.untyped)
+  HOMEBREW_REQUIRED_RUBY_VERSION = ::T.let(nil, ::T.untyped)
   HOMEBREW_SHIMS_PATH = ::T.let(nil, ::T.untyped)
   HOMEBREW_TAP_CASK_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_TAP_DIR_REGEX = ::T.let(nil, ::T.untyped)
@@ -13410,6 +13399,8 @@ class Object
   PATCH_B_SHA256 = ::T.let(nil, ::T.untyped)
   PATCH_URL_A = ::T.let(nil, ::T.untyped)
   PATCH_URL_B = ::T.let(nil, ::T.untyped)
+  REQUIRED_RUBY_X = ::T.let(nil, ::T.untyped)
+  REQUIRED_RUBY_Y = ::T.let(nil, ::T.untyped)
   RUBY_BIN = ::T.let(nil, ::T.untyped)
   RUBY_COPYRIGHT = ::T.let(nil, ::T.untyped)
   RUBY_DESCRIPTION = ::T.let(nil, ::T.untyped)
@@ -20115,6 +20106,10 @@ class RuboCop::AST::Node
   def val_node(node=T.unsafe(nil)); end
 end
 
+class RuboCop::AST::RegexpNode
+  include ::RuboCop::Ext::RegexpNode
+end
+
 class RuboCop::Cask::AST::CaskBlock
   def cask_body(*args, &block); end
 end
@@ -20277,8 +20272,12 @@ class RuboCop::Cop::FormulaAudit::DependencyOrder
   def uses_from_macos_node?(node=T.unsafe(nil)); end
 end
 
-class RuboCop::Cop::FormulaAudit::DeprecateDate
-  def deprecate_date(node0); end
+class RuboCop::Cop::FormulaAudit::DeprecateDisableDate
+  def date(node0); end
+end
+
+class RuboCop::Cop::FormulaAudit::DeprecateDisableReason
+  def reason(node0); end
 end
 
 class RuboCop::Cop::FormulaAudit::Miscellaneous
@@ -21736,6 +21735,7 @@ class SimpleCov::Formatter::Codecov
   BITRISE = ::T.let(nil, ::T.untyped)
   BUILDKITE = ::T.let(nil, ::T.untyped)
   CIRCLE = ::T.let(nil, ::T.untyped)
+  CODEBUILD = ::T.let(nil, ::T.untyped)
   CODESHIP = ::T.let(nil, ::T.untyped)
   DRONEIO = ::T.let(nil, ::T.untyped)
   GITHUB = ::T.let(nil, ::T.untyped)
@@ -22267,8 +22267,6 @@ class String
   def camelize(first_letter=T.unsafe(nil)); end
 
   def classify(); end
-
-  def colorize(color_code); end
 
   def constantize(); end
 
