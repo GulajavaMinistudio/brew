@@ -32,9 +32,11 @@ module Homebrew
       switch "-n", "--dry-run",
              description: "Print what would be done rather than doing it."
       switch "--write",
-             depends_on:  "--dry-run",
-             description: "When passed along with `--dry-run`, perform a not-so-dry run by making the expected "\
-                          "file modifications but not taking any Git actions."
+             description: "Make the expected file modifications without taking any Git actions."
+      switch "--commit",
+             depends_on:  "--write",
+             description: "When passed with `--write`, generate a new commit after writing changes "\
+                          "to the formula file."
       switch "--no-audit",
              description: "Don't run `brew audit` before opening the PR."
       switch "--strict",
@@ -66,6 +68,7 @@ module Homebrew
       switch "-f", "--force",
              description: "Ignore duplicate open PRs. Remove all mirrors if --mirror= was not specified."
 
+      conflicts "--dry-run", "--write"
       conflicts "--no-audit", "--strict"
       conflicts "--url", "--tag"
       max_named 1
@@ -83,7 +86,7 @@ module Homebrew
       previous_branch = "master" if previous_branch.empty?
       formula_path = formula.path.to_s[%r{(Formula/.*)}, 1]
 
-      if args.dry_run?
+      if args.dry_run? || args.write?
         ohai "git remote add #{homebrew_core_remote} #{homebrew_core_url}"
         ohai "git fetch #{homebrew_core_remote} #{homebrew_core_branch}"
         ohai "git cat-file -e #{origin_branch}:#{formula_path}"
@@ -245,8 +248,7 @@ module Homebrew
       ]
     end
 
-    read_only_run = args.dry_run? && !args.write?
-    old_contents = File.read(formula.path) unless read_only_run
+    old_contents = File.read(formula.path) unless args.dry_run?
 
     if new_mirrors
       replacement_pairs << [
@@ -296,7 +298,7 @@ module Homebrew
     end
     new_contents = Utils::Inreplace.inreplace_pairs(formula.path,
                                                     replacement_pairs.uniq.compact,
-                                                    read_only_run: read_only_run,
+                                                    read_only_run: args.dry_run?,
                                                     silent:        args.quiet?)
 
     new_formula_version = formula_version(formula, requested_spec, new_contents)
@@ -313,13 +315,13 @@ module Homebrew
     end
 
     if new_formula_version < old_formula_version
-      formula.path.atomic_write(old_contents) unless read_only_run
+      formula.path.atomic_write(old_contents) unless args.dry_run?
       odie <<~EOS
         You need to bump this formula manually since changing the
         version from #{old_formula_version} to #{new_formula_version} would be a downgrade.
       EOS
     elsif new_formula_version == old_formula_version
-      formula.path.atomic_write(old_contents) unless read_only_run
+      formula.path.atomic_write(old_contents) unless args.dry_run?
       odie <<~EOS
         You need to bump this formula manually since the new version
         and old version are both #{new_formula_version}.
@@ -332,79 +334,25 @@ module Homebrew
       alias_rename.map! { |a| formula.tap.alias_dir/a }
     end
 
-    unless read_only_run
+    unless args.dry_run?
       PyPI.update_python_resources! formula, new_formula_version, silent: args.quiet?, ignore_non_pypi_packages: true
     end
 
     run_audit(formula, alias_rename, old_contents, args: args)
 
-    formula.path.parent.cd do
-      _, base_branch = origin_branch.split("/")
-      branch = "bump-#{formula.name}-#{new_formula_version}"
-      git_dir = Utils.popen_read("git rev-parse --git-dir").chomp
-      shallow = !git_dir.empty? && File.exist?("#{git_dir}/shallow")
-      changed_files = [formula.path]
-      changed_files += alias_rename if alias_rename.present?
-
-      if args.dry_run?
-        ohai "try to fork repository with GitHub API" unless args.no_fork?
-        ohai "git fetch --unshallow origin" if shallow
-        ohai "git add #{alias_rename.first} #{alias_rename.last}" if alias_rename.present?
-        ohai "git checkout --no-track -b #{branch} #{origin_branch}"
-        ohai "git commit --no-edit --verbose --message='#{formula.name} " \
-             "#{new_formula_version}' -- #{changed_files.join(" ")}"
-        ohai "git push --set-upstream $HUB_REMOTE #{branch}:#{branch}"
-        ohai "git checkout --quiet #{previous_branch}"
-        ohai "create pull request with GitHub API (base branch: #{base_branch})"
-      else
-
-        if args.no_fork?
-          remote_url = Utils.popen_read("git remote get-url --push origin").chomp
-          username = formula.tap.user
-        else
-          begin
-            remote_url, username = GitHub.forked_repo_info!(tap_full_name)
-          rescue *GitHub.api_errors => e
-            formula.path.atomic_write(old_contents)
-            odie "Unable to fork: #{e.message}!"
-          end
-        end
-
-        safe_system "git", "fetch", "--unshallow", "origin" if shallow
-        safe_system "git", "add", *alias_rename if alias_rename.present?
-        safe_system "git", "checkout", "--no-track", "-b", branch, origin_branch
-        safe_system "git", "commit", "--no-edit", "--verbose",
-                    "--message=#{formula.name} #{new_formula_version}",
-                    "--", *changed_files
-        safe_system "git", "push", "--set-upstream", remote_url, "#{branch}:#{branch}"
-        safe_system "git", "checkout", "--quiet", previous_branch
-        pr_message = <<~EOS
-          Created with `brew bump-formula-pr`.
-        EOS
-        user_message = args.message
-        if user_message
-          pr_message += <<~EOS
-
-            ---
-
-            #{user_message}
-          EOS
-        end
-        pr_title = "#{formula.name} #{new_formula_version}"
-
-        begin
-          url = GitHub.create_pull_request(tap_full_name, pr_title,
-                                           "#{username}:#{branch}", base_branch, pr_message)["html_url"]
-          if args.no_browse?
-            puts url
-          else
-            exec_browser url
-          end
-        rescue *GitHub.api_errors => e
-          odie "Unable to open pull request: #{e.message}!"
-        end
-      end
-    end
+    pr_info = {
+      sourcefile_path:  formula.path,
+      old_contents:     old_contents,
+      additional_files: alias_rename,
+      origin_branch:    origin_branch,
+      branch_name:      "bump-#{formula.name}-#{new_formula_version}",
+      commit_message:   "#{formula.name} #{new_formula_version}",
+      previous_branch:  previous_branch,
+      tap:              formula.tap,
+      tap_full_name:    tap_full_name,
+      pr_message:       "Created with `brew bump-formula-pr`.",
+    }
+    GitHub.create_bump_pr(pr_info, args: args)
   end
 
   def determine_formula_from_url(url)
