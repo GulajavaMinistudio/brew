@@ -74,7 +74,7 @@ module SharedAudits
     @gitlab_release_data ||= {}
     @gitlab_release_data[id] ||= begin
       out, _, status= curl_output(
-        "--request", "GET", "https://gitlab.com/api/v4/projects/#{user}%2F#{repo}/releases/#{tag}"
+        "https://gitlab.com/api/v4/projects/#{user}%2F#{repo}/releases/#{tag}", "--fail"
       )
       return unless status.success?
 
@@ -84,12 +84,31 @@ module SharedAudits
     @gitlab_release_data[id]
   end
 
+  GITLAB_PRERELEASE_ALLOWLIST = {}.freeze
+
+  def gitlab_release(user, repo, tag, formula: nil)
+    release = gitlab_release_data(user, repo, tag)
+    return unless release
+
+    return if Date.parse(release["released_at"]) <= Date.today
+    return if formula && GITLAB_PRERELEASE_ALLOWLIST[formula.name] == formula.version
+
+    "#{tag} is a GitLab pre-release."
+  end
+
+  GITHUB_FORK_ALLOWLIST = %w[
+    variar/klogg
+  ].freeze
+
   def github(user, repo)
     metadata = github_repo_data(user, repo)
 
     return if metadata.nil?
 
-    return "GitHub fork (not canonical repository)" if metadata["fork"]
+    if metadata["fork"] && !GITHUB_FORK_ALLOWLIST.include?("#{user}/#{repo}")
+      return "GitHub fork (not canonical repository)"
+    end
+
     if (metadata["forks_count"] < 30) && (metadata["subscribers_count"] < 30) &&
        (metadata["stargazers_count"] < 75)
       return "GitHub repository not notable enough (<30 forks, <30 watchers and <75 stars)"
