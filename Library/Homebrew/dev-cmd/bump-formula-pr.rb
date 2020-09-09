@@ -3,6 +3,7 @@
 require "formula"
 require "cli/parser"
 require "utils/pypi"
+require "utils/tar"
 
 module Homebrew
   module_function
@@ -145,6 +146,13 @@ module Homebrew
     formula_spec = formula.stable
     odie "#{formula}: no #{requested_spec} specification found!" unless formula_spec
 
+    old_mirrors = formula_spec.mirrors
+    new_mirrors ||= args.mirror
+    new_mirror ||= determine_mirror(new_url)
+    new_mirrors ||= [new_mirror] unless new_mirror.nil?
+
+    check_for_mirrors(formula, old_mirrors, new_mirrors, args: args) if new_url
+
     hash_type, old_hash = if (checksum = formula_spec.checksum)
       [checksum.hash_type, checksum.hexdigest]
     end
@@ -152,9 +160,6 @@ module Homebrew
     new_hash = args[hash_type] if hash_type
     new_tag = args.tag
     new_revision = args.revision
-    new_mirrors ||= args.mirror
-    new_mirror ||= determine_mirror(new_url)
-    new_mirrors ||= [new_mirror] unless new_mirror.nil?
     old_url = formula_spec.url
     old_tag = formula_spec.specs[:tag]
     old_formula_version = formula_version(formula, requested_spec)
@@ -184,7 +189,14 @@ module Homebrew
       odie "#{formula}: no --url= or --version= argument specified!"
     else
       new_url ||= PyPI.update_pypi_url(old_url, new_version)
-      new_url ||= old_url.gsub(old_version, new_version)
+      unless new_url
+        new_url = old_url.gsub(old_version, new_version)
+        if !new_mirrors && !old_mirrors.empty?
+          new_mirrors = old_mirrors.map do |old_mirror|
+            old_mirror.gsub(old_version, new_version)
+          end
+        end
+      end
       if new_url == old_url
         odie <<~EOS
           You need to bump this formula manually since the new URL
@@ -194,19 +206,8 @@ module Homebrew
       end
       check_closed_pull_requests(formula, tap_full_name, url: new_url, args: args) unless new_version
       resource_path, forced_version = fetch_resource(formula, new_version, new_url)
-      tar_file_extensions = %w[.tar .tb2 .tbz .tbz2 .tgz .tlz .txz .tZ]
-      if tar_file_extensions.any? { |extension| new_url.include? extension }
-        gnu_tar_gtar_path = HOMEBREW_PREFIX/"opt/gnu-tar/bin/gtar"
-        gnu_tar_gtar = gnu_tar_gtar_path if gnu_tar_gtar_path.executable?
-        tar = which("gtar") || gnu_tar_gtar || which("tar")
-        if Utils.popen_read(tar, "-tf", resource_path).match?(%r{/.*\.})
-          new_hash = resource_path.sha256
-        else
-          odie "#{resource_path} is not a valid tar file!"
-        end
-      else
-        new_hash = resource_path.sha256
-      end
+      Utils::Tar.validate_file(resource_path)
+      new_hash = resource_path.sha256
     end
 
     replacement_pairs = []
@@ -303,17 +304,6 @@ module Homebrew
 
     new_formula_version = formula_version(formula, requested_spec, new_contents)
 
-    if !new_mirrors && !formula_spec.mirrors.empty?
-      if args.force?
-        opoo "#{formula}: Removing all mirrors because a --mirror= argument was not specified."
-      else
-        odie <<~EOS
-          #{formula}: a --mirror= argument for updating the mirror URL was not specified.
-          Use --force to remove all mirrors.
-        EOS
-      end
-    end
-
     if new_formula_version < old_formula_version
       formula.path.atomic_write(old_contents) unless args.dry_run?
       odie <<~EOS
@@ -385,6 +375,19 @@ module Homebrew
       url.sub "www.apache.org/dyn/closer.lua?path=", "archive.apache.org/dist/"
     when %r{.*mirrors.ocf.berkeley.edu/debian.*}
       url.sub "mirrors.ocf.berkeley.edu/debian", "mirrorservice.org/sites/ftp.debian.org/debian"
+    end
+  end
+
+  def check_for_mirrors(formula, old_mirrors, new_mirrors, args:)
+    return if new_mirrors || old_mirrors.empty?
+
+    if args.force?
+      opoo "#{formula}: Removing all mirrors because a --mirror= argument was not specified."
+    else
+      odie <<~EOS
+        #{formula}: a --mirror= argument for updating the mirror URL(s) was not specified.
+        Use --force to remove all mirrors.
+      EOS
     end
   end
 
