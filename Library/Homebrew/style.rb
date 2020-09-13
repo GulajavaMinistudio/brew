@@ -178,6 +178,7 @@ module Homebrew
         json = json_result!(result)
 
         # Convert to same format as RuboCop offenses.
+        severity_hash = { "style" => "refactor", "info" => "convention" }
         json.group_by { |v| v["file"] }
             .map do |k, v|
           {
@@ -188,7 +189,7 @@ module Homebrew
               o["cop_name"] = "SC#{o.delete("code")}"
 
               level = o.delete("level")
-              o["severity"] = { "style" => "refactor", "info" => "convention" }.fetch(level, level)
+              o["severity"] = severity_hash.fetch(level, level)
 
               line = o.delete("line")
               column = o.delete("column")
@@ -263,36 +264,18 @@ module Homebrew
       def corrected?
         @corrected
       end
-
-      def correction_status
-        "[Corrected] " if corrected?
-      end
-
-      def to_s(display_cop_name: false)
-        if display_cop_name
-          "#{severity_code}: #{location.to_short_s}: #{cop_name}: " \
-          "#{Tty.green}#{correction_status}#{Tty.reset}#{message}"
-        else
-          "#{severity_code}: #{location.to_short_s}: #{Tty.green}#{correction_status}#{Tty.reset}#{message}"
-        end
-      end
     end
 
     # Source location of a style offense.
     class LineLocation
-      attr_reader :line, :column, :length
+      attr_reader :line, :column
 
       def initialize(json)
         @line = json["line"]
         @column = json["column"]
-        @length = json["length"]
       end
 
       def to_s
-        "#{line}: col #{column} (#{length} chars)"
-      end
-
-      def to_short_s
         "#{line}: col #{column}"
       end
     end

@@ -23,6 +23,7 @@ require "language/python"
 require "tab"
 require "mktemp"
 require "find"
+require "utils/spdx"
 
 # A formula provides instructions and metadata for Homebrew to install a piece
 # of software. Every Homebrew formula is a {Formula}.
@@ -1697,7 +1698,7 @@ class Formula
       "aliases"                  => aliases.sort,
       "versioned_formulae"       => versioned_formulae.map(&:name),
       "desc"                     => desc,
-      "license"                  => license,
+      "license"                  => SPDX.license_expression_to_string(license),
       "homepage"                 => homepage,
       "versions"                 => {
         "stable" => stable&.version&.to_s,

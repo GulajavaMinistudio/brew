@@ -8162,6 +8162,8 @@ module Homebrew::EnvConfig
 
   def self.temp(); end
 
+  def self.update_report_only_installed?(); end
+
   def self.update_to_tag?(); end
 
   def self.verbose?(); end
@@ -13111,8 +13113,6 @@ end
 Net::HTTPClientError::EXCEPTION_TYPE = Net::HTTPServerException
 
 Net::HTTPClientErrorCode = Net::HTTPClientError
-
-Net::HTTPClientException = Net::HTTPServerException
 
 class Net::HTTPEarlyHints
   HAS_BODY = ::T.let(nil, ::T.untyped)
