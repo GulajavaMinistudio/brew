@@ -834,6 +834,8 @@ supplied by the user.
   When passed with `--write`, generate a new commit after writing changes to the cask file.
 * `--no-audit`:
   Don't run `brew cask audit` before opening the PR.
+* `--online`:
+  Run `brew cask audit --online` before opening the PR.
 * `--no-style`:
   Don't run `brew cask style --fix` before opening the PR.
 * `--no-browse`:
@@ -880,6 +882,8 @@ nor vice versa. It must use whichever style specification the formula already us
   Don't run `brew audit` before opening the PR.
 * `--strict`:
   Run `brew audit --strict` before opening the PR.
+* `--online`:
+  Run `brew audit --online` before opening the PR.
 * `--no-browse`:
   Print the pull request URL instead of opening in a browser.
 * `--no-fork`:
@@ -1085,19 +1089,23 @@ Requires write access to the repository.
 * `--no-publish`:
   Download the bottles, apply the bottle commit and upload the bottles to Bintray, but don't publish them.
 * `--no-upload`:
-  Download the bottles and apply the bottle commit, but don't upload to Bintray.
+  Download the bottles and apply the bottle commit, but don't upload to Bintray or GitHub Releases.
 * `-n`, `--dry-run`:
   Print what would be done rather than doing it.
 * `--clean`:
   Do not amend the commits from pull requests.
 * `--keep-old`:
   If the formula specifies a rebuild version, attempt to preserve its value in the generated DSL.
+* `--autosquash`:
+  Automatically reformat and reword commits in the pull request to our preferred format.
 * `--branch-okay`:
   Do not warn if pulling to a branch besides master (useful for testing).
 * `--resolve`:
   When a patch fails to apply, leave in progress and allow user to resolve, instead of aborting.
 * `--warn-on-upload-failure`:
   Warn instead of raising an error if the bottle upload fails. Useful for repairing bottle uploads that previously failed.
+* `--message`:
+  Message to include when autosquashing revision bumps, deletions, and rebuilds.
 * `--workflow`:
   Retrieve artifacts from the specified workflow (default: `tests.yml`).
 * `--artifact`:
@@ -1113,7 +1121,7 @@ Requires write access to the repository.
 
 ### `pr-upload` [*`options`*]
 
-Apply the bottle commit and publish bottles to Bintray.
+Apply the bottle commit and publish bottles to Bintray or GitHub Releases.
 
 * `--no-publish`:
   Apply the bottle commit and upload the bottles, but don't publish them.
