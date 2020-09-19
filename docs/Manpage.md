@@ -1034,15 +1034,17 @@ or `~/.brew_livecheck_watchlist`.
 * `--full-name`:
   Print formulae with fully-qualified names.
 * `--tap`:
-  Check the formulae within the given tap, specified as *`user`*`/`*`repo`*.
-* `--installed`:
-  Check formulae that are currently installed.
-* `--json`:
-  Output informations in JSON format.
+  Check formulae within the given tap, specified as *`user`*`/`*`repo`*.
 * `--all`:
   Check all available formulae.
+* `--installed`:
+  Check formulae that are currently installed.
 * `--newer-only`:
   Show the latest version only if it's newer than the formula.
+* `--json`:
+  Output information in JSON format.
+* `-q`, `--quiet`:
+  Suppress warnings, don't print a progress bar for JSON output.
 
 ### `man` [*`options`*]
 
@@ -1244,6 +1246,8 @@ Check for typechecking errors using Sorbet.
   Silence all non-critical errors.
 * `--update-definitions`:
   Update Tapioca gem definitions of recently bumped gems
+* `--prune-files-list`:
+  Remove deleted filepaths from sorbet/files.yaml
 * `--fail-if-not-changed`:
   Return a failing status code if all gems are up to date and gem definitions do not need a tapioca update
 * `--dir`:

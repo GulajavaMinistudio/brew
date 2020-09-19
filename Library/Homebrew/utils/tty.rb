@@ -4,7 +4,18 @@
 #
 # @api private
 module Tty
+  @stream = $stdout
+
   module_function
+
+  def with(stream)
+    previous_stream = @stream
+    @stream = stream
+
+    yield stream
+  ensure
+    @stream = previous_stream
+  end
 
   def strip_ansi(string)
     string.gsub(/\033\[\d+(;\d+)*m/, "")
@@ -42,6 +53,15 @@ module Tty
     no_underline:  24,
   }.freeze
 
+  SPECIAL_CODES = {
+    up:         "1A",
+    down:       "1B",
+    right:      "1C",
+    left:       "1D",
+    erase_line: "K",
+    erase_char: "P",
+  }.freeze
+
   CODES = COLOR_CODES.merge(STYLE_CODES).freeze
 
   def append_to_escape_sequence(code)
@@ -66,6 +86,16 @@ module Tty
     end
   end
 
+  SPECIAL_CODES.each do |name, code|
+    define_singleton_method(name) do
+      if @stream.tty?
+        "\033[#{code}"
+      else
+        ""
+      end
+    end
+  end
+
   def to_s
     return "" unless color?
 
@@ -78,6 +108,6 @@ module Tty
     return false if Homebrew::EnvConfig.no_color?
     return true if Homebrew::EnvConfig.color?
 
-    $stdout.tty?
+    @stream.tty?
   end
 end
