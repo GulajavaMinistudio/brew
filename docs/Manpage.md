@@ -1101,7 +1101,7 @@ Requires write access to the repository.
 * `--autosquash`:
   Automatically reformat and reword commits in the pull request to our preferred format.
 * `--branch-okay`:
-  Do not warn if pulling to a branch besides master (useful for testing).
+  Do not warn if pulling to a branch besides the repository default (useful for testing).
 * `--resolve`:
   When a patch fails to apply, leave in progress and allow user to resolve, instead of aborting.
 * `--warn-on-upload-failure`:
@@ -1244,10 +1244,8 @@ Check for typechecking errors using Sorbet.
 
 * `-q`, `--quiet`:
   Silence all non-critical errors.
-* `--update-definitions`:
-  Update Tapioca gem definitions of recently bumped gems
-* `--prune-files-list`:
-  Remove deleted filepaths from sorbet/files.yaml
+* `--update`:
+  Update RBI files and prune sorbet/files.yaml
 * `--fail-if-not-changed`:
   Return a failing status code if all gems are up to date and gem definitions do not need a tapioca update
 * `--dir`:
