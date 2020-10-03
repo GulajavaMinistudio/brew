@@ -38,12 +38,9 @@ class Tap
 
   def self.from_path(path)
     match = File.expand_path(path).match(HOMEBREW_TAP_PATH_REGEX)
-    raise "Invalid tap path '#{path}'" unless match
+    return if match.blank? || match[:user].blank? || match[:repo].blank?
 
     fetch(match[:user], match[:repo])
-  rescue
-    # No need to error as a nil tap is sufficient to show failure.
-    nil
   end
 
   def self.default_cask_tap
@@ -235,7 +232,7 @@ class Tap
 
     if official? && DEPRECATED_OFFICIAL_TAPS.include?(repo)
       odie "#{name} was deprecated. This tap is now empty and all its contents were either deleted or migrated."
-    elsif user == "caskroom"
+    elsif user == "caskroom" || name == "phinze/cask"
       new_repo = repo == "cask" ? "cask" : "cask-#{repo}"
       odie "#{name} was moved. Tap homebrew/#{new_repo} instead."
     end

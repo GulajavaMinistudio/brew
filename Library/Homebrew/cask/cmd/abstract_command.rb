@@ -32,6 +32,21 @@ module Cask
         "`#{command_name}` [<options>]#{banner_args}"
       end
 
+      OPTIONS = [
+        [:switch, "--[no-]binaries", {
+          description: "Disable/enable linking of helper executables. Default: enabled",
+          env:         :cask_opts_binaries,
+        }],
+        [:switch, "--require-sha",  {
+          description: "Require all casks to have a checksum.",
+          env:         :cask_opts_require_sha,
+        }],
+        [:switch, "--[no-]quarantine", {
+          description: "Disable/enable quarantining of downloads. Default: enabled",
+          env:         :cask_opts_quarantine,
+        }],
+      ].freeze
+
       def self.parser(&block)
         banner = <<~EOS
           `cask` #{banner_headline}
@@ -47,18 +62,9 @@ module Cask
 
           instance_eval(&block) if block_given?
 
-          switch "--[no-]binaries",
-                 description: "Disable/enable linking of helper executables to `#{Config.global.binarydir}`. " \
-                              "Default: enabled",
-                 env:         :cask_opts_binaries
-
-          switch "--require-sha",
-                 description: "Require all casks to have a checksum.",
-                 env:         :cask_opts_require_sha
-
-          switch "--[no-]quarantine",
-                 description: "Disable/enable quarantining of downloads. Default: enabled",
-                 env:         :cask_opts_quarantine
+          OPTIONS.each do |option|
+            send(*option)
+          end
 
           min_named min_n unless min_n.nil?
           max_named max_n unless max_n.nil?
@@ -100,8 +106,7 @@ module Cask
       def casks(alternative: -> { [] })
         return @casks if defined?(@casks)
 
-        casks = args.named.empty? ? alternative.call : args.named
-        @casks = casks.map { |cask| CaskLoader.load(cask) }
+        @casks = args.named.empty? ? alternative.call : args.named.to_casks
       rescue CaskUnavailableError => e
         reason = [e.reason, *suggestion_message(e.token)].join(" ")
         raise e.class.new(e.token, reason)
