@@ -1177,6 +1177,8 @@ Apply the bottle commit and publish bottles to Bintray or GitHub Releases.
   If the formula specifies a rebuild version, attempt to preserve its value in the generated DSL.
 * `-n`, `--dry-run`:
   Print what would be done rather than doing it.
+* `--no-commit`:
+  Do not generate a new commit before uploading.
 * `--warn-on-upload-failure`:
   Warn instead of raising an error if the bottle upload fails. Useful for repairing bottle uploads that previously failed.
 * `--bintray-org`:
@@ -1244,9 +1246,14 @@ including core code and all formulae.
 * `--except-cops`:
   Specify a comma-separated *`cops`* list to skip checking for violations of the listed RuboCop cops.
 
-### `tap-new` *`user`*`/`*`repo`*
+### `tap-new` [*`options`*] *`user`*`/`*`repo`*
 
 Generate the template files for a new tap.
+
+* `--no-git`:
+  Don't initialize a git repository for the tap.
+* `--pull-label`:
+  Label name for pull requests ready to be pulled (default `pr-pull`).
 
 ### `test` [*`options`*] *`formula`*
 
