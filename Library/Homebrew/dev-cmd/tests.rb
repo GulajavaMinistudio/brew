@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "cli/parser"
@@ -58,6 +59,7 @@ module Homebrew
       ENV["HOMEBREW_NO_COMPAT"] = "1" if args.no_compat?
       ENV["HOMEBREW_TEST_GENERIC_OS"] = "1" if args.generic?
       ENV["HOMEBREW_TEST_ONLINE"] = "1" if args.online?
+      ENV["HOMEBREW_SORBET_RUNTIME"] = "1"
 
       ENV["USER"] ||= system_command!("id", args: ["-nu"]).stdout.chomp
 

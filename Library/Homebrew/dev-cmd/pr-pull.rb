@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "download_strategy"
@@ -104,9 +105,10 @@ module Homebrew
     if pr
       # This is a tap pull request and approving reviewers should also sign-off.
       tap = Tap.from_path(path)
-      trailers += GitHub.approved_reviews(tap.user, tap.full_name.split("/").last, pr).map do |r|
+      review_trailers = GitHub.approved_reviews(tap.user, tap.full_name.split("/").last, pr).map do |r|
         "Signed-off-by: #{r["name"]} <#{r["email"]}>"
-      end.join("\n")
+      end
+      trailers = trailers.lines.concat(review_trailers).map(&:strip).uniq.join("\n")
 
       # Append the close message as well, unless the commit body already includes it.
       close_message = "Closes ##{pr}."
@@ -351,7 +353,7 @@ module Homebrew
     when :env_token
       curl_args = ["--header", "Authorization: token #{token}"]
     when :none
-      raise Error, "Credentials must be set to access the Artifacts API"
+      raise "Credentials must be set to access the Artifacts API"
     end
 
     # Download the artifact as a zip file and unpack it into `dir`. This is

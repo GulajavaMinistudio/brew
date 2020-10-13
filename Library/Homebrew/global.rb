@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "English"
@@ -30,6 +31,8 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.irregular "is", "are"
   inflect.irregular "it", "they"
 end
+
+require "utils/sorbet"
 
 HOMEBREW_BOTTLE_DEFAULT_DOMAIN = ENV["HOMEBREW_BOTTLE_DEFAULT_DOMAIN"]
 HOMEBREW_BREW_DEFAULT_GIT_REMOTE = ENV["HOMEBREW_BREW_DEFAULT_GIT_REMOTE"]

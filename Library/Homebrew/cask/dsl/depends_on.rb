@@ -1,4 +1,7 @@
+# typed: false
 # frozen_string_literal: true
+
+require "delegate"
 
 require "requirements/macos_requirement"
 
@@ -7,7 +10,7 @@ module Cask
     # Class corresponding to the `depends_on` stanza.
     #
     # @api private
-    class DependsOn < DelegateClass(Hash)
+    class DependsOn < SimpleDelegator
       VALID_KEYS = Set.new([
                              :formula,
                              :cask,

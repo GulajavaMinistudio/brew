@@ -27,6 +27,7 @@ configure
 create
 deps
 desc
+dispatch-build-bottle
 diy
 doctor
 dr
@@ -81,6 +82,7 @@ switch
 tap
 tap-info
 tap-new
+tc
 test
 tests
 typecheck

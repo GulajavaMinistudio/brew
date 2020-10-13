@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Homebrew
@@ -249,6 +250,10 @@ module Homebrew
       HOMEBREW_SKIP_OR_LATER_BOTTLES:         {
         description: "If set with `HOMEBREW_DEVELOPER`, do not use bottles from older versions " \
                      "of macOS. This is useful in development on new macOS versions.",
+        boolean:     true,
+      },
+      HOMEBREW_SORBET_RUNTIME:                {
+        description: "Enable runtime typechecking using Sorbet.",
         boolean:     true,
       },
       HOMEBREW_SVN:                           {
