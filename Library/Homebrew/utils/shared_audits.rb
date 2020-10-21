@@ -34,6 +34,7 @@ module SharedAudits
   GITHUB_PRERELEASE_ALLOWLIST = {
     "amd-power-gadget" => :all,
     "elm-format"       => "0.8.3",
+    "extraterm"        => :all,
     "freetube"         => :all,
     "gitless"          => "0.8.8",
     "home-assistant"   => :all,
@@ -167,7 +168,7 @@ module SharedAudits
     watcher_metadata = JSON.parse(watcher_out)
     return if watcher_metadata.nil?
 
-    return if (forks_metadata["size"] < 30) && (watcher_metadata["size"] < 75)
+    return if forks_metadata["size"] >= 30 || watcher_metadata["size"] >= 75
 
     "Bitbucket repository not notable enough (<30 forks and <75 watchers)"
   end

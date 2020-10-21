@@ -13,6 +13,8 @@ module GitHub
   module_function
 
   API_URL = "https://api.github.com"
+  API_MAX_PAGES = 50
+  API_MAX_ITEMS = 5000
 
   CREATE_GIST_SCOPES = ["gist"].freeze
   CREATE_ISSUE_FORK_OR_PR_SCOPES = ["public_repo"].freeze
@@ -352,16 +354,24 @@ module GitHub
   def print_pull_requests_matching(query)
     open_or_closed_prs = search_issues(query, type: "pr", user: "Homebrew")
 
-    open_prs = open_or_closed_prs.select { |i| i["state"] == "open" }
-    prs = if !open_prs.empty?
-      puts "Open pull requests:"
-      open_prs
-    else
-      puts "Closed pull requests:" unless open_or_closed_prs.empty?
-      open_or_closed_prs.take(20)
+    open_prs, closed_prs = open_or_closed_prs.partition { |pr| pr["state"] == "open" }
+                                             .map { |prs| prs.map { |pr| "#{pr["title"]} (#{pr["html_url"]})" } }
+
+    if open_prs.present?
+      ohai "Open pull requests"
+      open_prs.each { |pr| puts pr }
     end
 
-    prs.each { |i| puts "#{i["title"]} (#{i["html_url"]})" }
+    if closed_prs.present?
+      puts if open_prs.present?
+
+      ohai "Closed pull requests"
+      closed_prs.take(20).each { |pr| puts pr }
+
+      puts "..." if closed_prs.count > 20
+    end
+
+    puts "No pull requests found for #{query.inspect}" if open_prs.blank? && closed_prs.blank?
   end
 
   def create_fork(repo)
@@ -751,7 +761,25 @@ module GitHub
     end
   end
 
-  def pull_request_commits(user, repo, pr)
-    open_api(url_to("repos", user, repo, "pulls", pr, "commits?per_page=100")).map { |c| c["sha"] }
+  def pull_request_commits(user, repo, pr, per_page: 100)
+    pr_data = open_api(url_to("repos", user, repo, "pulls", pr))
+    commits_api = pr_data["commits_url"]
+    commit_count = pr_data["commits"]
+    commits = []
+
+    if commit_count > API_MAX_ITEMS
+      raise Error, "Getting #{commit_count} commits would exceed limit of #{API_MAX_ITEMS} API items!"
+    end
+
+    (1..API_MAX_PAGES).each do |page|
+      result = open_api(commits_api + "?per_page=#{per_page}&page=#{page}")
+      commits.concat(result.map { |c| c["sha"] })
+
+      return commits if commits.length == commit_count
+
+      if result.empty? || page * per_page >= commit_count
+        raise Error, "Expected #{commit_count} commits but actually got #{commits.length}!"
+      end
+    end
   end
 end

@@ -740,6 +740,10 @@ Without \fItext\fR, list all locally available casks (including tapped ones, no 
 Search for formulae with a description matching \fItext\fR and casks with a name matching \fItext\fR\.
 .
 .TP
+\fB\-\-pull\-request\fR
+Search for GitHub pull requests for \fItext\fR\.
+.
+.TP
 \fB\-\-macports\fR
 Search for \fItext\fR in the given package manager\'s list\.
 .
@@ -1707,6 +1711,10 @@ Don\'t initialize a git repository for the tap\.
 .TP
 \fB\-\-pull\-label\fR
 Label name for pull requests ready to be pulled (default \fBpr\-pull\fR)\.
+.
+.TP
+\fB\-\-branch\fR
+Initialize git repository with the specified branch name (default \fBmain\fR)\.
 .
 .SS "\fBtest\fR [\fIoptions\fR] \fIformula\fR"
 Run the test method provided by an installed formula\. There is no standard output or return code, but generally it should notify the user if something is wrong with the installed formula\.
