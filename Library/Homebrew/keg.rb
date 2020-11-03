@@ -183,13 +183,15 @@ class Keg
 
   # if path is a file in a keg then this will return the containing Keg object
   def self.for(path)
-    path = path.realpath
-    until path.root?
-      return Keg.new(path) if path.parent.parent == HOMEBREW_CELLAR.realpath
+    original_path = path
+    if original_path.exist? && (path = original_path.realpath)
+      until path.root?
+        return Keg.new(path) if path.parent.parent == HOMEBREW_CELLAR.realpath
 
-      path = path.parent.realpath # realpath() prevents root? failing
+        path = path.parent.realpath # realpath() prevents root? failing
+      end
     end
-    raise NotAKegError, "#{path} is not inside a keg"
+    raise NotAKegError, "#{original_path} is not inside a keg"
   end
 
   def self.all
@@ -335,6 +337,7 @@ class Keg
     EOS
   end
 
+  # TODO: refactor to use keyword arguments.
   def unlink(**options)
     ObserverPathnameExtension.reset_counts!
 
@@ -448,6 +451,7 @@ class Keg
     end
   end
 
+  # TODO: refactor to use keyword arguments.
   def link(**options)
     raise AlreadyLinkedError, self if linked_keg_record.directory?
 

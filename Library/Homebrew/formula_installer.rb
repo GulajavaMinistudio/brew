@@ -22,6 +22,7 @@ require "cmd/install"
 require "find"
 require "utils/spdx"
 require "deprecate_disable"
+require "unlink"
 
 # Installer for a formula.
 #
@@ -854,10 +855,11 @@ class FormulaInstaller
   end
 
   def link(keg)
+    Formula.clear_cache
+
     unless link_keg
       begin
         keg.optlink(verbose: verbose?)
-        Formula.clear_cache
       rescue Keg::LinkError => e
         onoe "Failed to create #{formula.opt_prefix}"
         puts "Things that depend on #{formula.full_name} will probably not build."
@@ -882,6 +884,8 @@ class FormulaInstaller
       opoo "This keg was marked linked already, continuing anyway"
       keg.remove_linked_keg_record
     end
+
+    Homebrew::Unlink.unlink_versioned_formulae(formula, verbose: verbose?)
 
     link_overwrite_backup = {} # Hash: conflict file -> backup file
     backup_dir = HOMEBREW_CACHE/"Backup"
