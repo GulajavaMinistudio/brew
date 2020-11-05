@@ -18,12 +18,17 @@ module Homebrew
 
         If <formula> is provided, summarise the paths within its current keg.
       EOS
+      switch "--formula", "--formulae",
+             description: "List only formulae. `This is the default action on non TTY.`"
+      switch "--cask", "--casks",
+             description: "List only casks, or <cask> if provided."
+      switch "--unbrewed",
+             description: "List files in Homebrew's prefix not installed by Homebrew."
       switch "--full-name",
+             depends_on:  "--formula",
              description: "Print formulae with fully-qualified names. If `--full-name` is not "\
                           "passed, other options (i.e. `-1`, `-l`, `-r` and `-t`) are passed to `ls`(1) "\
                           "which produces the actual output."
-      switch "--unbrewed",
-             description: "List files in Homebrew's prefix not installed by Homebrew."
       switch "--versions",
              description: "Show the version number for installed formulae, or only the specified "\
                           "formulae if <formula> are provided."
@@ -33,23 +38,26 @@ module Homebrew
       switch "--pinned",
              description: "Show the versions of pinned formulae, or only the specified (pinned) "\
                           "formulae if <formula> are provided. See also `pin`, `unpin`."
-      switch "--formula", "--formulae",
-             description: "List only formulae. `This is the default action on non TTY.`"
-      switch "--cask", "--casks",
-             description: "List only casks, or <cask> if provided."
       # passed through to ls
       switch "-1",
              description: "Force output to be one entry per line. " \
                           "This is the default when output is not to a terminal."
       switch "-l",
-             description: "List in long format. If the output is to a terminal, "\
+             description: "List formulae in long format. If the output is to a terminal, "\
                           "a total sum for all the file sizes is printed before the long listing."
       switch "-r",
-             description: "Reverse the order of the sort to list the oldest entries first."
+             description: "Reverse the order of the formulae sort to list the oldest entries first."
       switch "-t",
-             description: "Sort by time modified, listing most recently modified first."
+             description: "Sort formulae by time modified, listing most recently modified first."
 
-      ["--formula", "--unbrewed", "--multiple", "--pinned", "-l", "-r", "-t"].each do |flag|
+      ["-1", "-l", "-r", "-t"].each do |flag|
+        conflicts "--full-name", flag
+        conflicts "--unbrewed", flag
+        conflicts "--pinned", flag
+        conflicts "--versions", flag
+      end
+
+      ["--unbrewed", "--formula", "-l", "-r", "-t"].each do |flag|
         conflicts "--cask", flag
       end
     end
@@ -60,7 +68,11 @@ module Homebrew
 
     return list_casks(args: args) if args.cask?
 
-    return list_unbrewed if args.unbrewed?
+    if args.unbrewed?
+      raise UsageError, "`--unbrewed` does not take a formula/cask argument." unless args.no_named?
+
+      return list_unbrewed
+    end
 
     # Unbrewed uses the PREFIX, which will exist
     # Things below use the CELLAR, which doesn't until the first formula is installed.
@@ -104,6 +116,7 @@ module Homebrew
 
   UNBREWED_EXCLUDE_FILES = %w[.DS_Store].freeze
   UNBREWED_EXCLUDE_PATHS = %w[
+    */.keepme
     .github/*
     bin/brew
     completions/zsh/_brew
@@ -126,7 +139,7 @@ module Homebrew
 
   def list_unbrewed
     dirs  = HOMEBREW_PREFIX.subdirs.map { |dir| dir.basename.to_s }
-    dirs -= %w[Library Cellar .git]
+    dirs -= %w[Library Cellar Caskroom .git]
 
     # Exclude cache, logs, and repository, if they are located under the prefix.
     [HOMEBREW_CACHE, HOMEBREW_LOGS, HOMEBREW_REPOSITORY].each do |dir|
