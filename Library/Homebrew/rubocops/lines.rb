@@ -110,7 +110,7 @@ module RuboCop
         end
       end
 
-      # This cop makes sure that options are used idiomatically.
+      # This cop makes sure that `option`s are used idiomatically.
       #
       # @api private
       class OptionDeclarations < FormulaCop
@@ -320,7 +320,7 @@ module RuboCop
         EOS
       end
 
-      # This cop makes sure that python versions are consistent.
+      # This cop makes sure that Python versions are consistent.
       #
       # @api private
       class PythonVersions < FormulaCop
@@ -662,6 +662,23 @@ module RuboCop
                       "should not run build-time checks"
             end
           end
+        end
+      end
+
+      # This cop ensures that new formulae depending on Requirements are not introduced in homebrew/core.
+      class CoreRequirements < FormulaCop
+        def audit_formula(_node, _class_node, _parent_class_node, _body_node)
+          return if formula_tap != "homebrew-core"
+
+          if depends_on? :java
+            problem "Formulae in homebrew/core should depend on a versioned `openjdk` instead of :java"
+          end
+
+          if depends_on? :x11
+            problem "Formulae in homebrew/core should depend on specific X libraries instead of :x11"
+          end
+
+          problem ":osxfuse is deprecated in homebrew/core" if depends_on? :osxfuse
         end
       end
 
