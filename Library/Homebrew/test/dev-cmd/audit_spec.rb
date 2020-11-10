@@ -746,6 +746,17 @@ module Homebrew
           it { is_expected.to be_nil }
         end
 
+        context "should not warn when revision from previous version matches current revision" do
+          before do
+            formula_gsub_origin_commit "foo-1.0.tar.gz", "foo-1.1.tar.gz"
+            formula_gsub_origin_commit "revision 2", "# no revision"
+            formula_gsub_origin_commit "# no revision", "revision 1"
+            formula_gsub_origin_commit "revision 1", "revision 2"
+          end
+
+          it { is_expected.to be_nil }
+        end
+
         context "should only increment by 1 with an uncommitted version" do
           before do
             formula_gsub "foo-1.0.tar.gz", "foo-1.1.tar.gz"
@@ -776,8 +787,8 @@ module Homebrew
         context "should not decrease with a new version" do
           before do
             formula_gsub_origin_commit "foo-1.0.tar.gz", "foo-1.1.tar.gz"
-            formula_gsub_origin_commit "version_scheme 1", ""
             formula_gsub_origin_commit "revision 2", ""
+            formula_gsub_origin_commit "version_scheme 1", ""
           end
 
           it { is_expected.to match("version_scheme should not decrease (from 1 to 0)") }
@@ -868,9 +879,7 @@ module Homebrew
     end
 
     include_examples "formulae exist", described_class::VERSIONED_KEG_ONLY_ALLOWLIST
-    include_examples "formulae exist", described_class::VERSIONED_HEAD_SPEC_ALLOWLIST
     include_examples "formulae exist", described_class::PROVIDED_BY_MACOS_DEPENDS_ON_ALLOWLIST
-    include_examples "formulae exist", described_class::THROTTLED_FORMULAE.keys
     include_examples "formulae exist", described_class::UNSTABLE_ALLOWLIST.keys
     include_examples "formulae exist", described_class::GNOME_DEVEL_ALLOWLIST.keys
   end
