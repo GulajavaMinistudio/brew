@@ -15,7 +15,9 @@ BOTTLE_ERB = <<-EOS
     <% if root_url != "#{HOMEBREW_BOTTLE_DEFAULT_DOMAIN}/bottles" %>
     root_url "<%= root_url %>"
     <% end %>
-    <% if ![HOMEBREW_DEFAULT_PREFIX, LINUXBREW_DEFAULT_PREFIX].include?(prefix) %>
+    <% if ![HOMEBREW_DEFAULT_PREFIX,
+            HOMEBREW_MACOS_ARM_DEFAULT_PREFIX,
+            HOMEBREW_LINUX_DEFAULT_PREFIX].include?(prefix) %>
     prefix "<%= prefix %>"
     <% end %>
     <% if cellar.is_a? Symbol %>
@@ -38,8 +40,11 @@ EOS
 MAXIMUM_STRING_MATCHES = 100
 
 module Homebrew
+  extend T::Sig
+
   module_function
 
+  sig { returns(CLI::Parser) }
   def bottle_args
     Homebrew::CLI::Parser.new do
       usage_banner <<~EOS

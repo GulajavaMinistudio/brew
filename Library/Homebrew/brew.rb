@@ -68,7 +68,6 @@ begin
   ARGV.delete_at(help_cmd_index) if help_cmd_index
 
   args = Homebrew::CLI::Parser.new.parse(ARGV.dup.freeze, ignore_invalid_options: true)
-  Homebrew.args = args
   Context.current = args.context
 
   path = PATH.new(ENV["PATH"])
@@ -165,7 +164,7 @@ rescue BuildError => e
   if e.formula.head? || e.formula.deprecated? || e.formula.disabled?
     $stderr.puts <<~EOS
       Please create pull requests instead of asking for help on Homebrew's GitHub,
-      Discourse, Twitter or IRC.
+      Discourse, Twitter or any other official channels.
     EOS
   end
 

@@ -12,6 +12,8 @@ require "extend/cachable"
 # hash and creates an attribute for each key and value. Rather than calling
 # `new` directly, use one of the class methods like {Tab.create}.
 class Tab < OpenStruct
+  extend T::Sig
+
   extend Cachable
 
   FILENAME = "INSTALL_RECEIPT.json"
@@ -186,6 +188,7 @@ class Tab < OpenStruct
       "compiler"                => DevelopmentTools.default_compiler,
       "aliases"                 => [],
       "runtime_dependencies"    => nil,
+      "arch"                    => nil,
       "source"                  => {
         "path"     => nil,
         "tap"      => nil,
@@ -323,6 +326,7 @@ class Tab < OpenStruct
     versions["version_scheme"] || 0
   end
 
+  sig { returns(Time) }
   def source_modified_time
     Time.at(super || 0)
   end
@@ -345,6 +349,7 @@ class Tab < OpenStruct
       "aliases"                 => aliases,
       "runtime_dependencies"    => runtime_dependencies,
       "source"                  => source,
+      "arch"                    => Hardware::CPU.arch,
       "built_on"                => built_on,
     }
 
@@ -360,6 +365,7 @@ class Tab < OpenStruct
     tabfile.atomic_write(to_json)
   end
 
+  sig { returns(String) }
   def to_s
     s = []
     s << if poured_from_bottle

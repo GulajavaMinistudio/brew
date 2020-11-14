@@ -69,7 +69,8 @@ HOMEBREW_USER_AGENT_FAKE_SAFARI =
   "(KHTML, like Gecko) Version/10.0.3 Safari/602.4.8"
 
 HOMEBREW_DEFAULT_PREFIX = "/usr/local"
-LINUXBREW_DEFAULT_PREFIX = "/home/linuxbrew/.linuxbrew"
+HOMEBREW_MACOS_ARM_DEFAULT_PREFIX = "/opt/homebrew"
+HOMEBREW_LINUX_DEFAULT_PREFIX = "/home/linuxbrew/.linuxbrew"
 
 require "fileutils"
 require "os/global"
@@ -82,7 +83,7 @@ module Homebrew
   DEFAULT_REPOSITORY = "#{DEFAULT_PREFIX}/Homebrew"
 
   class << self
-    attr_writer :failed, :raise_deprecation_exceptions, :auditing, :args
+    attr_writer :failed, :raise_deprecation_exceptions, :auditing
 
     def Homebrew.default_prefix?(prefix = HOMEBREW_PREFIX)
       prefix.to_s == DEFAULT_PREFIX
@@ -91,10 +92,6 @@ module Homebrew
     def failed?
       @failed ||= false
       @failed == true
-    end
-
-    def args
-      @args ||= CLI::Args.new
     end
 
     def messages
