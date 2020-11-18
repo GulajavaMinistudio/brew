@@ -71,9 +71,6 @@ Homebrew Cask provides a friendly CLI workflow for the administration of macOS a
 
 Commands:
 
-- `--cache`
-  <br>Display the file used to cache a *`cask`*.
-
 - `audit`
   <br>Check *`cask`* for Homebrew coding style violations.
 
@@ -82,9 +79,6 @@ Commands:
 
 - `create`
   <br>Creates the given *`cask`* and opens it in an editor.
-
-- `doctor`
-  <br>Checks for configuration issues.
 
 - `edit`
   <br>Open the given *`cask`* for editing.
@@ -95,32 +89,17 @@ Commands:
 - `help`
   <br>Print help for `cask` commands.
 
-- `home`
-  <br>Opens the homepage of the given *`cask`*.
-
 - `info`
   <br>Displays information about the given *`cask`*.
 
 - `install`
   <br>Installs the given *`cask`*.
 
-- `list`
-  <br>Lists installed casks or the casks provided in the arguments.
-
-- `outdated`
-  <br>List the outdated installed casks.
-
-- `reinstall`
-  <br>Reinstalls the given *`cask`*.
-
 - `style`
   <br>Checks style of the given *`cask`* using RuboCop.
 
 - `uninstall`
   <br>Uninstalls the given *`cask`*.
-
-- `upgrade`
-  <br>Upgrades all outdated casks or the specified casks.
 
 - `zap`
   <br>Zaps all files associated with the given *`cask`*.
@@ -757,12 +736,12 @@ Print the version numbers of Homebrew, Homebrew/homebrew-core and Homebrew/homeb
 
 ## DEVELOPER COMMANDS
 
-### `audit` [*`options`*] [*`formula`*]
+### `audit` [*`options`*] [*`formula`*|*`cask`*]
 
 Check *`formula`* for Homebrew coding style violations. This should be run before
-submitting a new formula. If no *`formula`* are provided, check all locally
-available formulae and skip style checks. Will exit with a non-zero status if any
-errors are found.
+submitting a new formula or cask. If no *`formula`*|*`cask`* are provided, check all
+locally available formulae and casks and skip style checks. Will exit with a
+non-zero status if any errors are found.
 
 * `--strict`:
   Run additional, stricter style checks.
@@ -770,8 +749,8 @@ errors are found.
   Run additional, slower style checks that navigate the Git repository.
 * `--online`:
   Run additional, slower style checks that require a network connection.
-* `--new-formula`:
-  Run various additional style checks to determine if a new formula is eligible for Homebrew. This should be used when creating new formula and implies `--strict` and `--online`.
+* `--new`:
+  Run various additional style checks to determine if a new formula or cask is eligible for Homebrew. This should be used when creating new formula and implies `--strict` and `--online`.
 * `--tap`:
   Check the formulae within the given tap, specified as *`user`*`/`*`repo`*.
 * `--fix`:
@@ -792,6 +771,14 @@ errors are found.
   Specify a comma-separated *`cops`* list to check for violations of only the listed RuboCop cops.
 * `--except-cops`:
   Specify a comma-separated *`cops`* list to skip checking for violations of the listed RuboCop cops.
+* `--formula`:
+  Treat all named arguments as formulae.
+* `--cask`:
+  Treat all named arguments as casks.
+* `--[no-]appcast`:
+  Audit the appcast
+* `--token-conflicts`:
+  Audit for token conflicts
 
 ### `bottle` [*`options`*] *`formula`*
 
@@ -1405,7 +1392,7 @@ These options are applicable across multiple subcommands.
   Display any debugging information.
 
 * `-q`, `--quiet`:
-  Suppress any warnings.
+  Make some output more quiet.
 
 * `-v`, `--verbose`:
   Make some output more verbose.

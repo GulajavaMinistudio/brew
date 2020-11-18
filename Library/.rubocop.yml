@@ -120,6 +120,8 @@ Style/IfUnlessModifier:
 Style/NumericLiterals:
   MinDigits: 7
   Strict: true
+  Exclude:
+    - '**/Brewfile'
 
 # Zero-prefixed octal literals are widely used and understood.
 Style/NumericLiteralPrefix:
@@ -161,6 +163,10 @@ Performance/CaseWhenSplat:
 
 # Makes code less readable for minor performance increases.
 Performance/Caller:
+  Enabled: false
+
+# Makes code less readable for minor performance increases.
+Performance/MethodObjectAsBlock:
   Enabled: false
 
 # Don't allow cops to be disabled in casks and formulae.
@@ -365,6 +371,7 @@ Style/FrozenStringLiteralComment:
     - '**/{Formula,Casks}/*.rb'
     - 'Homebrew/test/**/Casks/**/*.rb'
     - '**/*.rbi'
+    - '**/Brewfile'
 
 # TODO: remove this when possible.
 Style/GlobalVars:
