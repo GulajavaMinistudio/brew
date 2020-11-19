@@ -26,6 +26,7 @@ end
 require "rspec/its"
 require "rspec/wait"
 require "rspec/retry"
+require "rspec/sorbet"
 require "rubocop"
 require "rubocop/rspec/support"
 require "find"
@@ -57,6 +58,10 @@ TEST_DIRECTORIES = [
   HOMEBREW_LOGS,
   HOMEBREW_TEMP,
 ].freeze
+
+# Make `instance_double` and `class_double`
+# work when type-checking is active.
+RSpec::Sorbet.allow_doubles!
 
 RSpec.configure do |config|
   config.order = :random
@@ -110,7 +115,7 @@ RSpec.configure do |config|
 
   config.before(:each, :needs_java) do
     java_installed = if OS.mac?
-      Utils.popen_read("/usr/libexec/java_home", "--failfast", "--version", "1.0+")
+      Utils.popen_read("/usr/libexec/java_home", "--failfast")
       $CHILD_STATUS.success?
     else
       which("java")

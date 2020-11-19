@@ -571,6 +571,10 @@ Uninstall *`formula`*.
   Delete all installed versions of *`formula`*.
 * `--ignore-dependencies`:
   Don't fail uninstall, even if *`formula`* is a dependency of any installed formulae.
+* `--formula`:
+  Treat all named arguments as formulae.
+* `--cask`:
+  Treat all named arguments as casks.
 
 ### `unlink` [*`options`*] *`formula`*
 
@@ -911,9 +915,14 @@ present, "revision 1" will be added.
 * `--message`:
   Append *`message`* to the default commit message.
 
-### `cat` *`formula`*
+### `cat` *`formula`*|*`cask`*
 
-Display the source of *`formula`*.
+Display the source of a *`formula`* or *`cask`*.
+
+* `--formula`:
+  Treat all named arguments as formulae.
+* `--cask`:
+  Treat all named arguments as casks.
 
 ### `command` *`cmd`*
 
@@ -1334,6 +1343,9 @@ If no options are passed, use `origin/master` as the start commit.
 ### `vendor-gems`
 
 Install and commit Homebrew's vendored gems.
+
+* `--update`:
+  Update all vendored Gems to the latest version.
 
 ## GLOBAL CASK OPTIONS
 

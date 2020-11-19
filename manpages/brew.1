@@ -793,6 +793,14 @@ Delete all installed versions of \fIformula\fR\.
 \fB\-\-ignore\-dependencies\fR
 Don\'t fail uninstall, even if \fIformula\fR is a dependency of any installed formulae\.
 .
+.TP
+\fB\-\-formula\fR
+Treat all named arguments as formulae\.
+.
+.TP
+\fB\-\-cask\fR
+Treat all named arguments as casks\.
+.
 .SS "\fBunlink\fR [\fIoptions\fR] \fIformula\fR"
 Remove symlinks for \fIformula\fR from Homebrew\'s prefix\. This can be useful for temporarily disabling a formula: \fBbrew unlink\fR \fIformula\fR \fB&&\fR \fIcommands\fR \fB&& brew link\fR \fIformula\fR
 .
@@ -1266,8 +1274,16 @@ Print what would be done rather than doing it\.
 \fB\-\-message\fR
 Append \fImessage\fR to the default commit message\.
 .
-.SS "\fBcat\fR \fIformula\fR"
-Display the source of \fIformula\fR\.
+.SS "\fBcat\fR \fIformula\fR|\fIcask\fR"
+Display the source of a \fIformula\fR or \fIcask\fR\.
+.
+.TP
+\fB\-\-formula\fR
+Treat all named arguments as formulae\.
+.
+.TP
+\fB\-\-cask\fR
+Treat all named arguments as casks\.
 .
 .SS "\fBcommand\fR \fIcmd\fR"
 Display the path to the file being used when invoking \fBbrew\fR \fIcmd\fR\.
@@ -1842,6 +1858,10 @@ Use the commit at the specified \fIdate\fR as the start commit\.
 .
 .SS "\fBvendor\-gems\fR"
 Install and commit Homebrew\'s vendored gems\.
+.
+.TP
+\fB\-\-update\fR
+Update all vendored Gems to the latest version\.
 .
 .SH "GLOBAL CASK OPTIONS"
 These options are applicable to subcommands accepting a \fB\-\-cask\fR flag and all \fBcask\fR commands\.
