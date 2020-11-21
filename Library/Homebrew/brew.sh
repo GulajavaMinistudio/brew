@@ -44,6 +44,7 @@ case "$*" in
   --caskroom)          echo "$HOMEBREW_PREFIX/Caskroom"; exit 0 ;;
   --cache)             echo "$HOMEBREW_CACHE"; exit 0 ;;
   shellenv)            source "$HOMEBREW_LIBRARY/Homebrew/cmd/shellenv.sh"; homebrew-shellenv; exit 0 ;;
+  formulae)            source "$HOMEBREW_LIBRARY/Homebrew/cmd/formulae.sh"; homebrew-formulae; exit 0 ;;
 esac
 
 #####
@@ -344,8 +345,14 @@ else
   : "${HOMEBREW_OS_VERSION:=$(uname -r)}"
   HOMEBREW_OS_USER_AGENT_VERSION="$HOMEBREW_OS_VERSION"
 
-  # Ensure the system Curl is a version that supports modern HTTPS certificates.
-  HOMEBREW_MINIMUM_CURL_VERSION="7.41.0"
+  if [[ -n $HOMEBREW_FORCE_HOMEBREW_ON_LINUX && -n $HOMEBREW_DEVELOPER && -n $HOMEBREW_ON_DEBIAN7 ]]
+  then
+    # Special version for our debian 7 docker container used to build patchelf and binutils
+    HOMEBREW_MINIMUM_CURL_VERSION="7.25.0"
+  else
+    # Ensure the system Curl is a version that supports modern HTTPS certificates.
+    HOMEBREW_MINIMUM_CURL_VERSION="7.41.0"
+  fi
   curl_version_output="$($HOMEBREW_CURL --version 2>/dev/null)"
   curl_name_and_version="${curl_version_output%% (*}"
   if [[ $(numeric "${curl_name_and_version##* }") -lt $(numeric "$HOMEBREW_MINIMUM_CURL_VERSION") ]]
