@@ -946,14 +946,16 @@ Display the path to the file being used when invoking `brew` *`cmd`*.
 
 ### `create` [*`options`*] *`URL`*
 
-Generate a formula for the downloadable file at *`URL`* and open it in the editor.
-Homebrew will attempt to automatically derive the formula name and version, but
-if it fails, you'll have to make your own template. The `wget` formula serves as
-a simple example. For the complete API, see:
+Generate a formula or, with `--cask`, a cask for the downloadable file at *`URL`*
+and open it in the editor. Homebrew will attempt to automatically derive the
+formula name and version, but if it fails, you'll have to make your own template.
+The `wget` formula serves as a simple example. For the complete API, see:
 <https://rubydoc.brew.sh/Formula>
 
 * `--autotools`:
   Create a basic template for an Autotools-style build.
+* `--cask`:
+  Create a basic template for a cask.
 * `--cmake`:
   Create a basic template for a CMake-style build.
 * `--crystal`:
@@ -977,9 +979,9 @@ a simple example. For the complete API, see:
 * `--HEAD`:
   Indicate that *`URL`* points to the package's repository rather than a file.
 * `--set-name`:
-  Explicitly set the *`name`* of the new formula.
+  Explicitly set the *`name`* of the new formula or cask.
 * `--set-version`:
-  Explicitly set the *`version`* of the new formula.
+  Explicitly set the *`version`* of the new formula or cask.
 * `--set-license`:
   Explicitly set the *`license`* of the new formula.
 * `--tap`:
@@ -1156,7 +1158,7 @@ Requires write access to the repository.
 * `--message`:
   Message to include when autosquashing revision bumps, deletions, and rebuilds.
 * `--workflow`:
-  Retrieve artifacts from the specified workflow (default: `tests.yml`).
+  Retrieve artifacts from the specified workflow (default: `tests.yml`). Legacy: use --workflows instead
 * `--artifact`:
   Download artifacts with the specified name (default: `bottles`).
 * `--bintray-org`:
@@ -1167,6 +1169,10 @@ Requires write access to the repository.
   Use the specified *`URL`* as the root of the bottle's URL instead of Homebrew's default.
 * `--bintray-mirror`:
   Use the specified Bintray repository to automatically mirror stable URLs defined in the formulae (default: `mirror`).
+* `--workflows`:
+  Retrieve artifacts from the specified workflow (default: `tests.yml`) Comma-separated list to include multiple workflows.
+* `--ignore-missing-artifacts`:
+  Comma-separated list of workflows which can be ignored if they have not been run.
 
 ### `pr-upload` [*`options`*]
 
@@ -1346,6 +1352,12 @@ Update versions for PyPI resource blocks in *`formula`*.
   Don't fail if *`formula`* is not a PyPI package.
 * `--version`:
   Use the specified *`version`* when finding resources for *`formula`*. If no version is specified, the current version for *`formula`* will be used.
+* `--package-name`:
+  Use the specified *`package-name`* when finding resources for *`formula`*. If no package name is specified, it will be inferred from the formula's stable URL.
+* `--extra-packages`:
+  Include these additional packages when finding resources.
+* `--exclude-packages`:
+  Exclude these packages when finding resources.
 
 ### `update-test` [*`options`*]
 
