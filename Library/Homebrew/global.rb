@@ -80,12 +80,15 @@ module Homebrew
 
   DEFAULT_PREFIX ||= HOMEBREW_DEFAULT_PREFIX
   DEFAULT_CELLAR = "#{DEFAULT_PREFIX}/Cellar"
+  DEFAULT_MACOS_CELLAR = "#{HOMEBREW_DEFAULT_PREFIX}/Cellar"
+  DEFAULT_MACOS_ARM_CELLAR = "#{HOMEBREW_MACOS_ARM_DEFAULT_PREFIX}/Cellar"
+  DEFAULT_LINUX_CELLAR = "#{HOMEBREW_LINUX_DEFAULT_PREFIX}/Cellar"
   DEFAULT_REPOSITORY = "#{DEFAULT_PREFIX}/Homebrew"
 
   class << self
     attr_writer :failed, :raise_deprecation_exceptions, :auditing
 
-    def Homebrew.default_prefix?(prefix = HOMEBREW_PREFIX)
+    def default_prefix?(prefix = HOMEBREW_PREFIX)
       prefix.to_s == DEFAULT_PREFIX
     end
 

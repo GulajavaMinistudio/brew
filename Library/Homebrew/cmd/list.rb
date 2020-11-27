@@ -22,7 +22,7 @@ module Homebrew
         If <formula> is provided, summarise the paths within its current keg.
       EOS
       switch "--formula", "--formulae",
-             description: "List only formulae. This is the default when output is not to a terminal."
+             description: "List only formulae."
       switch "--cask", "--casks",
              description: "List only casks, or <cask> if provided."
       switch "--unbrewed",
@@ -103,8 +103,7 @@ module Homebrew
         ls_args << "-t" if args.t?
 
         if !$stdout.tty? && !args.formula?
-          odeprecated "`brew list` to only list formulae", "`brew list --formula`"
-          safe_system "ls", *ls_args, HOMEBREW_CELLAR
+          odisabled "`brew list` to only list formulae", "`brew list --formula`"
         else
           safe_system "ls", *ls_args, HOMEBREW_CELLAR
           list_casks(args: args) unless args.formula?

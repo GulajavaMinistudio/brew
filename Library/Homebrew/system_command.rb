@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "open3"
@@ -75,7 +75,7 @@ class SystemCommand
       print_stdout: T::Boolean,
       print_stderr: T::Boolean,
       verbose:      T::Boolean,
-      secrets:      T::Array[String],
+      secrets:      T.any(String, T::Array[String]),
       chdir:        T.any(String, Pathname),
     ).void
   end

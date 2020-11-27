@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "formula"
@@ -25,13 +25,14 @@ module Homebrew
              description: "Explicitly set the <version> of the package being installed."
 
       max_named 0
+      hide_from_man_page!
     end
   end
 
   def diy
     args = diy_args.parse
 
-    # odeprecated "`brew diy`"
+    odeprecated "`brew diy`"
 
     path = Pathname.getwd
 

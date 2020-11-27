@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "cache_store"
@@ -113,11 +113,6 @@ class Formula
   # @private
   attr_reader :stable
 
-  # @private
-  def devel
-    odisabled "Formula#devel"
-  end
-
   # The HEAD {SoftwareSpec} for this {Formula}.
   # Installed when using `brew install --HEAD`.
   # This is always installed with the version `HEAD` and taken from the latest
@@ -129,6 +124,7 @@ class Formula
 
   # The currently active {SoftwareSpec}.
   # @see #determine_active_spec
+  sig { returns(SoftwareSpec) }
   attr_reader :active_spec
 
   protected :active_spec
@@ -326,11 +322,6 @@ class Formula
   # @private
   def stable?
     active_spec == stable
-  end
-
-  # @private
-  def devel?
-    odisabled "Formula#devel?"
   end
 
   # Is the currently active {SoftwareSpec} a {#head} build?
@@ -949,6 +940,7 @@ class Formula
   end
 
   # The generated launchd {.plist} file path.
+  sig { returns(Pathname) }
   def plist_path
     prefix/"#{plist_name}.plist"
   end
@@ -971,38 +963,47 @@ class Formula
     HOMEBREW_PREFIX/"opt"/name
   end
 
+  sig { returns(Pathname) }
   def opt_bin
     opt_prefix/"bin"
   end
 
+  sig { returns(Pathname) }
   def opt_include
     opt_prefix/"include"
   end
 
+  sig { returns(Pathname) }
   def opt_lib
     opt_prefix/"lib"
   end
 
+  sig { returns(Pathname) }
   def opt_libexec
     opt_prefix/"libexec"
   end
 
+  sig { returns(Pathname) }
   def opt_sbin
     opt_prefix/"sbin"
   end
 
+  sig { returns(Pathname) }
   def opt_share
     opt_prefix/"share"
   end
 
+  sig { returns(Pathname) }
   def opt_pkgshare
     opt_prefix/"share"/name
   end
 
+  sig { returns(Pathname) }
   def opt_elisp
     opt_prefix/"share/emacs/site-lisp"/name
   end
 
+  sig { returns(Pathname) }
   def opt_frameworks
     opt_prefix/"Frameworks"
   end
@@ -1022,40 +1023,45 @@ class Formula
   delegate pour_bottle_check_unsatisfied_reason: :"self.class"
 
   # Can be overridden to run commands on both source and bottle installation.
+  sig { overridable.void }
   def post_install; end
 
   # @private
+  sig { void }
   def run_post_install
     @prefix_returns_versioned_prefix = true
     build = self.build
-    self.build = Tab.for_formula(self)
 
-    new_env = {
-      TMPDIR:        HOMEBREW_TEMP,
-      TEMP:          HOMEBREW_TEMP,
-      TMP:           HOMEBREW_TEMP,
-      _JAVA_OPTIONS: "-Djava.io.tmpdir=#{HOMEBREW_TEMP}",
-      HOMEBREW_PATH: nil,
-      PATH:          ENV["HOMEBREW_PATH"],
-    }
+    begin
+      self.build = Tab.for_formula(self)
 
-    with_env(new_env) do
-      ENV.clear_sensitive_environment!
+      new_env = {
+        TMPDIR:        HOMEBREW_TEMP,
+        TEMP:          HOMEBREW_TEMP,
+        TMP:           HOMEBREW_TEMP,
+        _JAVA_OPTIONS: "-Djava.io.tmpdir=#{HOMEBREW_TEMP}",
+        HOMEBREW_PATH: nil,
+        PATH:          ENV["HOMEBREW_PATH"],
+      }
 
-      etc_var_dirs = [bottle_prefix/"etc", bottle_prefix/"var"]
-      Find.find(*etc_var_dirs.select(&:directory?)) do |path|
-        path = Pathname.new(path)
-        path.extend(InstallRenamed)
-        path.cp_path_sub(bottle_prefix, HOMEBREW_PREFIX)
+      with_env(new_env) do
+        ENV.clear_sensitive_environment!
+
+        etc_var_dirs = [bottle_prefix/"etc", bottle_prefix/"var"]
+        T.unsafe(Find).find(*etc_var_dirs.select(&:directory?)) do |path|
+          path = Pathname.new(path)
+          path.extend(InstallRenamed)
+          path.cp_path_sub(bottle_prefix, HOMEBREW_PREFIX)
+        end
+
+        with_logging("post_install") do
+          post_install
+        end
       end
-
-      with_logging("post_install") do
-        post_install
-      end
+    ensure
+      self.build = build
+      @prefix_returns_versioned_prefix = false
     end
-  ensure
-    self.build = build
-    @prefix_returns_versioned_prefix = false
   end
 
   # Warn the user about any Homebrew-specific issues or quirks for this package.
@@ -1077,6 +1083,7 @@ class Formula
   #   s += "Some issue only on older systems" if MacOS.version < :el_capitan
   #   s
   # end</pre>
+  sig { overridable.returns(T.nilable(String)) }
   def caveats
     nil
   end
@@ -1099,6 +1106,8 @@ class Formula
   # keep .la files with:
   #   skip_clean :la
   # @private
+  sig { params(path: Pathname).returns(T::Boolean) }
+
   def skip_clean?(path)
     return true if path.extname == ".la" && self.class.skip_clean_paths.include?(:la)
 
@@ -1251,7 +1260,7 @@ class Formula
     Formula.cache[:outdated_kegs] ||= {}
     Formula.cache[:outdated_kegs][cache_key] ||= begin
       all_kegs = []
-      current_version = false
+      current_version = T.let(false, T::Boolean)
 
       installed_kegs.each do |keg|
         all_kegs << keg
@@ -1413,6 +1422,7 @@ class Formula
       -DCMAKE_C_FLAGS_RELEASE=-DNDEBUG
       -DCMAKE_CXX_FLAGS_RELEASE=-DNDEBUG
       -DCMAKE_INSTALL_PREFIX=#{prefix}
+      -DCMAKE_INSTALL_LIBDIR=lib
       -DCMAKE_BUILD_TYPE=Release
       -DCMAKE_FIND_FRAMEWORK=LAST
       -DCMAKE_VERBOSE_MAKEFILE=ON
@@ -1437,13 +1447,15 @@ class Formula
   # Standard parameters for cabal-v2 builds.
   sig { returns(T::Array[String]) }
   def std_cabal_v2_args
+    env = T.cast(ENV, T.any(Stdenv, Superenv))
+
     # cabal-install's dependency-resolution backtracking strategy can
     # easily need more than the default 2,000 maximum number of
     # "backjumps," since Hackage is a fast-moving, rolling-release
     # target. The highest known needed value by a formula was 43,478
     # for git-annex, so 100,000 should be enough to avoid most
     # gratuitous backjumps build failures.
-    ["--jobs=#{ENV.make_jobs}", "--max-backjumps=100000", "--install-method=copy", "--installdir=#{bin}"]
+    ["--jobs=#{env.make_jobs}", "--max-backjumps=100000", "--install-method=copy", "--installdir=#{bin}"]
   end
 
   # Standard parameters for meson builds.
@@ -1970,6 +1982,7 @@ class Formula
   #
   # # If there is a "make install" available, please use it!
   # system "make", "install"</pre>
+  sig { params(cmd: T.any(String, Pathname), args: T.any(String, Pathname)).void }
   def system(cmd, *args)
     verbose_using_dots = Homebrew::EnvConfig.verbose_using_dots?
 
@@ -2036,10 +2049,12 @@ class Formula
           rd.close
         end
       else
-        pid = fork { exec_cmd(cmd, args, log, logfn) }
+        pid = fork do
+          exec_cmd(cmd, args, log, logfn)
+        end
       end
 
-      Process.wait(pid)
+      Process.wait(T.must(pid))
 
       $stdout.flush
 
@@ -2124,11 +2139,15 @@ class Formula
   end
 
   # Runs `xcodebuild` without Homebrew's compiler environment variables set.
+  sig { params(args: T.any(String, Pathname)).void }
   def xcodebuild(*args)
     removed = ENV.remove_cc_etc
-    system "xcodebuild", *args
-  ensure
-    ENV.update(removed)
+
+    begin
+      T.unsafe(self).system("xcodebuild", *args)
+    ensure
+      ENV.update(removed)
+    end
   end
 
   def fetch_patches
@@ -2158,7 +2177,8 @@ class Formula
     if cmd == "python"
       setup_py_in_args = %w[setup.py build.py].include?(args.first)
       setuptools_shim_in_args = args.any? { |a| a.to_s.start_with? "import setuptools" }
-      ENV.refurbish_args if setup_py_in_args || setuptools_shim_in_args
+      env = T.cast(ENV, T.any(Stdenv, Superenv))
+      env.refurbish_args if setup_py_in_args || setuptools_shim_in_args
     end
 
     $stdout.reopen(out)
@@ -2166,7 +2186,7 @@ class Formula
     out.close
     args.map!(&:to_s)
     begin
-      exec(cmd, *args)
+      T.unsafe(Kernel).exec(cmd, *args)
     rescue
       nil
     end
@@ -2227,10 +2247,6 @@ class Formula
         raise "You cannot override Formula#brew in class #{name}"
       when :test
         define_method(:test_defined?) { true }
-      when :patches
-        odisabled "a Formula#patches definition", "'patch do' block calls"
-      when :options
-        odisabled "a Formula#options definition", "'option do' block calls"
       end
     end
 
@@ -2274,10 +2290,7 @@ class Formula
       if args.nil?
         @licenses
       else
-        if args.is_a? Array
-          odeprecated "`license [...]`", "`license any_of: [...]`"
-          args = { any_of: args }
-        end
+        odisabled "`license [...]`", "`license any_of: [...]`" if args.is_a? Array
         @licenses = args
       end
     end
@@ -2437,7 +2450,7 @@ class Formula
     # Get the `BUILD_FLAGS` from the formula's namespace set in `Formulary::load_formula`.
     # @private
     def build_flags
-      namespace = to_s.split("::")[0..-2].join("::")
+      namespace = T.must(to_s.split("::")[0..-2]).join("::")
       return [] if namespace.empty?
 
       mod = const_get(namespace)
@@ -2461,11 +2474,6 @@ class Formula
       return @stable unless block
 
       @stable.instance_eval(&block)
-    end
-
-    # @private
-    def devel
-      odisabled "'devel' blocks in formulae", "'head' blocks or @-versioned formulae"
     end
 
     # @!attribute [w] head

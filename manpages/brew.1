@@ -60,81 +60,6 @@ Uninstall formulae that were only installed as a dependency of another formula a
 \fB\-n\fR, \fB\-\-dry\-run\fR
 List what would be uninstalled, but do not actually uninstall anything\.
 .
-.SS "\fBcask\fR \fIcommand\fR [\fIoptions\fR] [\fIcask\fR]"
-Homebrew Cask provides a friendly CLI workflow for the administration of macOS applications distributed as binaries\.
-.
-.P
-Commands:
-.
-.TP
-\fBaudit\fR
-.
-.br
-Check \fIcask\fR for Homebrew coding style violations\.
-.
-.TP
-\fBcat\fR
-.
-.br
-Dump raw source of a \fIcask\fR to the standard output\.
-.
-.TP
-\fBcreate\fR
-.
-.br
-Creates the given \fIcask\fR and opens it in an editor\.
-.
-.TP
-\fBedit\fR
-.
-.br
-Open the given \fIcask\fR for editing\.
-.
-.TP
-\fBfetch\fR
-.
-.br
-Downloads remote application files to local cache\.
-.
-.TP
-\fBhelp\fR
-.
-.br
-Print help for \fBcask\fR commands\.
-.
-.TP
-\fBinfo\fR
-.
-.br
-Displays information about the given \fIcask\fR\.
-.
-.TP
-\fBinstall\fR
-.
-.br
-Installs the given \fIcask\fR\.
-.
-.TP
-\fBstyle\fR
-.
-.br
-Checks style of the given \fIcask\fR using RuboCop\.
-.
-.TP
-\fBuninstall\fR
-.
-.br
-Uninstalls the given \fIcask\fR\.
-.
-.TP
-\fBzap\fR
-.
-.br
-Zaps all files associated with the given \fIcask\fR\.
-.
-.P
-See also: \fBman brew\fR
-.
 .SS "\fBcleanup\fR [\fIoptions\fR] [\fIformula\fR|\fIcask\fR]"
 Remove stale lock files and outdated downloads for all formulae and casks, and remove old versions of installed formulae\. If arguments are specified, only do this for the given formulae and casks\. Removes all downloads more than 120 days old\. This can be adjusted with \fBHOMEBREW_CLEANUP_MAX_AGE_DAYS\fR\.
 .
@@ -322,8 +247,8 @@ Automatically create a new issue in the appropriate GitHub repository after crea
 \fB\-p\fR, \fB\-\-private\fR
 The Gist will be marked private and will not appear in listings but will be accessible with its link\.
 .
-.SS "\fBhome\fR [\fIformula\fR]"
-Open \fIformula\fR\'s homepage in a browser, or open Homebrew\'s own homepage if no formula is provided\.
+.SS "\fBhome\fR [\fIformula\fR|\fIcask\fR]"
+Open a \fIformula\fR or \fIcask\fR\'s homepage in a browser, or open Homebrew\'s own homepage if no argument is provided\.
 .
 .SS "\fBinfo\fR [\fIoptions\fR] [\fIformula\fR|\fIcask\fR]"
 Display brief statistics for your Homebrew installation\.
@@ -349,7 +274,7 @@ Open the GitHub source page for \fIformula\fR in a browser\. To view formula his
 .
 .TP
 \fB\-\-json\fR
-Print a JSON representation of \fIformula\fR\. Currently the default and only accepted value for \fIversion\fR is \fBv1\fR\. See the docs for examples of using the JSON output: \fIhttps://docs\.brew\.sh/Querying\-Brew\fR
+Print a JSON representation\. Currently the default value for \fIversion\fR is \fBv1\fR for \fIformula\fR\. For \fIformula\fR and \fIcask\fR use \fBv2\fR\. See the docs for examples of using the JSON output: \fIhttps://docs\.brew\.sh/Querying\-Brew\fR
 .
 .TP
 \fB\-\-installed\fR
@@ -499,7 +424,7 @@ If \fIformula\fR is provided, summarise the paths within its current keg\.
 .
 .TP
 \fB\-\-formula\fR
-List only formulae\. This is the default when output is not to a terminal\.
+List only formulae\.
 .
 .TP
 \fB\-\-cask\fR
@@ -1173,15 +1098,15 @@ When passed with \fB\-\-write\fR, generate a new commit after writing changes to
 .
 .TP
 \fB\-\-no\-audit\fR
-Don\'t run \fBbrew cask audit\fR before opening the PR\.
+Don\'t run \fBbrew audit\fR before opening the PR\.
 .
 .TP
 \fB\-\-online\fR
-Run \fBbrew cask audit \-\-online\fR before opening the PR\.
+Run \fBbrew audit \-\-online\fR before opening the PR\.
 .
 .TP
 \fB\-\-no\-style\fR
-Don\'t run \fBbrew cask style \-\-fix\fR before opening the PR\.
+Don\'t run \fBbrew style \-\-fix\fR before opening the PR\.
 .
 .TP
 \fB\-\-no\-browse\fR
@@ -1413,17 +1338,6 @@ Dispatch specified workflow (default: \fBdispatch\-build\-bottle\.yml\fR)\.
 \fB\-\-upload\fR
 Upload built bottles to Bintray\.
 .
-.SS "\fBdiy\fR [\fIoptions\fR]"
-Automatically determine the installation prefix for non\-Homebrew software\. Using the output from this command, you can install your own software into the Cellar and then link it into Homebrew\'s prefix with \fBbrew link\fR\.
-.
-.TP
-\fB\-\-name\fR
-Explicitly set the \fIname\fR of the package being installed\.
-.
-.TP
-\fB\-\-version\fR
-Explicitly set the \fIversion\fR of the package being installed\.
-.
 .SS "\fBedit\fR [\fIformula\fR|\fIcask\fR]"
 Open a \fIformula\fR or \fIcask\fR in the editor set by \fBEDITOR\fR or \fBHOMEBREW_EDITOR\fR, or open the Homebrew repository for editing if no formula is provided\.
 .
@@ -1522,6 +1436,21 @@ Return a failing status code if changes are detected in the manpage outputs\. Th
 .TP
 \fB\-\-link\fR
 This is now done automatically by \fBbrew update\fR\.
+.
+.SS "\fBmirror\fR \fIformula\fR"
+Reupload the stable URL of a formula to Bintray for use as a mirror\.
+.
+.TP
+\fB\-\-bintray\-org\fR
+Upload to the specified Bintray organisation (default: \fBhomebrew\fR)\.
+.
+.TP
+\fB\-\-bintray\-repo\fR
+Upload to the specified Bintray repository (default: \fBmirror\fR)\.
+.
+.TP
+\fB\-\-no\-publish\fR
+Upload to Bintray, but don\'t publish\.
 .
 .SS "\fBpr\-automerge\fR [\fIoptions\fR]"
 Find pull requests that can be automatically merged using \fBbrew pr\-publish\fR\.
@@ -1824,6 +1753,10 @@ Silence all non\-critical errors\.
 Update RBI files\.
 .
 .TP
+\fB\-\-suggest\-typed\fR
+Try upgrading \fBtyped\fR sigils\.
+.
+.TP
 \fB\-\-fail\-if\-not\-changed\fR
 Return a failing status code if all gems are up to date and gem definitions do not need a tapioca update\.
 .
@@ -1838,6 +1771,21 @@ Typecheck a single file\.
 .TP
 \fB\-\-ignore\fR
 Ignores input files that contain the given string in their paths (relative to the input path passed to Sorbet)\.
+.
+.SS "\fBunbottled\fR [\fIformula\fR]"
+Outputs the unbottled dependents of formulae\.
+.
+.TP
+\fB\-\-tag\fR
+Use the specified bottle tag (e\.g\. big_sur) instead of the current OS\.
+.
+.TP
+\fB\-\-dependents\fR
+Don\'t get analytics data and sort by number of dependents instead\.
+.
+.TP
+\fB\-\-total\fR
+Output the number of unbottled and total formulae\.
 .
 .SS "\fBunpack\fR [\fIoptions\fR] \fIformula\fR"
 Unpack the source files for \fIformula\fR into subdirectories of the current working directory\.

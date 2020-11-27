@@ -47,7 +47,6 @@ module Formulary
       mod.const_set(:BUILD_FLAGS, flags)
       mod.module_eval(contents, path)
     rescue NameError, ArgumentError, ScriptError, MethodDeprecatedError => e
-      $stderr.puts e.backtrace if Homebrew::EnvConfig.developer?
       raise FormulaUnreadableError.new(name, e)
     end
     class_name = class_s(name)
@@ -225,12 +224,12 @@ module Formulary
 
     def load_file(flags:)
       if %r{githubusercontent.com/[\w-]+/[\w-]+/[a-f0-9]{40}(?:/Formula)?/(?<formula_name>[\w+-.@]+).rb} =~ url # rubocop:disable Style/CaseLikeIf
-        odisabled "Installation of #{formula_name} from a GitHub commit URL",
-                  "'brew extract #{formula_name}' to stable tap on GitHub"
+        raise UsageError, "Installation of #{formula_name} from a GitHub commit URL is unsupported! " \
+                  "'brew extract #{formula_name}' to stable tap on GitHub instead."
       elsif url.match?(%r{^(https?|ftp)://})
-        odisabled "Non-checksummed download of #{name} formula file from an arbitrary URL",
-                  "'brew extract' or 'brew create' and 'brew tap-new' to create a "\
-                  "formula file in a tap on GitHub"
+        raise UsageError, "Non-checksummed download of #{name} formula file from an arbitrary URL is unsupported! ",
+              "'brew extract' or 'brew create' and 'brew tap-new' to create a "\
+              "formula file in a tap on GitHub instead."
       end
       HOMEBREW_CACHE_FORMULA.mkpath
       FileUtils.rm_f(path)

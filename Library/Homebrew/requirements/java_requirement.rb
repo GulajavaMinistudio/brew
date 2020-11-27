@@ -34,6 +34,9 @@ class JavaRequirement < Requirement
   end
 
   def initialize(tags = [])
+    odeprecated "depends_on :java",
+                '"depends_on "openjdk@11", "depends_on "openjdk@8" or "depends_on "openjdk"'
+
     @version = tags.shift if tags.first&.match?(/^\d/)
     super(tags)
     @cask = suggestion.token
@@ -75,7 +78,7 @@ class JavaRequirement < Requirement
       title_string = " #{title}" if title
       <<~EOS
         Install#{title_string} with Homebrew Cask:
-          brew cask install #{token}
+          brew install --cask #{token}
       EOS
     end
   end
