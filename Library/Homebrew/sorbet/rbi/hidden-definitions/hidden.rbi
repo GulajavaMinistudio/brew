@@ -25753,14 +25753,6 @@ module Readline
   def self.completion_quote_character(); end
 end
 
-class Regexp::Expression::Base
-  include ::RuboCop::Ext::RegexpParser::Expression::Base
-end
-
-class Regexp::Expression::CharacterSet
-  include ::RuboCop::Ext::RegexpParser::Expression::CharacterSet
-end
-
 class Requirement
   extend ::T::Private::Methods::MethodHooks
   extend ::T::Private::Methods::SingletonMethodHooks
@@ -26145,7 +26137,6 @@ module RuboCop::AST::NodePattern::Sets
   SET_INCLUDE_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
   SET_SYSTEM_SHELL_OUTPUT_PIPE_OUTPUT = ::T.let(nil, ::T.untyped)
   SET_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
-  SET___METHOD_____CALLEE__ = ::T.let(nil, ::T.untyped)
 end
 
 class RuboCop::Cask::AST::CaskHeader
@@ -27765,6 +27756,13 @@ end
 class SimpleCov::Formatter::HTMLFormatter
 end
 
+class SimpleCov::Formatter::JSONFormatter
+  def format(result); end
+end
+
+class SimpleCov::Formatter::JSONFormatter
+end
+
 class SimpleCov::Formatter::MultiFormatter
 end
 
@@ -27789,6 +27787,7 @@ class SimpleCov::Formatter::SimpleFormatter
 end
 
 module SimpleCov::Formatter
+  def self.from_env(env); end
 end
 
 module SimpleCov::LastRun
@@ -28138,6 +28137,40 @@ module SimpleCov
   def self.wait_for_other_processes(); end
 
   def self.write_last_run(result); end
+end
+
+module SimpleCovJSONFormatter
+end
+
+class SimpleCovJSONFormatter::ResultExporter
+  def export(); end
+
+  def initialize(result_hash); end
+  FILENAME = ::T.let(nil, ::T.untyped)
+end
+
+class SimpleCovJSONFormatter::ResultExporter
+end
+
+class SimpleCovJSONFormatter::ResultHashFormatter
+  def format(); end
+
+  def initialize(result); end
+end
+
+class SimpleCovJSONFormatter::ResultHashFormatter
+end
+
+class SimpleCovJSONFormatter::SourceFileFormatter
+  def format(); end
+
+  def initialize(source_file); end
+end
+
+class SimpleCovJSONFormatter::SourceFileFormatter
+end
+
+module SimpleCovJSONFormatter
 end
 
 module Singleton

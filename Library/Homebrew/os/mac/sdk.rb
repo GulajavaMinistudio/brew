@@ -44,16 +44,28 @@ module OS
 
       def sdk_if_applicable(v = nil)
         sdk = begin
-          if v.nil?
-            sdk_for OS::Mac.version
+          if v.blank?
+            sdk_for OS::Mac.sdk_version
           else
             sdk_for v
           end
         rescue NoSDKError
           latest_sdk
         end
-        # Only return an SDK older than the OS version if it was specifically requested
-        return unless v || (!sdk.nil? && sdk.version >= OS::Mac.version)
+        return if sdk.blank?
+
+        # Accept an SDK for another OS version if it shares a major version
+        # with the current OS - for example, the 11.0 SDK on 11.1,
+        # or vice versa.
+        # Note that this only applies on macOS 11
+        # or greater, given the way the versioning has changed.
+        # This shortcuts the below check, since we *do* accept an older version
+        # on macOS 11 or greater if the major version matches.
+        return sdk if OS::Mac.version >= :big_sur && sdk.version.major == OS::Mac.version.major
+
+        # On OSs lower than 11, or where the major versions don't match,
+        # only return an SDK older than the OS version if it was specifically requested
+        return if v.blank? && sdk.version < OS::Mac.version
 
         sdk
       end
@@ -76,7 +88,7 @@ module OS
 
             Dir[File.join(sdk_prefix, "MacOSX*.sdk")].each do |sdk_path|
               version = sdk_path[/MacOSX(\d+\.\d+)u?\.sdk$/, 1]
-              paths[OS::Mac::Version.new(version)] = sdk_path unless version.nil?
+              paths[OS::Mac::Version.new(version)] = sdk_path if version.present?
             end
 
             paths
