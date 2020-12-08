@@ -12,6 +12,7 @@ require "patch"
 require "compilers"
 require "global"
 require "os/mac/version"
+require "extend/on_os"
 
 class SoftwareSpec
   extend T::Sig
@@ -392,10 +393,9 @@ class BottleSpecification
 
   def checksums
     tags = collector.keys.sort_by do |tag|
-      # Sort non-MacOS tags below MacOS tags.
-
-      OS::Mac::Version.from_symbol tag
+      "#{OS::Mac::Version.from_symbol(tag)}_#{tag}"
     rescue MacOSVersionError
+      # Sort non-MacOS tags below MacOS tags.
       "0.#{tag}"
     end
     checksums = {}
@@ -409,6 +409,8 @@ class BottleSpecification
 end
 
 class PourBottleCheck
+  include OnOS
+
   def initialize(formula)
     @formula = formula
   end
