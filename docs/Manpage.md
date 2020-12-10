@@ -637,15 +637,15 @@ upgraded formulae or, every 30 days, for all formulae.
 
 ### `uses` [*`options`*] *`formula`*
 
-Show formulae that specify *`formula`* as a dependency (i.e. show dependents
+Show formulae and casks that specify *`formula`* as a dependency (i.e. show dependents
 of *`formula`*). When given multiple formula arguments, show the intersection
-of formulae that use *`formula`*. By default, `uses` shows all formulae that
+of formulae that use *`formula`*. By default, `uses` shows all formulae and casks that
 specify *`formula`* as a required or recommended dependency for their stable builds.
 
 * `--recursive`:
   Resolve more than one level of dependencies.
 * `--installed`:
-  Only list formulae that are currently installed.
+  Only list formulae and casks that are currently installed.
 * `--include-build`:
   Include all formulae that specify *`formula`* as `:build` type dependency.
 * `--include-test`:
@@ -654,6 +654,10 @@ specify *`formula`* as a required or recommended dependency for their stable bui
   Include all formulae that specify *`formula`* as `:optional` type dependency.
 * `--skip-recommended`:
   Skip all formulae that specify *`formula`* as `:recommended` type dependency.
+* `--formula`:
+  Include only formulae.
+* `--cask`:
+  Include only casks.
 
 ### `--cache` [*`options`*] [*`formula`*|*`cask`*]
 
@@ -885,7 +889,7 @@ nor vice versa. It must use whichever style specification the formula already us
 * `--tag`:
   Specify the new git commit *`tag`* for the formula.
 * `--revision`:
-  Specify the new git commit *`revision`* corresponding to the specified *`tag`*.
+  Specify the new commit *`revision`* corresponding to the specified git *`tag`* or specified *`version`*.
 * `-f`, `--force`:
   Ignore duplicate open PRs. Remove all mirrors if `--mirror` was not specified.
 
@@ -1683,6 +1687,11 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 
     `export HOMEBREW_CASK_OPTS="--appdir=~/Applications --fontdir=/Library/Fonts"`
 
+- `HOMEBREW_CLEANUP_PERIODIC_FULL_DAYS`
+  <br>If set, `brew install`, `brew upgrade` and `brew reinstall` will cleanup all formulae when this number of days has passed.
+
+  *Default:* `30`.
+
 - `HOMEBREW_CLEANUP_MAX_AGE_DAYS`
   <br>Cleanup all cached files older than this many days.
 
@@ -1819,7 +1828,7 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
     *Note:* While ensuring your downloads are fully secure, this is likely to cause from-source SourceForge, some GNU & GNOME-hosted formulae to fail to download.
 
 - `HOMEBREW_NO_INSTALL_CLEANUP`
-  <br>If set, `brew install`, `brew upgrade` and `brew reinstall` will never automatically cleanup installed/upgraded/reinstalled formulae or all formulae every 30 days.
+  <br>If set, `brew install`, `brew upgrade` and `brew reinstall` will never automatically cleanup installed/upgraded/reinstalled formulae or all formulae every HOMEBREW_CLEANUP_PERIODIC_FULL_DAYS days.
 
 - `HOMEBREW_PRY`
   <br>If set, use Pry for the `brew irb` command.
