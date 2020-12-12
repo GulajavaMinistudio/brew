@@ -11,50 +11,50 @@ module RuboCop
       # - `component_precedence_list` has component hierarchy in a nested list
       #   where each sub array contains components' details which are at same precedence level
       class ComponentsOrder < FormulaCop
-        def audit_formula(_node, _class_node, _parent_class_node, body_node)
-          component_precedence_list = [
-            [{ name: :include,   type: :method_call }],
-            [{ name: :desc,      type: :method_call }],
-            [{ name: :homepage,  type: :method_call }],
-            [{ name: :url,       type: :method_call }],
-            [{ name: :mirror,    type: :method_call }],
-            [{ name: :version,   type: :method_call }],
-            [{ name: :sha256,    type: :method_call }],
-            [{ name: :license, type: :method_call }],
-            [{ name: :revision, type: :method_call }],
-            [{ name: :version_scheme, type: :method_call }],
-            [{ name: :head,      type: :method_call }],
-            [{ name: :stable,    type: :block_call }],
-            [{ name: :livecheck, type: :block_call }],
-            [{ name: :bottle,    type: :block_call }],
-            [{ name: :pour_bottle?, type: :block_call }],
-            [{ name: :head,      type: :block_call }],
-            [{ name: :bottle,    type: :method_call }],
-            [{ name: :keg_only,  type: :method_call }],
-            [{ name: :option,    type: :method_call }],
-            [{ name: :deprecated_option, type: :method_call }],
-            [{ name: :disable!, type: :method_call }],
-            [{ name: :deprecate!, type: :method_call }],
-            [{ name: :depends_on, type: :method_call }],
-            [{ name: :uses_from_macos, type: :method_call }],
-            [{ name: :on_macos, type: :block_call }],
-            [{ name: :on_linux, type: :block_call }],
-            [{ name: :conflicts_with, type: :method_call }],
-            [{ name: :skip_clean, type: :method_call }],
-            [{ name: :cxxstdlib_check, type: :method_call }],
-            [{ name: :link_overwrite, type: :method_call }],
-            [{ name: :fails_with, type: :method_call }, { name: :fails_with, type: :block_call }],
-            [{ name: :go_resource, type: :block_call }, { name: :resource, type: :block_call }],
-            [{ name: :patch, type: :method_call }, { name: :patch, type: :block_call }],
-            [{ name: :needs, type: :method_call }],
-            [{ name: :install, type: :method_definition }],
-            [{ name: :post_install, type: :method_definition }],
-            [{ name: :caveats, type: :method_definition }],
-            [{ name: :plist_options, type: :method_call }, { name: :plist, type: :method_definition }],
-            [{ name: :test, type: :block_call }],
-          ]
+        COMPONENT_PRECEDENCE_LIST = [
+          [{ name: :include,   type: :method_call }],
+          [{ name: :desc,      type: :method_call }],
+          [{ name: :homepage,  type: :method_call }],
+          [{ name: :url,       type: :method_call }],
+          [{ name: :mirror,    type: :method_call }],
+          [{ name: :version,   type: :method_call }],
+          [{ name: :sha256,    type: :method_call }],
+          [{ name: :license, type: :method_call }],
+          [{ name: :revision, type: :method_call }],
+          [{ name: :version_scheme, type: :method_call }],
+          [{ name: :head,      type: :method_call }],
+          [{ name: :stable,    type: :block_call }],
+          [{ name: :livecheck, type: :block_call }],
+          [{ name: :bottle,    type: :block_call }],
+          [{ name: :pour_bottle?, type: :block_call }],
+          [{ name: :head,      type: :block_call }],
+          [{ name: :bottle,    type: :method_call }],
+          [{ name: :keg_only,  type: :method_call }],
+          [{ name: :option,    type: :method_call }],
+          [{ name: :deprecated_option, type: :method_call }],
+          [{ name: :disable!, type: :method_call }],
+          [{ name: :deprecate!, type: :method_call }],
+          [{ name: :depends_on, type: :method_call }],
+          [{ name: :uses_from_macos, type: :method_call }],
+          [{ name: :on_macos, type: :block_call }],
+          [{ name: :on_linux, type: :block_call }],
+          [{ name: :conflicts_with, type: :method_call }],
+          [{ name: :skip_clean, type: :method_call }],
+          [{ name: :cxxstdlib_check, type: :method_call }],
+          [{ name: :link_overwrite, type: :method_call }],
+          [{ name: :fails_with, type: :method_call }, { name: :fails_with, type: :block_call }],
+          [{ name: :go_resource, type: :block_call }, { name: :resource, type: :block_call }],
+          [{ name: :patch, type: :method_call }, { name: :patch, type: :block_call }],
+          [{ name: :needs, type: :method_call }],
+          [{ name: :install, type: :method_definition }],
+          [{ name: :post_install, type: :method_definition }],
+          [{ name: :caveats, type: :method_definition }],
+          [{ name: :plist_options, type: :method_call }, { name: :plist, type: :method_definition }],
+          [{ name: :test, type: :block_call }],
+        ].freeze
 
-          @present_components, @offensive_nodes = check_order(component_precedence_list, body_node)
+        def audit_formula(_node, _class_node, _parent_class_node, body_node)
+          @present_components, @offensive_nodes = check_order(COMPONENT_PRECEDENCE_LIST, body_node)
 
           component_problem @offensive_nodes[0], @offensive_nodes[1] if @offensive_nodes
 
@@ -135,6 +135,7 @@ module RuboCop
         end
 
         def check_on_os_block_content(component_precedence_list, on_os_block)
+          on_os_allowed_methods = %w[depends_on patch resource deprecate! disable!]
           _, offensive_node = check_order(component_precedence_list, on_os_block.body)
           component_problem(*offensive_node) if offensive_node
           child_nodes = on_os_block.body.begin_type? ? on_os_block.body.child_nodes : [on_os_block.body]
@@ -145,16 +146,14 @@ module RuboCop
             method_type = child.send_type? || child.block_type?
             next unless method_type
 
-            valid_node ||= child.method_name.to_s == "patch"
-            valid_node ||= child.method_name.to_s == "resource"
-            valid_node ||= child.method_name.to_s == "deprecate!"
-            valid_node ||= child.method_name.to_s == "disable!"
+            valid_node ||= on_os_allowed_methods.include? child.method_name.to_s
 
-            @offensive_node = on_os_block
-            @offense_source_range = on_os_block.source_range
-            unless valid_node
-              problem "`#{on_os_block.method_name}` can only include `depends_on`, `patch` and `resource` nodes."
-            end
+            @offensive_node = child
+            @offense_source_range = child.source_range
+            next if valid_node
+
+            problem "`#{on_os_block.method_name}` cannot include `#{child.method_name}`. " \
+                    "Only #{on_os_allowed_methods.map { |m| "`#{m}`" }.to_sentence} are allowed."
           end
         end
 
