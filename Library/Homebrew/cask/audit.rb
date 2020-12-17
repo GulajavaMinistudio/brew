@@ -4,6 +4,7 @@
 require "cask/denylist"
 require "cask/download"
 require "digest"
+require "livecheck/livecheck"
 require "utils/curl"
 require "utils/git"
 require "utils/shared_audits"
@@ -66,10 +67,11 @@ module Cask
       check_single_uninstall_zap
       check_untrusted_pkg
       check_hosting_with_appcast
-      check_latest_with_appcast
+      check_latest_with_appcast_or_livecheck
       check_latest_with_auto_updates
       check_stanza_requires_uninstall
       check_appcast_contains_version
+      check_livecheck_version
       check_gitlab_repository
       check_gitlab_repository_archived
       check_gitlab_prerelease_version
@@ -246,6 +248,7 @@ module Cask
       return unless cask.sha256
 
       check_sha256_no_check_if_latest
+      check_sha256_no_check_if_unversioned
       check_sha256_actually_256
       check_sha256_invalid
     end
@@ -256,6 +259,12 @@ module Cask
       return if cask.sha256 == :no_check
 
       add_error "you should use sha256 :no_check when version is :latest"
+    end
+
+    def check_sha256_no_check_if_unversioned
+      return if cask.sha256 == :no_check
+
+      add_error "Use `sha256 :no_check` when URL is unversioned." if cask.url&.unversioned?
     end
 
     def check_sha256_actually_256
@@ -274,11 +283,11 @@ module Cask
       add_error "cannot use the sha256 for an empty string: #{empty_sha256}"
     end
 
-    def check_latest_with_appcast
+    def check_latest_with_appcast_or_livecheck
       return unless cask.version.latest?
-      return unless cask.appcast
 
-      add_error "Casks with an appcast should not use version :latest"
+      add_error "Casks with an appcast should not use version :latest" if cask.appcast
+      add_error "Casks with a livecheck should not use version :latest" if cask.livecheckable?
     end
 
     def check_latest_with_auto_updates
@@ -357,7 +366,7 @@ module Cask
     end
 
     def url_match_homepage?
-      host = cask.url.to_s.downcase
+      host = cask.url.to_s
       host_uri = URI(host)
       host = if host.match?(/:\d/) && host_uri.port != 80
         "#{host_uri.host}:#{host_uri.port}"
@@ -375,23 +384,27 @@ module Cask
     end
 
     def strip_url_scheme(url)
-      url.sub(%r{^.*://(www\.)?}, "")
+      url.sub(%r{^[^:/]+://(www\.)?}, "")
     end
 
     def url_from_verified
-      cask.url.verified.sub(%r{^https?://}, "")
+      strip_url_scheme(cask.url.verified)
     end
 
     def verified_matches_url?
-      strip_url_scheme(cask.url.to_s).start_with?(url_from_verified)
+      url_domain, url_path = strip_url_scheme(cask.url.to_s).split("/", 2)
+      verified_domain, verified_path = url_from_verified.split("/", 2)
+
+      (url_domain == verified_domain || (verified_domain && url_domain&.end_with?(".#{verified_domain}"))) &&
+        (!verified_path || url_path&.start_with?(verified_path))
     end
 
     def verified_present?
       cask.url.verified.present?
     end
 
-    def url_includes_file?
-      cask.url.to_s.start_with?("file://")
+    def file_url?
+      URI(cask.url.to_s).scheme == "file"
     end
 
     def check_unnecessary_verified
@@ -399,19 +412,20 @@ module Cask
       return unless url_match_homepage?
       return unless verified_matches_url?
 
-      add_warning "The URL's #{domain} matches the homepage #{homepage}, " \
-                  "the `verified` parameter of the `url` stanza is unnecessary. " \
-                  "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
+      add_error "The URL's domain #{domain} matches the homepage domain #{homepage}, " \
+                "the `verified` parameter of the `url` stanza is unnecessary. " \
+                "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
     end
 
     def check_missing_verified
       return if cask.url.from_block?
-      return if url_includes_file?
+      return if file_url?
       return if url_match_homepage?
       return if verified_present?
 
-      add_warning "#{domain} does not match #{homepage}, a `verified` parameter of the `url` has to be added. " \
-                  " See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
+      add_error "The URL's domain #{domain} does not match the homepage domain #{homepage}, " \
+                "a `verified` parameter has to be added to the `url` stanza. " \
+                "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
     end
 
     def check_no_match
@@ -419,8 +433,8 @@ module Cask
       return unless verified_present?
       return if !url_match_homepage? && verified_matches_url?
 
-      add_warning "#{url_from_verified} does not match #{strip_url_scheme(cask.url.to_s)}. " \
-                  "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
+      add_error "Verified URL #{url_from_verified} does not match URL #{strip_url_scheme(cask.url.to_s)}. " \
+                "See https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
     end
 
     def check_generic_artifacts
@@ -509,6 +523,18 @@ module Cask
       download.fetch
     rescue => e
       add_error "download not possible: #{e}"
+    end
+
+    def check_livecheck_version
+      return unless appcast?
+      return unless cask.livecheckable?
+      return if cask.livecheck.skip?
+      return if cask.version.latest?
+
+      latest_version = Homebrew::Livecheck.latest_version(cask)&.fetch(:latest)
+      return if cask.version.to_s == latest_version.to_s
+
+      add_error "Version '#{cask.version}' differs from '#{latest_version}' retrieved by livecheck."
     end
 
     def check_appcast_contains_version

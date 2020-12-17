@@ -152,8 +152,8 @@ class FormulaInstaller
     !formula.bottle_disabled?
   end
 
-  sig { params(install_bottle_options: { warn: T::Boolean }).returns(T::Boolean) }
-  def pour_bottle?(install_bottle_options = { warn: false })
+  sig { params(output_warning: T::Boolean).returns(T::Boolean) }
+  def pour_bottle?(output_warning: false)
     return false if @pour_failed
 
     return false if !formula.bottle_tag? && !formula.local_bottle_path
@@ -164,7 +164,7 @@ class FormulaInstaller
     return false if formula.bottle_disabled?
 
     unless formula.pour_bottle?
-      if install_bottle_options[:warn] && formula.pour_bottle_check_unsatisfied_reason
+      if output_warning && formula.pour_bottle_check_unsatisfied_reason
         opoo <<~EOS
           Building #{formula.full_name} from source:
             #{formula.pour_bottle_check_unsatisfied_reason}
@@ -175,7 +175,7 @@ class FormulaInstaller
 
     bottle = formula.bottle_specification
     unless bottle.compatible_locations?
-      if install_bottle_options[:warn]
+      if output_warning
         opoo <<~EOS
           Building #{formula.full_name} from source as the bottle needs:
           - HOMEBREW_CELLAR: #{bottle.cellar} (yours is #{HOMEBREW_CELLAR})
@@ -229,6 +229,23 @@ class FormulaInstaller
 
     if force_bottle? && !pour_bottle?
       raise CannotInstallFormulaError, "--force-bottle passed but #{formula.full_name} has no bottle!"
+    end
+
+    if Homebrew.default_prefix? && !Homebrew::EnvConfig.developer? &&
+       !build_from_source? && !build_bottle? &&
+       formula.tap&.core_tap? && !formula.bottle_unneeded? &&
+       # Integration tests override homebrew-core locations
+       ENV["HOMEBREW_TEST_TMPDIR"].nil? &&
+       !pour_bottle?
+      raise CannotInstallFormulaError, <<~EOS
+        #{formula}: no bottle available!
+        You can try to install from source with e.g.
+          brew install --build-from-source #{formula}
+        Please note building from source is unsupported. You will encounter build
+        failures with some formulae. If you experience any issues please create pull
+        requests instead of asking for help on Homebrew's GitHub, Twitter or any other
+        official channels.
+      EOS
     end
 
     type, reason = DeprecateDisable.deprecate_disable_info formula
@@ -1094,7 +1111,7 @@ class FormulaInstaller
 
     return if only_deps?
 
-    if pour_bottle?(warn: true)
+    if pour_bottle?(output_warning: true)
       begin
         downloader.fetch
       rescue Exception => e # rubocop:disable Lint/RescueException

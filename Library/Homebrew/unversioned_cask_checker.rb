@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "bundle_version"
 require "cask/cask"
 require "cask/installer"
 
@@ -45,54 +46,18 @@ module Homebrew
       pkgs.count == 1
     end
 
-    sig { params(info_plist_path: Pathname).returns(T.nilable(String)) }
-    def self.version_from_info_plist(info_plist_path)
-      plist = system_command!("plutil", args: ["-convert", "xml1", "-o", "-", info_plist_path]).plist
+    # Filter paths to `Info.plist` files so that ones belonging
+    # to e.g. nested `.app`s are ignored.
+    sig { params(paths: T::Array[Pathname]).returns(T::Array[Pathname]) }
+    def top_level_info_plists(paths)
+      # Go from `./Contents/Info.plist` to `./`.
+      top_level_paths = paths.map { |path| path.parent.parent }
 
-      short_version = plist["CFBundleShortVersionString"].presence
-      version = plist["CFBundleVersion"].presence
-
-      return decide_between_versions(short_version, version) if short_version && version
-    end
-
-    sig { params(package_info_path: Pathname).returns(T.nilable(String)) }
-    def self.version_from_package_info(package_info_path)
-      Homebrew.install_bundler_gems!
-      require "nokogiri"
-
-      xml = Nokogiri::XML(package_info_path.read)
-
-      bundle_id = xml.xpath("//pkg-info//bundle-version//bundle").first&.attr("id")
-      return unless bundle_id
-
-      bundle = xml.xpath("//pkg-info//bundle").find { |b| b["id"] == bundle_id }
-      return unless bundle
-
-      short_version = bundle["CFBundleShortVersionString"]
-      version = bundle["CFBundleVersion"]
-
-      return decide_between_versions(short_version, version) if short_version && version
-    end
-
-    sig do
-      params(short_version: T.nilable(String), version: T.nilable(String))
-        .returns(T.nilable(String))
-    end
-    def self.decide_between_versions(short_version, version)
-      return short_version if short_version == version
-
-      if short_version && version
-        return version if version.match?(/\A\d+(\.\d+)+\Z/) && version.start_with?("#{short_version}.")
-        return short_version if short_version.match?(/\A\d+(\.\d+)+\Z/) && short_version.start_with?("#{version}.")
-
-        if short_version.match?(/\A\d+(\.\d+)*\Z/) && version.match?(/\A\d+\Z/)
-          return short_version if short_version.start_with?("#{version}.") || short_version.end_with?(".#{version}")
-
-          return "#{short_version},#{version}"
+      paths.reject do |path|
+        top_level_paths.any? do |_other_top_level_path|
+          path.ascend.drop(3).any? { |parent_path| top_level_paths.include?(parent_path) }
         end
       end
-
-      short_version || version
     end
 
     sig { returns(T.nilable(String)) }
@@ -113,15 +78,12 @@ module Homebrew
         end
 
         info_plist_paths = apps.flat_map do |app|
-          Pathname.glob(dir/"**"/app.source.basename/"Contents"/"Info.plist").reject do |info_plist_path|
-            # Ignore nested apps.
-            info_plist_path.parent.parent.parent.ascend.any? { |p| p.extname == ".app" }
-          end.sort
+          top_level_info_plists(Pathname.glob(dir/"**"/app.source.basename/"Contents"/"Info.plist")).sort
         end
 
         info_plist_paths.each do |info_plist_path|
-          if (version = self.class.version_from_info_plist(info_plist_path))
-            return version
+          if (version = BundleVersion.from_info_plist(info_plist_path))
+            return version.nice_version
           end
         end
 
@@ -134,7 +96,6 @@ module Homebrew
             system_command!("installer", args: ["-plist", "-pkginfo", "-pkg", pkg_path])
             .plist
             .map { |package| package.fetch("Package") }
-            .uniq
 
           Dir.mktmpdir do |extract_dir|
             extract_dir = Pathname(extract_dir)
@@ -147,16 +108,34 @@ module Homebrew
               next
             end
 
+            top_level_info_plist_paths = top_level_info_plists(Pathname.glob(extract_dir/"**/Contents/Info.plist"))
+
+            unique_info_plist_versions =
+              top_level_info_plist_paths.map { |i| BundleVersion.from_info_plist(i)&.nice_version }
+                                        .compact.uniq
+            return unique_info_plist_versions.first if unique_info_plist_versions.count == 1
+
             package_info_path = extract_dir/"PackageInfo"
             if package_info_path.exist?
-              if (version = self.class.version_from_package_info(package_info_path))
-                return version
+              if (version = BundleVersion.from_package_info(package_info_path))
+                return version.nice_version
               end
             elsif packages.count == 1
               onoe "#{pkg_path.basename} does not contain a `PackageInfo` file."
             end
 
-            opoo "#{pkg_path.basename} contains multiple packages: (#{packages.join(", ")})" if packages.count != 1
+            distribution_path = extract_dir/"Distribution"
+            if distribution_path.exist?
+              Homebrew.install_bundler_gems!
+              require "nokogiri"
+
+              xml = Nokogiri::XML(distribution_path.read)
+
+              product_version = xml.xpath("//installer-gui-script//product").first&.attr("version")
+              return product_version if product_version
+            end
+
+            opoo "#{pkg_path.basename} contains multiple packages: #{packages}" if packages.count != 1
 
             $stderr.puts Pathname.glob(extract_dir/"**/*")
                                  .map { |path|
