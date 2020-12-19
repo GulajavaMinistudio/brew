@@ -359,6 +359,15 @@ class BottleSpecification
     @root_url_specs = {}
   end
 
+  def prefix=(prefix)
+    if [HOMEBREW_DEFAULT_PREFIX,
+        HOMEBREW_MACOS_ARM_DEFAULT_PREFIX,
+        HOMEBREW_LINUX_DEFAULT_PREFIX].exclude?(prefix)
+      odeprecated "setting `prefix` for bottles"
+    end
+    @prefix = prefix
+  end
+
   def root_url(var = nil, specs = {})
     if var.nil?
       @root_url ||= "#{Homebrew::EnvConfig.bottle_domain}/#{Utils::Bottles::Bintray.repository(tap)}"
@@ -380,6 +389,7 @@ class BottleSpecification
     # Only check the repository matches if the prefix is the default.
     # This is because the bottle DSL does not allow setting a custom repository
     # but does allow setting a custom prefix.
+    # TODO: delete this after Homebrew 2.7.0 is released.
     compatible_repository = if Homebrew.default_prefix?(prefix)
       repository == HOMEBREW_REPOSITORY.to_s
     else

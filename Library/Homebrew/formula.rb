@@ -2278,7 +2278,6 @@ class Formula
       if args.nil?
         @licenses
       else
-        odisabled "`license [...]`", "`license any_of: [...]`" if args.is_a? Array
         @licenses = args
       end
     end
@@ -2526,9 +2525,6 @@ class Formula
     # depends_on "sqlite" if MacOS.version >= :catalina
     # depends_on xcode: :build # If the formula really needs full Xcode to compile.
     # depends_on macos: :mojave # Needs at least macOS Mojave (10.14) to run.
-    # depends_on x11: :optional # X11/XQuartz components.
-    # depends_on :osxfuse # Permits the use of the upstream signed binary or our cask.
-    # depends_on :tuntap # Does the same thing as above. This is vital for Yosemite and later.</pre>
     # <pre># It is possible to only depend on something if
     # # `build.with?` or `build.without? "another_formula"`:
     # depends_on "postgresql" if build.without? "sqlite"</pre>
@@ -2767,6 +2763,7 @@ class Formula
     # <pre>deprecate! date: "2020-08-27", because: "has been replaced by foo"</pre>
     def deprecate!(date: nil, because: nil)
       odeprecated "`deprecate!` without a reason", "`deprecate! because: \"reason\"`" if because.blank?
+      odeprecated "`deprecate!` without a date", "`deprecate! date: \"#{Date.today}\"`" if date.blank?
 
       return if date.present? && Date.parse(date) > Date.today
 
@@ -2793,6 +2790,7 @@ class Formula
     # <pre>disable! date: "2020-08-27", because: "has been replaced by foo"</pre>
     def disable!(date: nil, because: nil)
       odeprecated "`disable!` without a reason", "`disable! because: \"reason\"`" if because.blank?
+      odeprecated "`disable!` without a date", "`disable! date: \"#{Date.today}\"`" if date.blank?
 
       if date.present? && Date.parse(date) > Date.today
         @deprecation_reason = because if because.present?
