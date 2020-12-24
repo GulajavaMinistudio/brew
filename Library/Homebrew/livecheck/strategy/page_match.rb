@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "open-uri"
@@ -19,6 +19,8 @@ module Homebrew
       #
       # @api public
       class PageMatch
+        extend T::Sig
+
         NICE_NAME = "Page match"
 
         # A priority of zero causes livecheck to skip the strategy. We do this
@@ -32,25 +34,22 @@ module Homebrew
         # Whether the strategy can be applied to the provided URL.
         # PageMatch will technically match any HTTP URL but is only
         # usable with a `livecheck` block containing a regex.
-        #
-        # @param url [String] the URL to match against
-        # @return [Boolean]
+        sig { params(url: String).returns(T::Boolean) }
         def self.match?(url)
           URL_MATCH_REGEX.match?(url)
         end
 
-        # Fetches the content at the URL, uses the regex to match text, and
-        # returns an array of unique matches.
+        # Uses the regex to match text in the content or, if a block is
+        # provided, passes the page content to the block to handle matching.
+        # With either approach, an array of unique matches is returned.
         #
-        # @param url [String] the URL of the content to check
+        # @param content [String] the page content to check
         # @param regex [Regexp] a regex used for matching versions in the
         #   content
         # @return [Array]
-        def self.page_matches(url, regex, &block)
-          page = Strategy.page_content(url)
-
+        def self.page_matches(content, regex, &block)
           if block
-            case (value = block.call(page))
+            case (value = block.call(content))
             when String
               return [value]
             when Array
@@ -60,7 +59,7 @@ module Homebrew
             end
           end
 
-          page.scan(regex).map do |match|
+          content.scan(regex).map do |match|
             case match
             when String
               match
@@ -72,15 +71,16 @@ module Homebrew
 
         # Checks the content at the URL for new versions, using the provided
         # regex for matching.
-        #
-        # @param url [String] the URL of the content to check
-        # @param regex [Regexp] a regex used for matching versions in content
-        # @return [Hash]
+        sig { params(url: String, regex: T.nilable(Regexp)).returns(T::Hash[Symbol, T.untyped]) }
         def self.find_versions(url, regex, &block)
           match_data = { matches: {}, regex: regex, url: url }
 
-          page_matches(url, regex, &block).each do |match|
-            match_data[:matches][match] = Version.new(match)
+          match_data.merge!(Strategy.page_content(url))
+          content = match_data.delete(:content)
+          return match_data if content.blank?
+
+          page_matches(content, regex, &block).each do |match_text|
+            match_data[:matches][match_text] = Version.new(match_text)
           end
 
           match_data
