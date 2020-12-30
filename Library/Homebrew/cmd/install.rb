@@ -131,8 +131,10 @@ module Homebrew
   def install
     args = install_args.parse
 
-    only = :formula if args.formula? && !args.cask?
-    only = :cask if args.cask? && !args.formula?
+    if args.env.present?
+      # TODO: enable for Homebrew 2.8.0 and use `replacement: false` for 2.9.0.
+      # odeprecated "brew install --env", "`env :std` in specific formula files"
+    end
 
     args.named.each do |name|
       next if File.exist?(name)
@@ -151,7 +153,7 @@ module Homebrew
       EOS
     end
 
-    formulae, casks = args.named.to_formulae_and_casks(only: only)
+    formulae, casks = args.named.to_formulae_and_casks
                           .partition { |formula_or_cask| formula_or_cask.is_a?(Formula) }
 
     if casks.any?
