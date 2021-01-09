@@ -55,6 +55,7 @@ case "$*" in
   --cache)             echo "$HOMEBREW_CACHE"; exit 0 ;;
   shellenv)            source "$HOMEBREW_LIBRARY/Homebrew/cmd/shellenv.sh"; homebrew-shellenv; exit 0 ;;
   formulae)            source "$HOMEBREW_LIBRARY/Homebrew/cmd/formulae.sh"; homebrew-formulae; exit 0 ;;
+  casks)               source "$HOMEBREW_LIBRARY/Homebrew/cmd/casks.sh"; homebrew-casks; exit 0 ;;
 esac
 
 #####
@@ -313,13 +314,20 @@ then
   HOMEBREW_SYSTEM="Macintosh"
   [[ "$HOMEBREW_PROCESSOR" = "x86_64" ]] && HOMEBREW_PROCESSOR="Intel"
   HOMEBREW_MACOS_VERSION="$(/usr/bin/sw_vers -productVersion)"
-  HOMEBREW_OS_VERSION="macOS $HOMEBREW_MACOS_VERSION"
   # Don't change this from Mac OS X to match what macOS itself does in Safari on 10.12
   HOMEBREW_OS_USER_AGENT_VERSION="Mac OS X $HOMEBREW_MACOS_VERSION"
 
   # Intentionally set this variable by exploding another.
   # shellcheck disable=SC2086,SC2183
   printf -v HOMEBREW_MACOS_VERSION_NUMERIC "%02d%02d%02d" ${HOMEBREW_MACOS_VERSION//./ }
+
+  # Don't include minor versions for Big Sur and later.
+  if [[ "$HOMEBREW_MACOS_VERSION_NUMERIC" -gt "110000" ]]
+  then
+    HOMEBREW_OS_VERSION="macOS ${HOMEBREW_MACOS_VERSION%.*}"
+  else
+    HOMEBREW_OS_VERSION="macOS $HOMEBREW_MACOS_VERSION"
+  fi
 
   # Refuse to run on pre-Yosemite
   if [[ "$HOMEBREW_MACOS_VERSION_NUMERIC" -lt "101000" ]]

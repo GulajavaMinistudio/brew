@@ -60,6 +60,9 @@ Uninstall formulae that were only installed as a dependency of another formula a
 \fB\-n\fR, \fB\-\-dry\-run\fR
 List what would be uninstalled, but do not actually uninstall anything\.
 .
+.SS "\fBcasks\fR"
+List all locally installable casks including short names\.
+.
 .SS "\fBcleanup\fR [\fIoptions\fR] [\fIformula\fR|\fIcask\fR]"
 Remove stale lock files and outdated downloads for all formulae and casks, and remove old versions of installed formulae\. If arguments are specified, only do this for the given formulae and casks\. Removes all downloads more than 120 days old\. This can be adjusted with \fBHOMEBREW_CLEANUP_MAX_AGE_DAYS\fR\.
 .
@@ -320,7 +323,7 @@ If brewing fails, open an interactive debugging session with access to IRB or a 
 .
 .TP
 \fB\-f\fR, \fB\-\-force\fR
-Install formulae without checking for previously installed keg\-only or non\-migrated versions\. Overwrite existing files when installing casks\.
+Install formulae without checking for previously installed keg\-only or non\-migrated versions\. When installing casks, overwrite existing files (binaries and symlinks are excluded, unless originally from the same cask)\.
 .
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
@@ -815,7 +818,7 @@ If brewing fails, open an interactive debugging session with access to IRB or a 
 .
 .TP
 \fB\-f\fR, \fB\-\-force\fR
-Install formulae without checking for previously installed keg\-only or non\-migrated versions\. Overwrite existing files when installing casks\.
+Install formulae without checking for previously installed keg\-only or non\-migrated versions\. When installing casks, overwrite existing files (binaries and symlinks are excluded, unless originally from the same cask)\.
 .
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
@@ -1682,6 +1685,9 @@ If \fB\-\-markdown\fR and a \fIprevious_tag\fR are passed, an extra line contain
 .TP
 \fB\-\-markdown\fR
 Print as a Markdown list\.
+.
+.SS "\fBrubocop\fR"
+Installs, configures and runs Homebrew\'s \fBrubocop\fR\.
 .
 .SS "\fBruby\fR (\fB\-e\fR \fItext\fR|\fIfile\fR)"
 Run a Ruby instance with Homebrew\'s libraries loaded, e\.g\. \fBbrew ruby \-e "puts :gcc\.f\.deps"\fR or \fBbrew ruby script\.rb\fR\.

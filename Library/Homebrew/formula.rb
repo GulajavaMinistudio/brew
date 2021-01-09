@@ -262,13 +262,13 @@ class Formula
   end
 
   def validate_attributes!
-    raise FormulaValidationError.new(full_name, :name, name) if name.blank? || name =~ /\s/
+    raise FormulaValidationError.new(full_name, :name, name) if name.blank? || name.match?(/\s/)
 
     url = active_spec.url
-    raise FormulaValidationError.new(full_name, :url, url) if url.blank? || url =~ /\s/
+    raise FormulaValidationError.new(full_name, :url, url) if url.blank? || url.match?(/\s/)
 
     val = version.respond_to?(:to_str) ? version.to_str : version
-    return unless val.blank? || val =~ /\s/
+    return if val.present? && !val.match?(/\s/)
 
     raise FormulaValidationError.new(full_name, :version, val)
   end
@@ -1823,8 +1823,8 @@ class Formula
           bottle_url = "#{bottle_spec.root_url}/#{Bottle::Filename.create(self, os, bottle_spec.rebuild).bintray}"
           checksum = bottle_spec.collector[os]
           bottle_info["files"][os] = {
-            "url"                   => bottle_url,
-            checksum.hash_type.to_s => checksum.hexdigest,
+            "url"    => bottle_url,
+            "sha256" => checksum.hexdigest,
           }
         end
         hsh["bottle"]["stable"] = bottle_info
@@ -2418,8 +2418,8 @@ class Formula
     # tell you the currently valid value.
     #
     # <pre>sha256 "2a2ba417eebaadcb4418ee7b12fe2998f26d6e6f7fda7983412ff66a741ab6f7"</pre>
-    Checksum::TYPES.each do |type|
-      define_method(type) { |val| stable.send(type, val) }
+    def sha256(val)
+      stable.sha256(val)
     end
 
     # @!attribute [w] bottle

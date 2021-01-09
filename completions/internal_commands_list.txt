@@ -20,6 +20,7 @@ bump-formula-pr
 bump-revision
 bump-unversioned-casks
 cask
+casks
 cat
 cleanup
 command
@@ -74,6 +75,7 @@ reinstall
 release-notes
 remove
 rm
+rubocop
 ruby
 search
 sh

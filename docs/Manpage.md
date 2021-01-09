@@ -65,6 +65,10 @@ Uninstall formulae that were only installed as a dependency of another formula a
 * `-n`, `--dry-run`:
   List what would be uninstalled, but do not actually uninstall anything.
 
+### `casks`
+
+List all locally installable casks including short names.
+
 ### `cleanup` [*`options`*] [*`formula`*|*`cask`*]
 
 Remove stale lock files and outdated downloads for all formulae and casks,
@@ -252,7 +256,7 @@ the installed formulae or, every 30 days, for all formulae.
 * `-d`, `--debug`:
   If brewing fails, open an interactive debugging session with access to IRB or a shell inside the temporary build directory.
 * `-f`, `--force`:
-  Install formulae without checking for previously installed keg-only or non-migrated versions. Overwrite existing files when installing casks.
+  Install formulae without checking for previously installed keg-only or non-migrated versions. When installing casks, overwrite existing files (binaries and symlinks are excluded, unless originally from the same cask).
 * `-v`, `--verbose`:
   Print the verification and postinstall steps.
 * `--formula`:
@@ -608,7 +612,7 @@ upgraded formulae or, every 30 days, for all formulae.
 * `-d`, `--debug`:
   If brewing fails, open an interactive debugging session with access to IRB or a shell inside the temporary build directory.
 * `-f`, `--force`:
-  Install formulae without checking for previously installed keg-only or non-migrated versions. Overwrite existing files when installing casks.
+  Install formulae without checking for previously installed keg-only or non-migrated versions. When installing casks, overwrite existing files (binaries and symlinks are excluded, unless originally from the same cask).
 * `-v`, `--verbose`:
   Print the verification and postinstall steps.
 * `-n`, `--dry-run`:
@@ -1205,6 +1209,10 @@ a warning will be shown if the latest minor release was less than one month ago.
 
 * `--markdown`:
   Print as a Markdown list.
+
+### `rubocop`
+
+Installs, configures and runs Homebrew's `rubocop`.
 
 ### `ruby` (`-e` *`text`*|*`file`*)
 
