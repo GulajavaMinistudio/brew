@@ -26,7 +26,8 @@ module Homebrew
              description: "Initialize Git repository with the specified branch name (default: `main`)."
 
       conflicts "--no-git", "--branch"
-      named 1
+
+      named_args :tap, number: 1
     end
   end
 
@@ -36,8 +37,7 @@ module Homebrew
     label = args.pull_label || "pr-pull"
     branch = args.branch || "main"
 
-    tap_name = args.named.first
-    tap = Tap.fetch(tap_name)
+    tap = args.named.to_taps.first
     raise "Invalid tap name '#{tap_name}'" unless tap.path.to_s.match?(HOMEBREW_TAP_PATH_REGEX)
 
     titleized_user = tap.user.dup
@@ -148,7 +148,9 @@ module Homebrew
 
     unless args.no_git?
       cd tap.path do
-        safe_system "git", "init"
+        # Would be nice to use --initial-branch here but it's not available in
+        # older versions of Git that we support.
+        safe_system "git", "-c", "init.defaultBranch=#{branch}", "init"
         safe_system "git", "add", "--all"
         safe_system "git", "commit", "-m", "Create #{tap} tap"
         safe_system "git", "branch", "-m", branch
