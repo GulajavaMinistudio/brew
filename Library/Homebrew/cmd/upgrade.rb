@@ -17,9 +17,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def upgrade_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `upgrade` [<options>] [<formula>|<cask>] [<formula>|<cask> ...]
-
+      description <<~EOS
         Upgrade outdated casks and outdated, unpinned formulae using the same options they were originally
         installed with, plus any appended brew formula options. If <cask> or <formula> are specified,
         upgrade only the given <cask> or <formula> kegs (unless they are pinned; see `pin`, `unpin`).
@@ -90,7 +88,7 @@ module Homebrew
 
       conflicts "--build-from-source", "--force-bottle"
 
-      named_args [:installed_formula, :installed_cask]
+      named_args [:outdated_formula, :outdated_cask]
     end
   end
 

@@ -5,6 +5,7 @@ require "formula"
 require "erb"
 require "ostruct"
 require "cli/parser"
+require "completions"
 
 module Homebrew
   extend T::Sig
@@ -18,9 +19,7 @@ module Homebrew
   sig { returns(CLI::Parser) }
   def man_args
     Homebrew::CLI::Parser.new do
-      usage_banner <<~EOS
-        `man` [<options>]
-
+      description <<~EOS
         Generate Homebrew's manpages.
       EOS
       switch "--fail-if-changed",
@@ -28,9 +27,6 @@ module Homebrew
                           "can be used to notify CI when the manpages are out of date. Additionally, "\
                           "the date used in new manpages will match those in the existing manpages (to allow "\
                           "comparison without factoring in the date)."
-      switch "--link",
-             description: "This is now done automatically by `brew update`."
-
       named_args :none
     end
   end
@@ -38,10 +34,9 @@ module Homebrew
   def man
     args = man_args.parse
 
-    odie "`brew man --link` is now done automatically by `brew update`." if args.link?
-
     Commands.rebuild_internal_commands_completion_list
     regenerate_man_pages(preserve_date: args.fail_if_changed?, quiet: args.quiet?)
+    Completions.update_shell_completions!
 
     diff = system_command "git", args: [
       "-C", HOMEBREW_REPOSITORY, "diff", "--exit-code", "docs/Manpage.md", "manpages", "completions"
