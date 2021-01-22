@@ -68,7 +68,7 @@ Remove stale lock files and outdated downloads for all formulae and casks, and r
 .
 .TP
 \fB\-\-prune\fR
-Remove all cache files older than specified \fIdays\fR\.
+Remove all cache files older than specified \fIdays\fR\. If you want to remove everything, use \fB\-\-prune=all\fR\.
 .
 .TP
 \fB\-n\fR, \fB\-\-dry\-run\fR
@@ -1505,6 +1505,9 @@ Only check casks\.
 .SS "\fBman\fR [\fI\-\-fail\-if\-changed\fR]"
 Generate Homebrew\'s manpages\.
 .
+.P
+Not (yet) working on Apple Silicon\.
+.
 .TP
 \fB\-\-fail\-if\-changed\fR
 Return a failing status code if changes are detected in the manpage outputs\. This can be used to notify CI when the manpages are out of date\. Additionally, the date used in new manpages will match those in the existing manpages (to allow comparison without factoring in the date)\.
@@ -1821,6 +1824,9 @@ Randomise tests with the specified \fIvalue\fR instead of a random seed\.
 .
 .SS "\fBtypecheck\fR, \fBtc\fR [\fIoptions\fR]"
 Check for typechecking errors using Sorbet\.
+.
+.P
+Not (yet) working on Apple Silicon\.
 .
 .TP
 \fB\-\-fix\fR
