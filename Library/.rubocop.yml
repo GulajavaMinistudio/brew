@@ -353,6 +353,7 @@ Layout/LineLength:
       ' name "',
       ' pkg "',
       ' pkgutil: "',
+      '    sha256 cellar: ',
       "#{language}",
       "#{version.",
       ' "/Library/Application Support/',
