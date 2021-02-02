@@ -723,7 +723,7 @@ the list is formatted for export to `bash`(1) unless `--plain` is passed.
 * `--plain`:
   Generate plain output even when piped.
 
-### `--prefix` [*`--unbrewed`*] [*`formula`* ...]
+### `--prefix` [*`--unbrewed`*] [*`--installed`*] [*`formula`* ...]
 
 Display Homebrew's install path. *Default:*
 
@@ -736,6 +736,8 @@ is or would be installed.
 
 * `--unbrewed`:
   List files in Homebrew's prefix not installed by Homebrew.
+* `--installed`:
+  Outputs nothing and returns a failing status code if *`formula`* is not installed.
 
 ### `--repository`, `--repo` [*`tap`* ...]
 
@@ -1705,6 +1707,9 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 - `HOMEBREW_BINTRAY_USER`
   <br>Use this username when accessing the Bintray API (where bottles are stored).
 
+- `HOMEBREW_BOOTSNAP`
+  <br>If set, use Bootsnap to speed up repeated `brew` calls. A no-op when using Homebrew's vendored, relocatable Ruby on macOS (as it doesn't work).
+
 - `HOMEBREW_BOTTLE_DOMAIN`
   <br>Use this URL as the download mirror for bottles. For example, `HOMEBREW_BOTTLE_DOMAIN=http://localhost:8080` will cause all bottles to download from the prefix `http://localhost:8080/`.
 
@@ -1836,6 +1841,9 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 
 - `HOMEBREW_NO_AUTO_UPDATE`
   <br>If set, do not automatically update before running `brew install`, `brew upgrade` or `brew tap`.
+
+- `HOMEBREW_NO_BOOTSNAP`
+  <br>If set, do not use Bootsnap to speed up repeated `brew` calls.
 
 - `HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK`
   <br>If set, fail on the failure of installation from a bottle rather than falling back to building from source.

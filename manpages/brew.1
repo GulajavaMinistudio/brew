@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BREW" "1" "January 2021" "Homebrew" "brew"
+.TH "BREW" "1" "February 2021" "Homebrew" "brew"
 .
 .SH "NAME"
 \fBbrew\fR \- The Missing Package Manager for macOS (or Linux)
@@ -978,7 +978,7 @@ Generate a list of environment variables for the specified shell, or \fB\-\-shel
 \fB\-\-plain\fR
 Generate plain output even when piped\.
 .
-.SS "\fB\-\-prefix\fR [\fI\-\-unbrewed\fR] [\fIformula\fR \.\.\.]"
+.SS "\fB\-\-prefix\fR [\fI\-\-unbrewed\fR] [\fI\-\-installed\fR] [\fIformula\fR \.\.\.]"
 Display Homebrew\'s install path\. \fIDefault:\fR
 .
 .IP "\(bu" 4
@@ -998,6 +998,10 @@ If \fIformula\fR is provided, display the location in the Cellar where \fIformul
 .TP
 \fB\-\-unbrewed\fR
 List files in Homebrew\'s prefix not installed by Homebrew\.
+.
+.TP
+\fB\-\-installed\fR
+Outputs nothing and returns a failing status code if \fIformula\fR is not installed\.
 .
 .SS "\fB\-\-repository\fR, \fB\-\-repo\fR [\fItap\fR \.\.\.]"
 Display where Homebrew\'s git repository is located\.
@@ -2372,6 +2376,12 @@ Use this API key when accessing the Bintray API (where bottles are stored)\.
 Use this username when accessing the Bintray API (where bottles are stored)\.
 .
 .TP
+\fBHOMEBREW_BOOTSNAP\fR
+.
+.br
+If set, use Bootsnap to speed up repeated \fBbrew\fR calls\. A no\-op when using Homebrew\'s vendored, relocatable Ruby on macOS (as it doesn\'t work)\.
+.
+.TP
 \fBHOMEBREW_BOTTLE_DOMAIN\fR
 .
 .br
@@ -2616,6 +2626,12 @@ If set, do not send analytics\. For more information, see: \fIhttps://docs\.brew
 .
 .br
 If set, do not automatically update before running \fBbrew install\fR, \fBbrew upgrade\fR or \fBbrew tap\fR\.
+.
+.TP
+\fBHOMEBREW_NO_BOOTSNAP\fR
+.
+.br
+If set, do not use Bootsnap to speed up repeated \fBbrew\fR calls\.
 .
 .TP
 \fBHOMEBREW_NO_BOTTLE_SOURCE_FALLBACK\fR
