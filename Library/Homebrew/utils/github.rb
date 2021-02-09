@@ -20,7 +20,8 @@ module GitHub
 
   CREATE_GIST_SCOPES = ["gist"].freeze
   CREATE_ISSUE_FORK_OR_PR_SCOPES = ["public_repo"].freeze
-  ALL_SCOPES = (CREATE_GIST_SCOPES + CREATE_ISSUE_FORK_OR_PR_SCOPES).freeze
+  CREATE_WORKFLOW_SCOPES = ["workflow"].freeze
+  ALL_SCOPES = (CREATE_GIST_SCOPES + CREATE_ISSUE_FORK_OR_PR_SCOPES + CREATE_WORKFLOW_SCOPES).freeze
   ALL_SCOPES_URL = Formatter.url(
     "https://github.com/settings/tokens/new?scopes=#{ALL_SCOPES.join(",")}&description=Homebrew",
   ).freeze
@@ -569,6 +570,47 @@ module GitHub
     end
 
     artifact.first["archive_download_url"]
+  end
+
+  def public_member_usernames(org, per_page: 100)
+    url = "#{API_URL}/orgs/#{org}/public_members?per_page=#{per_page}"
+    members = []
+
+    (1..API_MAX_PAGES).each do |page|
+      result = open_api("#{url}&page=#{page}").map { |member| member["login"] }
+      members.concat(result)
+
+      return members if result.length < per_page
+    end
+  end
+
+  def members_by_team(org, team)
+    query = <<~EOS
+        { organization(login: "#{org}") {
+          teams(first: 100) {
+            nodes {
+              ... on Team { name }
+            }
+          }
+          team(slug: "#{team}") {
+            members(first: 100) {
+              nodes {
+                ... on User { login name }
+              }
+            }
+          }
+        }
+      }
+    EOS
+    result = open_graphql(query, scopes: ["read:org", "user"])
+
+    if result["organization"]["teams"]["nodes"].blank?
+      raise Error,
+            "Your token needs the 'read:org' scope to access this API"
+    end
+    raise Error, "The team #{org}/#{team} does not exist" if result["organization"]["team"].blank?
+
+    result["organization"]["team"]["members"]["nodes"].map { |member| [member["login"], member["name"]] }.to_h
   end
 
   def sponsors_by_tier(user)
