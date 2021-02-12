@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (6.1.2)
+    activesupport (6.1.2.1)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (>= 1.6, < 2)
       minitest (>= 5.1)
@@ -141,7 +141,7 @@ GEM
     simplecov_json_formatter (0.1.2)
     sorbet (0.5.6274)
       sorbet-static (= 0.5.6274)
-    sorbet-runtime (0.5.6267)
+    sorbet-runtime (0.5.6274)
     sorbet-runtime-stub (0.2.0)
     sorbet-static (0.5.6274-universal-darwin-14)
     spoom (1.0.7)
@@ -163,6 +163,7 @@ GEM
       unf_ext
     unf_ext (0.0.7.7)
     unicode-display_width (2.0.0)
+    warning (1.1.0)
     webrick (1.7.0)
     webrobots (0.1.2)
     zeitwerk (2.4.2)
@@ -200,6 +201,7 @@ DEPENDENCIES
   sorbet-runtime
   sorbet-runtime-stub
   tapioca
+  warning
 
 BUNDLED WITH
    1.17.3
