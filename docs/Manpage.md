@@ -826,11 +826,17 @@ value, while `--no-rebuild` will remove it.
 * `--root-url`:
   Use the specified *`URL`* as the root of the bottle's URL instead of Homebrew's default.
 
-### `bump` [*`--limit`*`=`] [*`formula`* ...]
+### `bump` [*`options`*] [*`formula`*|*`cask`* ...]
 
 Display out-of-date brew formulae and the latest version available.
 Also displays whether a pull request has been opened with the URL.
 
+* `--no-pull-requests`:
+  Do not retrieve pull requests from GitHub.
+* `--formula`:
+  Check only formulae.
+* `--cask`:
+  Check only casks.
 * `--limit`:
   Limit number of package results returned.
 
@@ -1847,7 +1853,7 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
   <br>If set, do not send analytics. For more information, see: <https://docs.brew.sh/Analytics>
 
 - `HOMEBREW_NO_AUTO_UPDATE`
-  <br>If set, do not automatically update before running `brew install`, `brew upgrade` or `brew tap`.
+  <br>If set, do not automatically update before running some commands e.g. `brew install`, `brew upgrade` and `brew tap`.
 
 - `HOMEBREW_NO_BOOTSNAP`
   <br>If set, do not use Bootsnap to speed up repeated `brew` calls.
