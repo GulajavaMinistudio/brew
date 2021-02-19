@@ -7960,17 +7960,17 @@ end
 module GetText
 end
 
+module GitHub::API
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
 class GitHub::Actions::Annotation
   extend ::T::Private::Methods::MethodHooks
   extend ::T::Private::Methods::SingletonMethodHooks
 end
 
 module GitHub::Actions
-  extend ::T::Private::Methods::MethodHooks
-  extend ::T::Private::Methods::SingletonMethodHooks
-end
-
-module GitHub
   extend ::T::Private::Methods::MethodHooks
   extend ::T::Private::Methods::SingletonMethodHooks
 end
@@ -8155,8 +8155,6 @@ module Homebrew::EnvConfig
   def self.no_auto_update?(); end
 
   def self.no_bootsnap?(); end
-
-  def self.no_bottle_source_fallback?(); end
 
   def self.no_color?(); end
 
@@ -23397,6 +23395,8 @@ class RSpec::Mocks::Proxy
   def build_expectation(method_name); end
 
   def check_for_unexpected_arguments(expectation); end
+
+  def ensure_can_be_proxied!(object); end
 
   def ensure_implemented(*_args); end
 
