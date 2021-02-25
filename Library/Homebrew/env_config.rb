@@ -40,8 +40,9 @@ module Homebrew
         description: "Use this username when accessing the Bintray API (where bottles are stored).",
       },
       HOMEBREW_BOOTSNAP:                      {
-        description: "If set, use Bootsnap to speed up repeated `brew` calls. "\
-                     "A no-op when using Homebrew's vendored, relocatable Ruby on macOS (as it doesn't work).",
+        description: "If set, use Bootsnap to speed up repeated `brew` calls. " \
+                     "A no-op in various configurations where it doesn't work. " \
+                     "Enabled by default if HOMEBREW_DEVELOPER is set or a developer command has been run.",
         boolean:     true,
       },
       HOMEBREW_BOTTLE_DOMAIN:                 {
@@ -178,6 +179,10 @@ module Homebrew
         description:  "Print this text before the installation summary of each successful build.",
         default_text: 'The "Beer Mug" emoji.',
         default:      "🍺",
+      },
+      HOMEBREW_INTERNET_ARCHIVE_KEY:          {
+        description: "Use this API key when accessing the Internet Archive S3 API, where bottles are stored. " \
+                     "The format is access:secret. See https://archive.org/account/s3.php",
       },
       HOMEBREW_LIVECHECK_WATCHLIST:           {
         description: "Consult this file for the list of formulae to check by default when no formula argument " \
