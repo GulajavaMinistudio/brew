@@ -58,7 +58,7 @@ GEM
       racc (~> 1.4)
     ntlm-http (0.1.1)
     parallel (1.20.1)
-    parallel_tests (3.4.0)
+    parallel_tests (3.5.0)
       parallel
     parlour (5.0.0)
       commander (~> 4.5)
@@ -139,11 +139,11 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.2)
-    sorbet (0.5.6274)
-      sorbet-static (= 0.5.6274)
+    sorbet (0.5.6304)
+      sorbet-static (= 0.5.6304)
     sorbet-runtime (0.5.6274)
     sorbet-runtime-stub (0.2.0)
-    sorbet-static (0.5.6274-universal-darwin-14)
+    sorbet-static (0.5.6304-universal-darwin-14)
     spoom (1.0.9)
       colorize
       sorbet (~> 0.5.5)
