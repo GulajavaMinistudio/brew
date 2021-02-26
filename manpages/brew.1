@@ -1710,6 +1710,9 @@ Use the specified \fIURL\fR as the root of the bottle\'s URL instead of Homebrew
 .SS "\fBprof\fR [\fI\-\-stackprof\fR] \fIcommand\fR [\.\.\.]"
 Run Homebrew with a Ruby profiler\. For example, \fBbrew prof readall\fR\.
 .
+.P
+\fINote:\fR Not (yet) working on Apple Silicon\.
+.
 .TP
 \fB\-\-stackprof\fR
 Use \fBstackprof\fR instead of \fBruby\-prof\fR (the default)\.
@@ -2406,7 +2409,7 @@ Use this username when accessing the Bintray API (where bottles are stored)\.
 \fBHOMEBREW_BOOTSNAP\fR
 .
 .br
-If set, use Bootsnap to speed up repeated \fBbrew\fR calls\. A no\-op in various configurations where it doesn\'t work\. Enabled by default if HOMEBREW_DEVELOPER is set or a developer command has been run\.
+If set, use Bootsnap to speed up repeated \fBbrew\fR calls\. A no\-op when using Homebrew\'s vendored, relocatable Ruby on macOS (as it doesn\'t work)\.
 .
 .TP
 \fBHOMEBREW_BOTTLE_DOMAIN\fR
