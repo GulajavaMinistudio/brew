@@ -734,8 +734,7 @@ Display Homebrew's install path. *Default:*
   - macOS ARM: `/opt/homebrew`
   - Linux: `/home/linuxbrew/.linuxbrew`
 
-If *`formula`* is provided, display the location in the Cellar where *`formula`*
-is or would be installed.
+If *`formula`* is provided, display the location where *`formula`* is or would be installed.
 
 * `--unbrewed`:
   List files in Homebrew's prefix not installed by Homebrew.
@@ -1100,14 +1099,14 @@ casks to check is taken from `HOMEBREW_LIVECHECK_WATCHLIST` or
 * `--cask`:
   Only check casks.
 
-### `man` [*`--fail-if-changed`*]
+### `man` [*`--fail-if-not-changed`*]
 
 Generate Homebrew's manpages.
 
 *Note:* Not (yet) working on Apple Silicon.
 
-* `--fail-if-changed`:
-  Return a failing status code if changes are detected in the manpage outputs. This can be used to notify CI when the manpages are out of date. Additionally, the date used in new manpages will match those in the existing manpages (to allow comparison without factoring in the date).
+* `--fail-if-not-changed`:
+  Return a failing status code if no changes are detected in the manpage outputs. This can be used to notify CI when the manpages are out of date. Additionally, the date used in new manpages will match those in the existing manpages (to allow comparison without factoring in the date).
 
 ### `mirror` [*`options`*] *`formula`* [...]
 
@@ -1730,7 +1729,7 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
   <br>If set, use Bootsnap to speed up repeated `brew` calls. A no-op when using Homebrew's vendored, relocatable Ruby on macOS (as it doesn't work).
 
 - `HOMEBREW_BOTTLE_DOMAIN`
-  <br>Use this URL as the download mirror for bottles. For example, `HOMEBREW_BOTTLE_DOMAIN=http://localhost:8080` will cause all bottles to download from the prefix `http://localhost:8080/`.
+  <br>Use this URL as the download mirror for bottles. If bottles at that URL are temporarily unavailable, the default bottle domain will be used as a fallback mirror. For example, `HOMEBREW_BOTTLE_DOMAIN=http://localhost:8080` will cause all bottles to download from the prefix `http://localhost:8080/`. If bottles are not available at `HOMEBREW_BOTTLE_DOMAIN` they will be downloaded from the default bottle domain.
 
   *Default:* macOS: `https://homebrew.bintray.com/`, Linux: `https://linuxbrew.bintray.com/`.
 
@@ -1973,7 +1972,7 @@ Homebrew API: <https://rubydoc.brew.sh>
 
 Homebrew's Project Leader is Mike McQuaid.
 
-Homebrew's Project Leadership Committee is Jonathan Chang, Markus Reiter, Misty De Meo, Sean Molenaar and Shaun Jackman.
+Homebrew's Project Leadership Committee is Issy Long, Jonathan Chang, Markus Reiter, Misty De Meo and Sean Molenaar.
 
 Homebrew's Technical Steering Committee is FX Coudert, Markus Reiter, Michka Popoff, Mike McQuaid and Misty De Meo.
 

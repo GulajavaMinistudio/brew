@@ -87,17 +87,18 @@ RSpec.shared_context "integration test" do # rubocop:disable RSpec/ContextWordin
     )
 
     @ruby_args ||= begin
-      ruby_args = [
-        ENV["HOMEBREW_RUBY_WARNINGS"],
-        "-I", $LOAD_PATH.join(File::PATH_SEPARATOR)
-      ]
+      ruby_args = HOMEBREW_RUBY_EXEC_ARGS.dup
       if ENV["HOMEBREW_TESTS_COVERAGE"]
         simplecov_spec = Gem.loaded_specs["simplecov"]
-        specs = [simplecov_spec]
-        simplecov_spec.runtime_dependencies.each do |dep|
-          specs += dep.to_specs
-        rescue Gem::LoadError => e
-          onoe e
+        parallel_tests_spec = Gem.loaded_specs["parallel_tests"]
+        specs = []
+        [simplecov_spec, parallel_tests_spec].each do |spec|
+          specs << spec
+          spec.runtime_dependencies.each do |dep|
+            specs += dep.to_specs
+          rescue Gem::LoadError => e
+            onoe e
+          end
         end
         libs = specs.flat_map do |spec|
           full_gem_path = spec.full_gem_path
@@ -111,12 +112,12 @@ RSpec.shared_context "integration test" do # rubocop:disable RSpec/ContextWordin
         libs.each { |lib| ruby_args << "-I" << lib }
         ruby_args << "-rsimplecov"
       end
-      ruby_args << "-rtest/support/helper/integration_mocks"
+      ruby_args << "-r#{HOMEBREW_LIBRARY_PATH}/test/support/helper/integration_mocks"
       ruby_args << (HOMEBREW_LIBRARY_PATH/"brew.rb").resolved_path.to_s
     end
 
     Bundler.with_clean_env do
-      stdout, stderr, status = Open3.capture3(env, RUBY_PATH, *@ruby_args, *args)
+      stdout, stderr, status = Open3.capture3(env, *@ruby_args, *args)
       $stdout.print stdout
       $stderr.print stderr
       status

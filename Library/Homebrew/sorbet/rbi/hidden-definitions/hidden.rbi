@@ -8045,6 +8045,37 @@ module Homebrew
   MIN_PORT = ::T.let(nil, ::T.untyped)
 end
 
+module Homebrew::Assertions
+  include ::Minitest::Assertions
+  def assert_no_match(*args); end
+
+  def assert_not_empty(*args); end
+
+  def assert_not_equal(*args); end
+
+  def assert_not_in_delta(*args); end
+
+  def assert_not_in_epsilon(*args); end
+
+  def assert_not_includes(*args); end
+
+  def assert_not_instance_of(*args); end
+
+  def assert_not_kind_of(*args); end
+
+  def assert_not_nil(*args); end
+
+  def assert_not_operator(*args); end
+
+  def assert_not_predicate(*args); end
+
+  def assert_not_respond_to(*args); end
+
+  def assert_not_same(*args); end
+
+  def assert_raise(*args); end
+end
+
 class Homebrew::BundleVersion
   extend ::T::Private::Methods::MethodHooks
   extend ::T::Private::Methods::SingletonMethodHooks
@@ -12561,6 +12592,7 @@ class Object
   HOMEBREW_RELEASES_URL_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_REPOSITORY = ::T.let(nil, ::T.untyped)
   HOMEBREW_REQUIRED_RUBY_VERSION = ::T.let(nil, ::T.untyped)
+  HOMEBREW_RUBY_EXEC_ARGS = ::T.let(nil, ::T.untyped)
   HOMEBREW_SHIMS_PATH = ::T.let(nil, ::T.untyped)
   HOMEBREW_TAP_CASK_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_TAP_DIR_REGEX = ::T.let(nil, ::T.untyped)
