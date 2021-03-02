@@ -458,6 +458,9 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
         filename = URI.decode_www_form_component(encoded_filename).encode(encoding) if encoding && encoded_filename
       end
 
+      # Servers may include '/' in their Content-Disposition filename header. Take only the basename of this, because:
+      # - Unpacking code assumes this is a single file - not something living in a subdirectory.
+      # - Directory traversal attacks are possible without limiting this to just the basename.
       (filename || content_disposition.filename).rpartition("/")[-1]
     end
 
@@ -1049,7 +1052,7 @@ class CVSDownloadStrategy < VCSDownloadStrategy
   end
 
   def split_url(in_url)
-    parts = in_url.split(/:/)
+    parts = in_url.split(":")
     mod = parts.pop
     url = parts.join(":")
     [mod, url]
