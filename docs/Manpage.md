@@ -749,8 +749,7 @@ If *`user`*`/`*`repo`* are provided, display where tap *`user`*`/`*`repo`*'s dir
 
 ### `--version`, `-v`
 
-Print the version numbers of Homebrew, Homebrew/homebrew-core and Homebrew/homebrew-cask
-(if tapped) to standard output.
+Print the version numbers of Homebrew, Homebrew/homebrew-core and Homebrew/homebrew-cask (if tapped) to standard output.
 
 ## DEVELOPER COMMANDS
 
@@ -1018,6 +1017,8 @@ Build bottles for these formulae with GitHub Actions.
   Dispatch specified workflow (default: `dispatch-build-bottle.yml`).
 * `--upload`:
   Upload built bottles to Bintray.
+* `--linux`:
+  Dispatch bottle for Linux (using GitHub runners).
 
 ### `edit` [*`--formula`*] [*`--cask`*] [*`formula`*|*`cask`* ...]
 
