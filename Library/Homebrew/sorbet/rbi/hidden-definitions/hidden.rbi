@@ -8234,6 +8234,8 @@ module Homebrew::EnvConfig
 
   def self.pry?(); end
 
+  def self.simulate_macos_on_linux?(); end
+
   def self.skip_or_later_bottles?(); end
 
   def self.sorbet_runtime?(); end
@@ -26900,11 +26902,6 @@ class RuboCop::Cop::FormulaCop
   def required_dependency?(param0); end
 
   def required_dependency_name?(param0, param1); end
-end
-
-class RuboCop::Cop::Style::UnlessMultipleConditions
-  extend ::T::Private::Methods::MethodHooks
-  extend ::T::Private::Methods::SingletonMethodHooks
 end
 
 module RuboCop::RSpec::ExpectOffense
