@@ -53,7 +53,7 @@ GEM
     net-http-digest_auth (1.4.1)
     net-http-persistent (4.0.1)
       connection_pool (~> 2.2)
-    nokogiri (1.11.1)
+    nokogiri (1.11.2)
       mini_portile2 (~> 2.5.0)
       racc (~> 1.4)
     ntlm-http (0.1.1)
@@ -149,7 +149,7 @@ GEM
       sorbet (~> 0.5.5)
       sorbet-runtime
       thor (>= 0.19.2)
-    tapioca (0.4.16)
+    tapioca (0.4.17)
       bundler (>= 1.17.3)
       parlour (>= 2.1.0)
       pry (>= 0.12.2)
