@@ -126,16 +126,21 @@ module Cask
       end
     end
 
-    sig { returns(String) }
-    def summary
+    sig { params(include_passed: T::Boolean, include_warnings: T::Boolean).returns(String) }
+    def summary(include_passed: false, include_warnings: true)
+      return if success? && !include_passed
+      return if warnings? && !errors? && !include_warnings
+
       summary = ["audit for #{cask}: #{result}"]
 
       errors.each do |error|
         summary << " #{Formatter.error("-")} #{error}"
       end
 
-      warnings.each do |warning|
-        summary << " #{Formatter.warning("-")} #{warning}"
+      if include_warnings
+        warnings.each do |warning|
+          summary << " #{Formatter.warning("-")} #{warning}"
+        end
       end
 
       summary.join("\n")
@@ -288,7 +293,11 @@ module Cask
     def check_appcast_and_livecheck
       return unless cask.appcast
 
-      add_error "Cask has a `livecheck`, the `appcast` should be removed." if cask.livecheckable?
+      if cask.livecheckable?
+        add_error "Cask has a `livecheck`, the `appcast` should be removed."
+      elsif new_cask?
+        add_error "New casks should use a `livecheck` instead of an `appcast`."
+      end
     end
 
     def check_latest_with_appcast_or_livecheck
@@ -542,12 +551,20 @@ module Cask
 
     def check_livecheck_version
       return unless appcast?
-      return unless cask.livecheckable?
       return if cask.livecheck.skip?
       return if cask.version.latest?
 
       latest_version = Homebrew::Livecheck.latest_version(cask)&.fetch(:latest)
-      return if cask.version.to_s == latest_version.to_s
+      if cask.version.to_s == latest_version.to_s
+        if cask.appcast
+          add_error "Version '#{latest_version}' was automatically detected by livecheck; " \
+                    "the appcast should be removed."
+        end
+
+        return
+      end
+
+      return if cask.appcast && !cask.livecheckable?
 
       add_error "Version '#{cask.version}' differs from '#{latest_version}' retrieved by livecheck."
     end

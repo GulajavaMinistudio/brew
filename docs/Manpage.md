@@ -780,6 +780,8 @@ non-zero status if any errors are found.
   Include the RuboCop cop name for each violation in the output.
 * `--display-filename`:
   Prefix every line of output with the file or formula name being audited, to make output easy to grep.
+* `--display-failures-only`:
+  Only display casks that fail the audit. This is the default for formulae.
 * `--skip-style`:
   Skip running non-RuboCop style checks. Useful if you plan on running `brew style` separately. Enabled by default unless a formula is specified by name.
 * `-D`, `--audit-debug`:
@@ -1319,6 +1321,8 @@ user if something is wrong with the installed formula.
 
 *Example:* `brew install jruby && brew test jruby`
 
+* `-f`, `--force`:
+  Test formulae even if they are unlinked.
 * `--HEAD`:
   Test the head version of a formula.
 * `--keep-tmp`:

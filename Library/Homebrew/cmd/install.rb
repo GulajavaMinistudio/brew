@@ -176,7 +176,15 @@ module Homebrew
 
     # if the user's flags will prevent bottle only-installations when no
     # developer tools are available, we need to stop them early on
-    FormulaInstaller.prevent_build_flags(args)
+    unless DevelopmentTools.installed?
+      build_flags = []
+
+      build_flags << "--HEAD" if args.HEAD?
+      build_flags << "--build-bottle" if args.build_bottle?
+      build_flags << "--build-from-source" if args.build_from_source?
+
+      raise BuildFlagsError.new(build_flags, bottled: formulae.all?(&:bottled?)) if build_flags.present?
+    end
 
     installed_formulae = []
 
@@ -316,7 +324,19 @@ module Homebrew
       Cleanup.install_formula_clean!(f)
     end
 
-    Upgrade.check_installed_dependents(installed_formulae, args: args)
+    Upgrade.check_installed_dependents(
+      installed_formulae,
+      flags:                      args.flags_only,
+      installed_on_request:       args.named.present?,
+      force_bottle:               args.force_bottle?,
+      build_from_source_formulae: args.build_from_source_formulae,
+      interactive:                args.interactive?,
+      keep_tmp:                   args.keep_tmp?,
+      force:                      args.force?,
+      debug:                      args.debug?,
+      quiet:                      args.quiet?,
+      verbose:                    args.verbose?,
+    )
 
     Homebrew.messages.display_messages(display_times: args.display_times?)
   rescue FormulaUnreadableError, FormulaClassUnavailableError,
