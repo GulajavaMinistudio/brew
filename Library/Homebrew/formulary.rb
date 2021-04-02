@@ -4,6 +4,7 @@
 require "digest/md5"
 require "extend/cachable"
 require "tab"
+require "utils/bottles"
 
 # The {Formulary} is responsible for creating instances of {Formula}.
 # It is not meant to be used directly from formulae.
@@ -52,6 +53,7 @@ module Formulary
     require "formula"
 
     mod = Module.new
+    remove_const(namespace) if const_defined?(namespace)
     const_set(namespace, mod)
 
     begin
@@ -190,13 +192,19 @@ module Formulary
     end
 
     def get_formula(spec, force_bottle: false, flags: [], **)
-      contents = Utils::Bottles.formula_contents @bottle_filename, name: name
       formula = begin
+        contents = Utils::Bottles.formula_contents @bottle_filename, name: name
         Formulary.from_contents(name, path, contents, spec, force_bottle: force_bottle, flags: flags)
       rescue FormulaUnreadableError => e
         opoo <<~EOS
           Unreadable formula in #{@bottle_filename}:
           #{e}
+        EOS
+        super
+      rescue BottleFormulaUnavailableError => e
+        opoo <<~EOS
+          #{e}
+          Falling back to non-bottle formula.
         EOS
         super
       end
@@ -457,7 +465,7 @@ module Formulary
 
   def self.loader_for(ref, from: nil)
     case ref
-    when Pathname::BOTTLE_EXTNAME_RX
+    when HOMEBREW_BOTTLES_EXTNAME_REGEX
       return BottleLoader.new(ref)
     when URL_START_REGEX
       return FromUrlLoader.new(ref)

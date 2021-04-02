@@ -67,13 +67,13 @@ module Cask
       check_single_pre_postflight
       check_single_uninstall_zap
       check_untrusted_pkg
-      check_hosting_with_appcast
+      livecheck_result = check_livecheck_version
+      check_hosting_with_livecheck(livecheck_result: livecheck_result)
       check_appcast_and_livecheck
       check_latest_with_appcast_or_livecheck
       check_latest_with_auto_updates
       check_stanza_requires_uninstall
       check_appcast_contains_version
-      check_livecheck_version
       check_gitlab_repository
       check_gitlab_repository_archived
       check_gitlab_prerelease_version
@@ -233,7 +233,6 @@ module Cask
       return unless cask.version
 
       check_no_string_version_latest
-      check_no_file_separator_in_version
     end
 
     def check_no_string_version_latest
@@ -241,14 +240,6 @@ module Cask
       return unless cask.version.raw_version == "latest"
 
       add_error "you should use version :latest instead of version 'latest'"
-    end
-
-    def check_no_file_separator_in_version
-      odebug "Verifying version does not contain '#{File::SEPARATOR}'"
-      return unless cask.version.raw_version.is_a?(String)
-      return unless cask.version.raw_version.include?(File::SEPARATOR)
-
-      add_error "version should not contain '#{File::SEPARATOR}'"
     end
 
     def check_sha256
@@ -314,22 +305,23 @@ module Cask
       add_error "Casks with `version :latest` should not use `auto_updates`."
     end
 
-    APPCAST_REFERENCE_URL = "https://github.com/Homebrew/homebrew-cask/blob/HEAD/doc/cask_language_reference/stanzas/appcast.md"
+    LIVECHECK_REFERENCE_URL = "https://github.com/Homebrew/homebrew-cask/blob/HEAD/doc/cask_language_reference/stanzas/livecheck.md"
 
-    def check_hosting_with_appcast
-      return if cask.appcast || cask.livecheckable?
+    def check_hosting_with_livecheck(livecheck_result:)
+      return if block_url_offline? || cask.appcast || cask.livecheckable?
+      return if livecheck_result == :auto_detected
 
-      add_appcast = "please add an appcast. See #{Formatter.url(APPCAST_REFERENCE_URL)}"
+      add_livecheck = "please add a livecheck. See #{Formatter.url(LIVECHECK_REFERENCE_URL)}"
 
       case cask.url.to_s
       when %r{sourceforge.net/(\S+)}
         return if cask.version.latest?
 
-        add_error "Download is hosted on SourceForge, #{add_appcast}"
+        add_error "Download is hosted on SourceForge, #{add_livecheck}"
       when %r{dl.devmate.com/(\S+)}
-        add_error "Download is hosted on DevMate, #{add_appcast}"
+        add_error "Download is hosted on DevMate, #{add_livecheck}"
       when %r{rink.hockeyapp.net/(\S+)}
-        add_error "Download is hosted on HockeyApp, #{add_appcast}"
+        add_error "Download is hosted on HockeyApp, #{add_livecheck}"
       end
     end
 
@@ -427,9 +419,16 @@ module Cask
       URI(cask.url.to_s).scheme == "file"
     end
 
+    def block_url_offline?
+      return false if online?
+
+      cask.url.from_block?
+    end
+
     VERIFIED_URL_REFERENCE_URL = "https://github.com/Homebrew/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/url.md#when-url-and-homepage-hostnames-differ-add-verified"
 
     def check_unnecessary_verified
+      return if block_url_offline?
       return unless verified_present?
       return unless url_match_homepage?
       return unless verified_matches_url?
@@ -440,7 +439,7 @@ module Cask
     end
 
     def check_missing_verified
-      return if cask.url.from_block?
+      return if block_url_offline?
       return if file_url?
       return if url_match_homepage?
       return if verified_present?
@@ -451,6 +450,7 @@ module Cask
     end
 
     def check_no_match
+      return if block_url_offline?
       return unless verified_present?
       return if verified_matches_url?
 
@@ -551,8 +551,8 @@ module Cask
 
     def check_livecheck_version
       return unless appcast?
-      return if cask.livecheck.skip?
-      return if cask.version.latest?
+      return :skip if cask.livecheck.skip?
+      return :latest if cask.version.latest?
 
       latest_version = Homebrew::Livecheck.latest_version(cask)&.fetch(:latest)
       if cask.version.to_s == latest_version.to_s
@@ -561,12 +561,14 @@ module Cask
                     "the appcast should be removed."
         end
 
-        return
+        return :auto_detected
       end
 
-      return if cask.appcast && !cask.livecheckable?
+      return :appcast if cask.appcast && !cask.livecheckable?
 
       add_error "Version '#{cask.version}' differs from '#{latest_version}' retrieved by livecheck."
+
+      false
     end
 
     def check_appcast_contains_version
@@ -598,7 +600,7 @@ module Cask
       return if cask.tap == "homebrew/cask-versions"
 
       odebug "Auditing GitHub prerelease"
-      user, repo = get_repo_data(%r{https?://github\.com/([^/]+)/([^/]+)/?.*}) if @online
+      user, repo = get_repo_data(%r{https?://github\.com/([^/]+)/([^/]+)/?.*}) if online?
       return if user.nil?
 
       tag = SharedAudits.github_tag_from_url(cask.url)
@@ -610,7 +612,7 @@ module Cask
     def check_gitlab_prerelease_version
       return if cask.tap == "homebrew/cask-versions"
 
-      user, repo = get_repo_data(%r{https?://gitlab\.com/([^/]+)/([^/]+)/?.*}) if @online
+      user, repo = get_repo_data(%r{https?://gitlab\.com/([^/]+)/([^/]+)/?.*}) if online?
       return if user.nil?
 
       odebug "Auditing GitLab prerelease"
@@ -622,7 +624,7 @@ module Cask
     end
 
     def check_github_repository_archived
-      user, repo = get_repo_data(%r{https?://github\.com/([^/]+)/([^/]+)/?.*}) if @online
+      user, repo = get_repo_data(%r{https?://github\.com/([^/]+)/([^/]+)/?.*}) if online?
       return if user.nil?
 
       odebug "Auditing GitHub repo archived"
@@ -642,7 +644,7 @@ module Cask
     end
 
     def check_gitlab_repository_archived
-      user, repo = get_repo_data(%r{https?://gitlab\.com/([^/]+)/([^/]+)/?.*}) if @online
+      user, repo = get_repo_data(%r{https?://gitlab\.com/([^/]+)/([^/]+)/?.*}) if online?
       return if user.nil?
 
       odebug "Auditing GitLab repo archived"

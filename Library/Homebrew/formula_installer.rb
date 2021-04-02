@@ -502,9 +502,8 @@ class FormulaInstaller
   # being installed.
   def compute_dependencies
     @compute_dependencies ||= begin
-      req_map, req_deps = expand_requirements
-      check_requirements(req_map)
-      expand_dependencies(req_deps + formula.deps)
+      check_requirements(expand_requirements)
+      expand_dependencies
     end
   end
 
@@ -550,7 +549,6 @@ class FormulaInstaller
 
   def expand_requirements
     unsatisfied_reqs = Hash.new { |h, k| h[k] = [] }
-    req_deps = []
     formulae = [formula]
     formula_deps_map = formula.recursive_dependencies
                               .index_by(&:name)
@@ -577,17 +575,16 @@ class FormulaInstaller
       end
     end
 
-    # Merge the repeated dependencies, which may have different tags.
-    req_deps = Dependency.merge_repeats(req_deps)
-
-    [unsatisfied_reqs, req_deps]
+    unsatisfied_reqs
   end
 
-  def expand_dependencies(deps)
+  def expand_dependencies
     inherited_options = Hash.new { |hash, key| hash[key] = Options.new }
     pour_bottle = pour_bottle?
 
-    expanded_deps = Dependency.expand(formula, deps) do |dependent, dep|
+    # Cache for this expansion only. FormulaInstaller has a lot of inputs which can alter expansion.
+    cache_key = "FormulaInstaller-#{formula.full_name}-#{Time.now.to_f}"
+    expanded_deps = Dependency.expand(formula, cache_key: cache_key) do |dependent, dep|
       inherited_options[dep.name] |= inherited_options_for(dep)
       build = effective_build_options_for(
         dependent,
@@ -1103,7 +1100,9 @@ class FormulaInstaller
 
     return if only_deps?
 
-    unless pour_bottle?(output_warning: true)
+    if pour_bottle?(output_warning: true)
+      formula.fetch_bottle_tab
+    else
       formula.fetch_patches
       formula.resources.each(&:fetch)
     end
@@ -1127,13 +1126,16 @@ class FormulaInstaller
     end
 
     keg = Keg.new(formula.prefix)
-    tab = Tab.for_keg(keg)
     Tab.clear_cache
+
+    tab = if (tab_attributes = formula.bottle_tab_attributes.presence)
+      Tab.from_file_content(tab_attributes.to_json, keg/Tab::FILENAME)
+    else
+      Tab.for_keg(keg)
+    end
 
     skip_linkage = formula.bottle_specification.skip_relocation?
     keg.replace_placeholders_with_locations tab.changed_files, skip_linkage: skip_linkage
-
-    tab = Tab.for_keg(keg)
 
     unless ignore_deps?
       CxxStdlib.check_compatibility(
@@ -1142,14 +1144,21 @@ class FormulaInstaller
       )
     end
 
-    tab.tap = formula.tap
+    # fill in missing/outdated parts of the tab
+    # keep in sync with Tab#to_bottle_json
+    tab.used_options = []
+    tab.unused_options = []
+    tab.built_as_bottle = true
     tab.poured_from_bottle = true
-    tab.time = Time.now.to_i
-    tab.head = HOMEBREW_REPOSITORY.git_head
-    tab.source["path"] = formula.specified_path.to_s
     tab.installed_as_dependency = installed_as_dependency?
     tab.installed_on_request = installed_on_request?
+    tab.time = Time.now.to_i
     tab.aliases = formula.aliases
+    tab.arch = Hardware::CPU.arch
+    tab.source["versions"]["stable"] = formula.stable.version.to_s
+    tab.source["path"] = formula.specified_path.to_s
+    tab.source["tap_git_head"] = formula.tap&.git_head
+    tab.tap = formula.tap
     tab.write
   end
 

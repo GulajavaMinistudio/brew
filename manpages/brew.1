@@ -478,15 +478,15 @@ Force output to be one entry per line\. This is the default when output is not t
 .
 .TP
 \fB\-l\fR
-List formulae in long format\.
+List formulae and/or casks in long format\. Has no effect when a formula or cask name is passed as an argument\.
 .
 .TP
 \fB\-r\fR
-Reverse the order of the formulae sort to list the oldest entries first\.
+Reverse the order of the formulae and/or casks sort to list the oldest entries first\. Has no effect when a formula or cask name is passed as an argument\.
 .
 .TP
 \fB\-t\fR
-Sort formulae by time modified, listing most recently modified first\.
+Sort formulae and/or casks by time modified, listing most recently modified first\. Has no effect when a formula or cask name is passed as an argument\.
 .
 .SS "\fBlog\fR [\fIoptions\fR] [\fIformula\fR]"
 Show the \fBgit log\fR for \fIformula\fR, or show the log for the Homebrew repository if no formula is provided\.
@@ -1133,6 +1133,14 @@ Write changes to the formula file\. A new commit will be generated unless \fB\-\
 When passed with \fB\-\-write\fR, a new commit will not generated after writing changes to the formula file\.
 .
 .TP
+\fB\-\-only\-json\-tab\fR
+When passed with \fB\-\-json\fR, the tab will be written to the JSON file but not the bottle\.
+.
+.TP
+\fB\-\-committer\fR
+Specify a committer name and email in \fBgit\fR\'s standard author format\.
+.
+.TP
 \fB\-\-root\-url\fR
 Use the specified \fIURL\fR as the root of the bottle\'s URL instead of Homebrew\'s default\.
 .
@@ -1649,6 +1657,10 @@ When a patch fails to apply, leave in progress and allow user to resolve, instea
 Warn instead of raising an error if the bottle upload fails\. Useful for repairing bottle uploads that previously failed\.
 .
 .TP
+\fB\-\-committer\fR
+Specify a committer name and email in \fBgit\fR\'s standard author format\.
+.
+.TP
 \fB\-\-message\fR
 Message to include when autosquashing revision bumps, deletions, and rebuilds\.
 .
@@ -1706,6 +1718,10 @@ Do not generate a new commit before uploading\.
 .TP
 \fB\-\-warn\-on\-upload\-failure\fR
 Warn instead of raising an error if the bottle upload fails\. Useful for repairing bottle uploads that previously failed\.
+.
+.TP
+\fB\-\-committer\fR
+Specify a committer name and email in \fBgit\fR\'s standard author format\.
 .
 .TP
 \fB\-\-archive\-item\fR

@@ -613,46 +613,46 @@ describe Cask::Audit, :cask do
       end
     end
 
-    describe "hosting with appcast checks" do
-      let(:message) { /please add an appcast/ }
+    describe "hosting with livecheck checks" do
+      let(:message) { /please add a livecheck/ }
 
-      context "when the download does not use hosting with an appcast" do
+      context "when the download does not use hosting with a livecheck" do
         let(:cask_token) { "basic-cask" }
 
         it { is_expected.not_to fail_with(message) }
       end
 
-      context "when the download is hosted on SourceForge and has an appcast" do
+      context "when the download is hosted on SourceForge and has a livecheck" do
         let(:cask_token) { "sourceforge-with-appcast" }
 
         it { is_expected.not_to fail_with(message) }
       end
 
-      context "when the download is hosted on SourceForge and does not have an appcast" do
+      context "when the download is hosted on SourceForge and does not have a livecheck" do
         let(:cask_token) { "sourceforge-correct-url-format" }
 
         it { is_expected.to fail_with(message) }
       end
 
-      context "when the download is hosted on DevMate and has an appcast" do
+      context "when the download is hosted on DevMate and has a livecheck" do
         let(:cask_token) { "devmate-with-appcast" }
 
         it { is_expected.not_to fail_with(message) }
       end
 
-      context "when the download is hosted on DevMate and does not have an appcast" do
+      context "when the download is hosted on DevMate and does not have a livecheck" do
         let(:cask_token) { "devmate-without-appcast" }
 
         it { is_expected.to fail_with(message) }
       end
 
-      context "when the download is hosted on HockeyApp and has an appcast" do
+      context "when the download is hosted on HockeyApp and has a livecheck" do
         let(:cask_token) { "hockeyapp-with-appcast" }
 
         it { is_expected.not_to fail_with(message) }
       end
 
-      context "when the download is hosted on HockeyApp and does not have an appcast" do
+      context "when the download is hosted on HockeyApp and does not have a livecheck" do
         let(:cask_token) { "hockeyapp-without-appcast" }
 
         it { is_expected.to fail_with(message) }
@@ -795,7 +795,17 @@ describe Cask::Audit, :cask do
           end
         end
 
-        context "when doing the audit" do
+        context "when doing an offline audit" do
+          let(:online) { false }
+
+          it "does not evaluate the block" do
+            expect(run).not_to pass
+          end
+        end
+
+        context "when doing and online audit" do
+          let(:online) { true }
+
           it "evaluates the block" do
             expect(run).to fail_with(/Boom/)
           end
@@ -1010,25 +1020,6 @@ describe Cask::Audit, :cask do
       it "receives cookies" do
         expect(audit.cask.url.cookies).to eq "foo" => "bar"
       end
-    end
-
-    context "when the version contains a slash" do
-      let(:cask_token) { "foo" }
-      let(:cask) do
-        tmp_cask cask_token.to_s, <<~RUBY
-          cask '#{cask_token}' do
-            version '0.1,../../directory/traversal'
-            sha256 '8dd95daa037ac02455435446ec7bc737b34567afe9156af7d20b2a83805c1d8a'
-            url 'https://brew.sh/foo.zip'
-            name 'Audit'
-            desc 'Audit Description'
-            homepage 'https://brew.sh'
-            app 'Audit.app'
-          end
-        RUBY
-      end
-
-      it { is_expected.to fail_with(%r{version should not contain '/'}) }
     end
   end
 end

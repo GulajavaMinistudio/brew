@@ -372,6 +372,7 @@ _brew_bottle() {
   case "$cur" in
     -*)
       __brewcomp "
+      --committer
       --debug
       --force-core-tap
       --help
@@ -380,6 +381,7 @@ _brew_bottle() {
       --merge
       --no-commit
       --no-rebuild
+      --only-json-tab
       --quiet
       --root-url
       --skip-relocation
@@ -1455,6 +1457,7 @@ _brew_pr_pull() {
       --bintray-org
       --branch-okay
       --clean
+      --committer
       --debug
       --dry-run
       --help
@@ -1483,6 +1486,7 @@ _brew_pr_upload() {
       __brewcomp "
       --archive-item
       --bintray-org
+      --committer
       --debug
       --dry-run
       --github-org

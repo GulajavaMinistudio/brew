@@ -17,6 +17,18 @@ class GitHubPackages
   DOCKER_PREFIX = "docker://#{URL_DOMAIN}/"
   URL_REGEX = %r{(?:#{Regexp.escape(URL_PREFIX)}|#{Regexp.escape(DOCKER_PREFIX)})([\w-]+)/([\w-]+)}.freeze
 
+  # Translate Homebrew tab.arch to OCI platform.architecture
+  TAB_ARCH_TO_PLATFORM_ARCHITECTURE = {
+    "arm64"  => "arm64",
+    "x86_64" => "amd64",
+  }.freeze
+
+  # Translate Homebrew built_on.os to OCI platform.os
+  BUILT_ON_OS_TO_PLATFORM_OS = {
+    "Linux"     => "linux",
+    "Macintosh" => "darwin",
+  }.freeze
+
   sig { returns(String) }
   def inspect
     "#<GitHubPackages: org=#{@github_org}>"
@@ -46,15 +58,40 @@ class GitHubPackages
       skopeo = Formula["skopeo"].opt_bin/"skopeo"
     end
 
-    # TODO: these dependencies are installed but cannot be required automatically.
     Homebrew.install_gem!("json_schemer")
     require "json_schemer"
 
     load_schemas!
 
-    bottles_hash.each_value do |bottle_hash|
-      upload_bottle(user, token, skopeo, bottle_hash, dry_run: dry_run)
+    bottles_hash.each do |formula_full_name, bottle_hash|
+      upload_bottle(user, token, skopeo, formula_full_name, bottle_hash, dry_run: dry_run)
     end
+  end
+
+  def self.version_rebuild(version, rebuild, bottle_tag = nil)
+    bottle_tag = (".#{bottle_tag}" if bottle_tag.present?)
+
+    rebuild = if rebuild.to_i.positive?
+      if bottle_tag
+        ".#{rebuild}"
+      else
+        "-#{rebuild}"
+      end
+    end
+
+    "#{version}#{bottle_tag}#{rebuild}"
+  end
+
+  def self.repo_without_prefix(repo)
+    # remove redundant repo prefix for a shorter name
+    repo.delete_prefix("homebrew-")
+  end
+
+  def self.root_url(org, repo, prefix = URL_PREFIX)
+    # docker/skopeo insist on lowercase org ("repository name")
+    org = org.downcase
+
+    "#{prefix}#{org}/#{repo_without_prefix(repo)}"
   end
 
   private
@@ -120,18 +157,15 @@ class GitHubPackages
     exit 1
   end
 
-  def upload_bottle(user, token, skopeo, bottle_hash, dry_run:)
-    formula_path = HOMEBREW_REPOSITORY/bottle_hash["formula"]["path"]
-    formula = Formulary.factory(formula_path)
-    formula_name = formula.name
+  def upload_bottle(user, token, skopeo, formula_full_name, bottle_hash, dry_run:)
+    formula_name = bottle_hash["formula"]["name"]
 
     _, org, repo, = *bottle_hash["bottle"]["root_url"].match(URL_REGEX)
+    repo = "homebrew-#{repo}" unless HOMEBREW_OFFICIAL_REPO_PREFIXES_REGEX.match?(repo)
 
     version = bottle_hash["formula"]["pkg_version"]
-    rebuild = if (rebuild = bottle_hash["bottle"]["rebuild"]).positive?
-      ".#{rebuild}"
-    end
-    version_rebuild = "#{version}#{rebuild}"
+    rebuild = bottle_hash["bottle"]["rebuild"]
+    version_rebuild = GitHubPackages.version_rebuild(version, rebuild)
     root = Pathname("#{formula_name}--#{version_rebuild}")
     FileUtils.rm_rf root
 
@@ -140,27 +174,28 @@ class GitHubPackages
     blobs = root/"blobs/sha256"
     blobs.mkpath
 
-    # TODO: ideally most/all of these attributes would be stored in the
-    # bottle JSON rather than reading them from the formula.
-    git_revision = formula.tap.git_head
-    git_path = formula_path.to_s.delete_prefix("#{formula.tap.path}/")
-    source = "https://github.com/#{org}/#{repo}/blob/#{git_revision}/#{git_path}"
-    documentation = if formula.tap.core_tap?
+    git_path = bottle_hash["formula"]["tap_git_path"]
+    git_revision = bottle_hash["formula"]["tap_git_revision"]
+    source = "https://github.com/#{org}/#{repo}/blob/#{git_revision.presence || "HEAD"}/#{git_path}"
+
+    formula_core_tap = formula_full_name.exclude?("/")
+    documentation = if formula_core_tap
       "https://formulae.brew.sh/formula/#{formula_name}"
-    else
-      formula.tap.remote
+    elsif (remote = bottle_hash["formula"]["tap_git_remote"]) && remote.start_with?("https://github.com/")
+      remote
     end
 
+    created_date = bottle_hash["bottle"]["date"]
     formula_annotations_hash = {
-      "org.opencontainers.image.created"       => Time.now.strftime("%F"),
-      "org.opencontainers.image.description"   => formula.desc,
+      "org.opencontainers.image.created"       => created_date,
+      "org.opencontainers.image.description"   => bottle_hash["formula"]["desc"],
       "org.opencontainers.image.documentation" => documentation,
-      "org.opencontainers.image.license"       => formula.license,
+      "org.opencontainers.image.license"       => bottle_hash["formula"]["license"],
       "org.opencontainers.image.ref.name"      => version_rebuild,
       "org.opencontainers.image.revision"      => git_revision,
       "org.opencontainers.image.source"        => source,
-      "org.opencontainers.image.title"         => formula.full_name,
-      "org.opencontainers.image.url"           => formula.homepage,
+      "org.opencontainers.image.title"         => formula_full_name,
+      "org.opencontainers.image.url"           => bottle_hash["formula"]["homepage"],
       "org.opencontainers.image.vendor"        => org,
       "org.opencontainers.image.version"       => version,
     }
@@ -168,40 +203,39 @@ class GitHubPackages
       formula_annotations_hash.delete(key) if value.blank?
     end
 
-    created_times = []
     manifests = bottle_hash["bottle"]["tags"].map do |bottle_tag, tag_hash|
       local_file = tag_hash["local_filename"]
       odebug "Uploading #{local_file}"
 
       tar_gz_sha256 = write_tar_gz(local_file, blobs)
 
-      tab = Tab.from_file_content(
-        Utils.safe_popen_read("tar", "xfO", local_file, "#{formula_name}/#{version}/INSTALL_RECEIPT.json"),
-        "#{local_file}/#{formula_name}/#{version}",
-      )
-      os_version = if tab.built_on.present?
-        /(\d+\.)*\d+/ =~ tab.built_on["os_version"]
-        Regexp.last_match(0)
-      end
-
-      # TODO: ideally most/all of these attributes would be stored in the
-      # bottle JSON rather than reading them from the formula.
-      os, arch, formulae_dir = if bottle_tag.to_s.end_with?("_linux")
-        ["linux", "amd64", "formula-linux"]
+      tab = tag_hash["tab"]
+      architecture = if tab["arch"].present?
+        TAB_ARCH_TO_PLATFORM_ARCHITECTURE[tab["arch"]]
+      elsif bottle_tag.to_s.start_with?("arm64")
+        "arm64"
       else
-        os = "darwin"
-        macos_version = MacOS::Version.from_symbol(bottle_tag.to_sym)
-        os_version ||= macos_version.to_f.to_s
-        arch = if macos_version.arch == :arm64
-          "arm64"
-        else
-          "amd64"
-        end
-        [os, arch, "formula"]
+        "amd64"
+      end
+      raise TypeError, "unknown tab['arch']: #{tab["arch"]}" if architecture.blank?
+
+      os = if tab["built_on"].present? && tab["built_on"]["os"].present?
+        BUILT_ON_OS_TO_PLATFORM_OS[tab["built_on"]["os"]]
+      elsif bottle_tag.to_s.end_with?("_linux")
+        "linux"
+      else
+        "darwin"
+      end
+      raise TypeError, "unknown tab['built_on']['os']: #{tab["built_on"]["os"]}" if os.blank?
+
+      os_version = if tab["built_on"].present? && tab["built_on"]["os_version"].present?
+        tab["built_on"]["os_version"]
+      else
+        MacOS::Version.from_symbol(bottle_tag).to_s
       end
 
       platform_hash = {
-        architecture: arch,
+        architecture: architecture,
         os: os,
         "os.version" => os_version,
       }
@@ -211,18 +245,16 @@ class GitHubPackages
 
       config_json_sha256, config_json_size = write_image_config(platform_hash, tar_sha256, blobs)
 
-      created_time = tab.source_modified_time
-      created_time ||= Time.now
-      created_times << created_time
-      documentation = "https://formulae.brew.sh/#{formulae_dir}/#{formula_name}" if formula.tap.core_tap?
-      tag = "#{version}.#{bottle_tag}#{rebuild}"
-      title = "#{formula.full_name} #{tag}"
+      formulae_dir = tag_hash["formulae_brew_sh_path"]
+      documentation = "https://formulae.brew.sh/#{formulae_dir}/#{formula_name}" if formula_core_tap
+
+      tag = GitHubPackages.version_rebuild(version, rebuild, bottle_tag)
 
       annotations_hash = formula_annotations_hash.merge({
-        "org.opencontainers.image.created"       => created_time.strftime("%F"),
+        "org.opencontainers.image.created"       => created_date,
         "org.opencontainers.image.documentation" => documentation,
         "org.opencontainers.image.ref.name"      => tag,
-        "org.opencontainers.image.title"         => title,
+        "org.opencontainers.image.title"         => "#{formula_full_name} #{tag}",
       }).sort.to_h
       annotations_hash.each do |key, value|
         annotations_hash.delete(key) if value.blank?
@@ -255,19 +287,19 @@ class GitHubPackages
         platform:    platform_hash,
         annotations: {
           "org.opencontainers.image.ref.name" => tag,
+          "sh.brew.bottle.checksum"           => tar_gz_sha256,
+          "sh.brew.tab"                       => tab.to_json,
         },
       }
     end
 
     index_json_sha256, index_json_size = write_image_index(manifests, blobs, formula_annotations_hash)
 
-    write_index_json(index_json_sha256, index_json_size, root)
+    write_index_json(index_json_sha256, index_json_size, root,
+                     "org.opencontainers.image.ref.name" => version_rebuild)
 
-    # docker/skopeo insist on lowercase org ("repository name")
-    org_prefix = "#{URL_DOMAIN}/#{org.downcase}"
-    # remove redundant repo prefix for a shorter name
-    package_name = "#{repo.delete_prefix("homebrew-")}/#{formula_name}"
-    image_tag = "#{org_prefix}/#{package_name}:#{version_rebuild}"
+    image_tag = "#{GitHubPackages.root_url(org, repo, DOCKER_PREFIX)}/#{formula_name}:#{version_rebuild}"
+
     puts
     args = ["copy", "--all", "oci:#{root}", image_tag.to_s]
     if dry_run
@@ -275,6 +307,7 @@ class GitHubPackages
     else
       args << "--dest-creds=#{user}:#{token}"
       system_command!(skopeo, verbose: true, print_stdout: true, args: args)
+      package_name = "#{GitHubPackages.repo_without_prefix(repo)}/#{formula_name}"
       ohai "Uploaded to https://github.com/orgs/Homebrew/packages/container/package/#{package_name}"
     end
   end
@@ -315,16 +348,15 @@ class GitHubPackages
     write_hash(blobs, image_index)
   end
 
-  def write_index_json(index_json_sha256, index_json_size, root)
+  def write_index_json(index_json_sha256, index_json_size, root, annotations)
     index_json = {
       schemaVersion: 2,
       manifests:     [{
         mediaType:   "application/vnd.oci.image.index.v1+json",
         digest:      "sha256:#{index_json_sha256}",
         size:        index_json_size,
-        annotations: {},
+        annotations: annotations,
       }],
-      annotations:   {},
     }
     validate_schema!(IMAGE_INDEX_SCHEMA_URI, index_json)
     write_hash(root, index_json, "index.json")

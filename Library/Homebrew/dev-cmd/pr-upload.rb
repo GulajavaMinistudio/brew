@@ -30,6 +30,8 @@ module Homebrew
       switch "--warn-on-upload-failure",
              description: "Warn instead of raising an error if the bottle upload fails. "\
                           "Useful for repairing bottle uploads that previously failed."
+      flag   "--committer=",
+             description: "Specify a committer name and email in `git`'s standard author format."
       flag   "--archive-item=",
              description: "Upload to the specified Internet Archive item (default: `homebrew`)."
       flag   "--bintray-org=",
@@ -92,33 +94,43 @@ module Homebrew
       hash.deep_merge(JSON.parse(IO.read(json_file)))
     end
 
+    if args.root_url
+      bottles_hash.each_value do |bottle_hash|
+        bottle_hash["bottle"]["root_url"] = args.root_url
+      end
+    end
+
     bottle_args = ["bottle", "--merge", "--write"]
     bottle_args << "--verbose" if args.verbose?
     bottle_args << "--debug" if args.debug?
     bottle_args << "--keep-old" if args.keep_old?
     bottle_args << "--root-url=#{args.root_url}" if args.root_url
+    bottle_args << "--committer=#{args.committer}" if args.committer
     bottle_args << "--no-commit" if args.no_commit?
     bottle_args += json_files
 
     if args.dry_run?
-      service =
-        if internet_archive?(bottles_hash)
-          "Internet Archive"
-        elsif bintray?(bottles_hash)
-          "Bintray"
-        elsif github_releases?(bottles_hash)
-          "GitHub Releases"
-        elsif github_packages?(bottles_hash)
-          "GitHub Packages"
-        else
-          odie "Service specified by root_url is not recognized"
-        end
-      puts <<~EOS
-        brew #{bottle_args.join " "}
-        Upload bottles described by these JSON files to #{service}:
-          #{json_files.join("\n  ")}
-      EOS
-      return unless github_packages?(bottles_hash)
+      dry_run_service = if github_packages?(bottles_hash)
+        # GitHub Packages has its own --dry-run handling.
+        nil
+      elsif internet_archive?(bottles_hash)
+        "Internet Archive"
+      elsif bintray?(bottles_hash)
+        "Bintray"
+      elsif github_releases?(bottles_hash)
+        "GitHub Releases"
+      else
+        odie "Service specified by root_url is not recognized"
+      end
+
+      if dry_run_service
+        puts <<~EOS
+          brew #{bottle_args.join " "}
+          Upload bottles described by these JSON files to #{dry_run_service}:
+            #{json_files.join("\n  ")}
+        EOS
+        return
+      end
     end
 
     check_bottled_formulae(bottles_hash)
