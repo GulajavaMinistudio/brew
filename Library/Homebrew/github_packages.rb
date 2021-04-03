@@ -16,6 +16,7 @@ class GitHubPackages
   URL_PREFIX = "https://#{URL_DOMAIN}/v2/"
   DOCKER_PREFIX = "docker://#{URL_DOMAIN}/"
   URL_REGEX = %r{(?:#{Regexp.escape(URL_PREFIX)}|#{Regexp.escape(DOCKER_PREFIX)})([\w-]+)/([\w-]+)}.freeze
+  GITHUB_PACKAGE_TYPE = "homebrew_bottle"
 
   # Translate Homebrew tab.arch to OCI platform.architecture
   TAB_ARCH_TO_PLATFORM_ARCHITECTURE = {
@@ -51,8 +52,14 @@ class GitHubPackages
     raise UsageError, "HOMEBREW_GITHUB_PACKAGES_USER is unset." if user.blank?
     raise UsageError, "HOMEBREW_GITHUB_PACKAGES_TOKEN is unset." if token.blank?
 
-    skopeo = HOMEBREW_PREFIX/"bin/skopeo"
+    skopeo = [
+      which("skopeo"),
+      which("skopeo", ENV["HOMEBREW_PATH"]),
+      HOMEBREW_PREFIX/"bin/skopeo",
+    ].compact.first
     unless skopeo.exist?
+      odie "no `skoepeo` and HOMEBREW_FORCE_HOMEBREW_ON_LINUX is set!" if Homebrew::EnvConfig.force_homebrew_on_linux?
+
       ohai "Installing `skopeo` for upload..."
       safe_system HOMEBREW_BREW_FILE, "install", "--formula", "skopeo"
       skopeo = Formula["skopeo"].opt_bin/"skopeo"
@@ -198,10 +205,7 @@ class GitHubPackages
       "org.opencontainers.image.url"           => bottle_hash["formula"]["homepage"],
       "org.opencontainers.image.vendor"        => org,
       "org.opencontainers.image.version"       => version,
-    }
-    formula_annotations_hash.each do |key, value|
-      formula_annotations_hash.delete(key) if value.blank?
-    end
+    }.compact
 
     manifests = bottle_hash["bottle"]["tags"].map do |bottle_tag, tag_hash|
       local_file = tag_hash["local_filename"]
@@ -228,17 +232,28 @@ class GitHubPackages
       end
       raise TypeError, "unknown tab['built_on']['os']: #{tab["built_on"]["os"]}" if os.blank?
 
-      os_version = if tab["built_on"].present? && tab["built_on"]["os_version"].present?
-        tab["built_on"]["os_version"]
+      os_version = tab["built_on"]["os_version"] if tab["built_on"].present?
+      os_version = case os
+      when "darwin"
+        os_version || "macOS #{MacOS::Version.from_symbol(bottle_tag)}"
+      when "linux"
+        (os_version || "Ubuntu 16.04.7").delete_suffix " LTS"
       else
-        MacOS::Version.from_symbol(bottle_tag).to_s
+        os_version
       end
+
+      glibc_version = if os == "linux"
+        (tab["built_on"]["glibc_version"] if tab["built_on"].present?) || "2.23"
+      end
+
+      variant = tab["oldest_cpu_family"] || "core2" if os == "linux"
 
       platform_hash = {
         architecture: architecture,
+        variant: variant,
         os: os,
         "os.version" => os_version,
-      }
+      }.compact
       tar_sha256 = Digest::SHA256.hexdigest(
         Utils.safe_popen_read("gunzip", "--stdout", "--decompress", local_file),
       )
@@ -255,10 +270,9 @@ class GitHubPackages
         "org.opencontainers.image.documentation" => documentation,
         "org.opencontainers.image.ref.name"      => tag,
         "org.opencontainers.image.title"         => "#{formula_full_name} #{tag}",
-      }).sort.to_h
-      annotations_hash.each do |key, value|
-        annotations_hash.delete(key) if value.blank?
-      end
+        "com.github.package.type"                => GITHUB_PACKAGE_TYPE,
+        "sh.brew.bottle.glibc.version"           => glibc_version,
+      }).compact.sort.to_h
 
       image_manifest = {
         schemaVersion: 2,
@@ -287,9 +301,10 @@ class GitHubPackages
         platform:    platform_hash,
         annotations: {
           "org.opencontainers.image.ref.name" => tag,
-          "sh.brew.bottle.checksum"           => tar_gz_sha256,
+          "sh.brew.bottle.digest"             => tar_gz_sha256,
+          "sh.brew.bottle.glibc.version"      => glibc_version,
           "sh.brew.tab"                       => tab.to_json,
-        },
+        }.compact,
       }
     end
 
@@ -338,8 +353,6 @@ class GitHubPackages
 
   def write_image_index(manifests, blobs, annotations)
     image_index = {
-      # Currently needed for correct multi-arch display in GitHub Packages UI
-      mediaType:     "application/vnd.docker.distribution.manifest.list.v2+json",
       schemaVersion: 2,
       manifests:     manifests,
       annotations:   annotations,

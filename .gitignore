@@ -32,6 +32,9 @@
 **/vendor/bundle/ruby/*/gems/*/*
 **/vendor/bundle/ruby/*/specifications
 
+# Ignore YARD files
+**/.yardoc
+
 # Unignore vendored gems
 !**/vendor/bundle/ruby/*/gems/*/lib
 !**/vendor/bundle/ruby/*/gems/rubocop-performance-*/config
@@ -92,7 +95,6 @@
 **/vendor/bundle/ruby/*/gems/colorize-*/
 **/vendor/bundle/ruby/*/gems/commander-*/
 **/vendor/bundle/ruby/*/gems/connection_pool-*/
-**/vendor/bundle/ruby/*/gems/codecov-*/
 **/vendor/bundle/ruby/*/gems/diff-lcs-*/
 **/vendor/bundle/ruby/*/gems/docile-*/
 **/vendor/bundle/ruby/*/gems/domain_name-*/

@@ -22,10 +22,12 @@ module Homebrew
       EOS
       switch "--no-publish",
              description: "Download the bottles, apply the bottle commit and "\
-                          "upload the bottles to Bintray, but don't publish them."
+                          "upload the bottles, but don't publish them."
       switch "--no-upload",
              description: "Download the bottles and apply the bottle commit, "\
-                          "but don't upload to Bintray or GitHub Releases."
+                          "but don't upload."
+      switch "--no-commit",
+             description: "Do not generate a new commit before uploading."
       switch "-n", "--dry-run",
              description: "Print what would be done rather than doing it."
       switch "--clean",
@@ -431,6 +433,7 @@ module Homebrew
           upload_args = ["pr-upload"]
           upload_args << "--debug" if args.debug?
           upload_args << "--verbose" if args.verbose?
+          upload_args << "--no-commit" if args.no_commit?
           upload_args << "--no-publish" if args.no_publish?
           upload_args << "--dry-run" if args.dry_run?
           upload_args << "--keep-old" if args.keep_old?
@@ -452,7 +455,7 @@ end
 class GitHubArtifactDownloadStrategy < AbstractFileDownloadStrategy
   extend T::Sig
 
-  def fetch
+  def fetch(timeout: nil)
     ohai "Downloading #{url}"
     if cached_location.exist?
       puts "Already downloaded: #{cached_location}"
@@ -460,7 +463,8 @@ class GitHubArtifactDownloadStrategy < AbstractFileDownloadStrategy
       begin
         curl "--location", "--create-dirs", "--output", temporary_path, url,
              *meta.fetch(:curl_args, []),
-             secrets: meta.fetch(:secrets, [])
+             secrets: meta.fetch(:secrets, []),
+             timeout: timeout
       rescue ErrorDuringExecution
         raise CurlDownloadStrategyError, url
       end

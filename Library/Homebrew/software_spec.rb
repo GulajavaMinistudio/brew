@@ -293,7 +293,7 @@ class Bottle
   attr_reader :name, :resource, :prefix, :cellar, :rebuild
 
   def_delegators :resource, :url, :verify_download_integrity
-  def_delegators :resource, :cached_download, :clear_cache
+  def_delegators :resource, :cached_download
 
   def initialize(formula, spec)
     @name = formula.name
@@ -335,6 +335,11 @@ class Bottle
     @resource.fetch(verify_download_integrity: verify_download_integrity)
   end
 
+  def clear_cache
+    @resource.clear_cache
+    github_packages_manifest_resource&.clear_cache
+  end
+
   def compatible_locations?
     @spec.compatible_locations?
   end
@@ -370,9 +375,9 @@ class Bottle
     manifests_annotations = manifests.map { |m| m["annotations"] }
     raise ArgumentError, "Missing 'annotations' section." if manifests_annotations.blank?
 
-    bottle_checksum = @resource.checksum.hexdigest
+    bottle_digest = @resource.checksum.hexdigest
     manifest_annotations = manifests_annotations.find do |m|
-      m["sh.brew.bottle.checksum"] == bottle_checksum
+      m["sh.brew.bottle.digest"] == bottle_digest
     end
     raise ArgumentError, "Couldn't find manifest matching bottle checksum." if manifest_annotations.blank?
 
