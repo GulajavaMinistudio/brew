@@ -44,8 +44,8 @@ class GitHubPackages
     ENV["HOMEBREW_FORCE_HOMEBREW_ON_LINUX"] = "1" if @github_org == "homebrew" && !OS.mac?
   end
 
-  sig { params(bottles_hash: T::Hash[String, T.untyped], dry_run: T::Boolean).void }
-  def upload_bottles(bottles_hash, dry_run:)
+  sig { params(bottles_hash: T::Hash[String, T.untyped], dry_run: T::Boolean, warn_on_error: T::Boolean).void }
+  def upload_bottles(bottles_hash, dry_run:, warn_on_error:)
     user = Homebrew::EnvConfig.github_packages_user
     token = Homebrew::EnvConfig.github_packages_token
 
@@ -71,7 +71,8 @@ class GitHubPackages
     load_schemas!
 
     bottles_hash.each do |formula_full_name, bottle_hash|
-      upload_bottle(user, token, skopeo, formula_full_name, bottle_hash, dry_run: dry_run)
+      upload_bottle(user, token, skopeo, formula_full_name, bottle_hash,
+                    dry_run: dry_run, warn_on_error: warn_on_error)
     end
   end
 
@@ -99,6 +100,19 @@ class GitHubPackages
     org = org.downcase
 
     "#{prefix}#{org}/#{repo_without_prefix(repo)}"
+  end
+
+  def self.image_formula_name(formula_name)
+    # invalid docker name characters
+    # / makes sense because we already use it to separate repo/formula
+    # x makes sense because we already use it in Formulary
+    formula_name.tr("@", "/")
+                .tr("+", "x")
+  end
+
+  def self.image_version_rebuild(version_rebuild)
+    # invalid docker tag characters
+    version_rebuild.tr("+", ".")
   end
 
   private
@@ -164,7 +178,7 @@ class GitHubPackages
     exit 1
   end
 
-  def upload_bottle(user, token, skopeo, formula_full_name, bottle_hash, dry_run:)
+  def upload_bottle(user, token, skopeo, formula_full_name, bottle_hash, dry_run:, warn_on_error:)
     formula_name = bottle_hash["formula"]["name"]
 
     _, org, repo, = *bottle_hash["bottle"]["root_url"].match(URL_REGEX)
@@ -173,6 +187,28 @@ class GitHubPackages
     version = bottle_hash["formula"]["pkg_version"]
     rebuild = bottle_hash["bottle"]["rebuild"]
     version_rebuild = GitHubPackages.version_rebuild(version, rebuild)
+
+    image_name = GitHubPackages.image_formula_name(formula_name)
+    image_tag = GitHubPackages.image_version_rebuild(version_rebuild)
+    image_uri = "#{GitHubPackages.root_url(org, repo, DOCKER_PREFIX)}/#{image_name}:#{image_tag}"
+
+    puts
+    inspect_args = ["inspect", image_uri.to_s]
+    if dry_run
+      puts "#{skopeo} #{inspect_args.join(" ")} --dest-creds=#{user}:$HOMEBREW_GITHUB_PACKAGES_TOKEN"
+    else
+      inspect_args << "--dest-creds=#{user}:#{token}"
+      inspect_result = system_command(skopeo, args: inspect_args)
+      if inspect_result.status.success?
+        if warn_on_error
+          opoo "#{image_uri} already exists, skipping upload!"
+          return
+        else
+          odie "#{image_uri} already exists!"
+        end
+      end
+    end
+
     root = Pathname("#{formula_name}--#{version_rebuild}")
     FileUtils.rm_rf root
 
@@ -206,8 +242,7 @@ class GitHubPackages
       "org.opencontainers.image.url"           => bottle_hash["formula"]["homepage"],
       "org.opencontainers.image.vendor"        => org,
       "org.opencontainers.image.version"       => version,
-    }
-    delete_blank_hash_values(formula_annotations_hash)
+    }.reject { |_, v| v.blank? }
 
     manifests = bottle_hash["bottle"]["tags"].map do |bottle_tag, tag_hash|
       local_file = tag_hash["local_filename"]
@@ -234,13 +269,15 @@ class GitHubPackages
       end
       raise TypeError, "unknown tab['built_on']['os']: #{tab["built_on"]["os"]}" if os.blank?
 
-      os_version = tab["built_on"]["os_version"] if tab["built_on"].present?
+      os_version = tab["built_on"]["os_version"].presence if tab["built_on"].present?
       case os
       when "darwin"
         os_version ||= "macOS #{MacOS::Version.from_symbol(bottle_tag)}"
       when "linux"
-        os_version = (os_version || "Ubuntu 16.04.7").delete_suffix " LTS"
-        glibc_version = (tab["built_on"]["glibc_version"] if tab["built_on"].present?) || OS::GLIBC_CI_VERSION
+        os_version&.delete_suffix!(" LTS")
+        os_version ||= OS::CI_OS_VERSION
+        glibc_version = tab["built_on"]["glibc_version"].presence if tab["built_on"].present?
+        glibc_version ||= OS::CI_GLIBC_VERSION
         cpu_variant = tab["oldest_cpu_family"] || Hardware::CPU::INTEL_64BIT_OLDEST_CPU.to_s
       end
 
@@ -248,8 +285,7 @@ class GitHubPackages
         architecture: architecture,
         os: os,
         "os.version" => os_version,
-      }
-      delete_blank_hash_values(platform_hash)
+      }.reject { |_, v| v.blank? }
 
       tar_sha256 = Digest::SHA256.hexdigest(
         Utils.safe_popen_read("gunzip", "--stdout", "--decompress", local_file),
@@ -268,8 +304,7 @@ class GitHubPackages
         "sh.brew.bottle.digest"             => tar_gz_sha256,
         "sh.brew.bottle.glibc.version"      => glibc_version,
         "sh.brew.tab"                       => tab.to_json,
-      }
-      delete_blank_hash_values(descriptor_annotations_hash)
+      }.reject { |_, v| v.blank? }
 
       annotations_hash = formula_annotations_hash.merge(descriptor_annotations_hash).merge(
         {
@@ -277,8 +312,7 @@ class GitHubPackages
           "org.opencontainers.image.documentation" => documentation,
           "org.opencontainers.image.title"         => "#{formula_full_name} #{tag}",
         },
-      ).sort.to_h
-      delete_blank_hash_values(annotations_hash)
+      ).reject { |_, v| v.blank? }.sort.to_h
 
       image_manifest = {
         schemaVersion: 2,
@@ -314,16 +348,14 @@ class GitHubPackages
     write_index_json(index_json_sha256, index_json_size, root,
                      "org.opencontainers.image.ref.name" => version_rebuild)
 
-    image_tag = "#{GitHubPackages.root_url(org, repo, DOCKER_PREFIX)}/#{formula_name}:#{version_rebuild}"
-
     puts
-    args = ["copy", "--all", "oci:#{root}", image_tag.to_s]
+    args = ["copy", "--all", "oci:#{root}", image_uri.to_s]
     if dry_run
       puts "#{skopeo} #{args.join(" ")} --dest-creds=#{user}:$HOMEBREW_GITHUB_PACKAGES_TOKEN"
     else
       args << "--dest-creds=#{user}:#{token}"
       system_command!(skopeo, verbose: true, print_stdout: true, args: args)
-      package_name = "#{GitHubPackages.repo_without_prefix(repo)}/#{formula_name}"
+      package_name = "#{GitHubPackages.repo_without_prefix(repo)}/#{image_formula_name}"
       ohai "Uploaded to https://github.com/orgs/Homebrew/packages/container/package/#{package_name}"
     end
   end
@@ -385,11 +417,5 @@ class GitHubPackages
     path.write(json)
 
     [sha256, json.size]
-  end
-
-  def delete_blank_hash_values(hash)
-    hash.each do |key, value|
-      hash.delete(key) if value.blank?
-    end
   end
 end
