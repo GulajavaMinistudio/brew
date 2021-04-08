@@ -15,8 +15,11 @@ class GitHubPackages
   URL_DOMAIN = "ghcr.io"
   URL_PREFIX = "https://#{URL_DOMAIN}/v2/"
   DOCKER_PREFIX = "docker://#{URL_DOMAIN}/"
+  private_constant :URL_DOMAIN
+  private_constant :URL_PREFIX
+  private_constant :DOCKER_PREFIX
+
   URL_REGEX = %r{(?:#{Regexp.escape(URL_PREFIX)}|#{Regexp.escape(DOCKER_PREFIX)})([\w-]+)/([\w-]+)}.freeze
-  GITHUB_PACKAGE_TYPE = "homebrew_bottle"
 
   # Translate Homebrew tab.arch to OCI platform.architecture
   TAB_ARCH_TO_PLATFORM_ARCHITECTURE = {
@@ -102,6 +105,15 @@ class GitHubPackages
     "#{prefix}#{org}/#{repo_without_prefix(repo)}"
   end
 
+  def self.root_url_if_match(url)
+    return if url.blank?
+
+    _, org, repo, = *url.to_s.match(URL_REGEX)
+    return if org.blank? || repo.blank?
+
+    root_url(org, repo)
+  end
+
   def self.image_formula_name(formula_name)
     # invalid docker name characters
     # / makes sense because we already use it to separate repo/formula
@@ -112,7 +124,9 @@ class GitHubPackages
 
   def self.image_version_rebuild(version_rebuild)
     # invalid docker tag characters
-    version_rebuild.tr("+", ".")
+    # TODO: consider changing the actual versions here and make an audit to
+    # avoid these weird characters being used
+    version_rebuild.gsub(/[+#~]/, ".")
   end
 
   private
@@ -121,6 +135,8 @@ class GitHubPackages
   IMAGE_INDEX_SCHEMA_URI = "https://opencontainers.org/schema/image/index"
   IMAGE_LAYOUT_SCHEMA_URI = "https://opencontainers.org/schema/image/layout"
   IMAGE_MANIFEST_SCHEMA_URI = "https://opencontainers.org/schema/image/manifest"
+
+  GITHUB_PACKAGE_TYPE = "homebrew_bottle"
 
   def load_schemas!
     schema_uri("content-descriptor",
@@ -182,7 +198,7 @@ class GitHubPackages
     formula_name = bottle_hash["formula"]["name"]
 
     _, org, repo, = *bottle_hash["bottle"]["root_url"].match(URL_REGEX)
-    repo = "homebrew-#{repo}" unless HOMEBREW_OFFICIAL_REPO_PREFIXES_REGEX.match?(repo)
+    repo = "homebrew-#{repo}" unless repo.start_with?("homebrew-")
 
     version = bottle_hash["formula"]["pkg_version"]
     rebuild = bottle_hash["bottle"]["rebuild"]
@@ -195,10 +211,10 @@ class GitHubPackages
     puts
     inspect_args = ["inspect", image_uri.to_s]
     if dry_run
-      puts "#{skopeo} #{inspect_args.join(" ")} --dest-creds=#{user}:$HOMEBREW_GITHUB_PACKAGES_TOKEN"
+      puts "#{skopeo} #{inspect_args.join(" ")} --creds=#{user}:$HOMEBREW_GITHUB_PACKAGES_TOKEN"
     else
-      inspect_args << "--dest-creds=#{user}:#{token}"
-      inspect_result = system_command(skopeo, args: inspect_args)
+      inspect_args << "--creds=#{user}:#{token}"
+      inspect_result = system_command(skopeo, print_stderr: false, args: inspect_args)
       if inspect_result.status.success?
         if warn_on_error
           opoo "#{image_uri} already exists, skipping upload!"
@@ -219,7 +235,15 @@ class GitHubPackages
 
     git_path = bottle_hash["formula"]["tap_git_path"]
     git_revision = bottle_hash["formula"]["tap_git_revision"]
-    source = "https://github.com/#{org}/#{repo}/blob/#{git_revision.presence || "HEAD"}/#{git_path}"
+
+    # we're uploading Homebrew/linuxbrew-core bottles to Linuxbrew with a core/
+    # prefix.
+    source_org_repo = if org.casecmp("linuxbrew").zero? && repo == "homebrew-core"
+      "Homebrew/linuxbrew-core"
+    else
+      "#{org}/#{repo}"
+    end
+    source = "https://github.com/#{source_org_repo}/blob/#{git_revision.presence || "HEAD"}/#{git_path}"
 
     formula_core_tap = formula_full_name.exclude?("/")
     documentation = if formula_core_tap
@@ -355,8 +379,8 @@ class GitHubPackages
     else
       args << "--dest-creds=#{user}:#{token}"
       system_command!(skopeo, verbose: true, print_stdout: true, args: args)
-      package_name = "#{GitHubPackages.repo_without_prefix(repo)}/#{image_formula_name}"
-      ohai "Uploaded to https://github.com/orgs/Homebrew/packages/container/package/#{package_name}"
+      package_name = "#{GitHubPackages.repo_without_prefix(repo)}/#{image_name}"
+      ohai "Uploaded to https://github.com/orgs/#{org}/packages/container/package/#{package_name}"
     end
   end
 
