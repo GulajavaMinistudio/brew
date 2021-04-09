@@ -281,6 +281,10 @@ class Bottle
       ERB::Util.url_encode("#{name}-#{version}#{extname}")
     end
 
+    def github_packages
+      "#{name}--#{version}#{extname}"
+    end
+
     sig { returns(String) }
     def extname
       s = rebuild.positive? ? ".#{rebuild}" : ""
@@ -304,15 +308,9 @@ class Bottle
 
     checksum, tag, cellar = spec.checksum_for(Utils::Bottles.tag)
 
-    filename = Filename.create(formula, tag, spec.rebuild).bintray
+    filename = Filename.create(formula, tag, spec.rebuild)
 
-    # TODO: this will need adjusted when if we use GitHub Packages by default
-    path, resolved_basename = if spec.root_url.match?(GitHubPackages::URL_REGEX)
-      image_name = GitHubPackages.image_formula_name(@name)
-      ["#{image_name}/blobs/sha256:#{checksum}", filename]
-    else
-      filename
-    end
+    path, resolved_basename = spec.path_resolved_basename(@name, checksum, filename)
 
     @resource.url("#{spec.root_url}/#{path}", select_download_strategy(spec.root_url_specs))
     @resource.downloader.resolved_basename = resolved_basename if resolved_basename.present?
@@ -422,9 +420,9 @@ end
 class BottleSpecification
   extend T::Sig
 
-  attr_rw :prefix, :rebuild
+  attr_rw :rebuild
   attr_accessor :tap
-  attr_reader :all_tags_cellar, :checksum, :collector, :root_url_specs, :repository
+  attr_reader :all_tags_cellar, :collector, :root_url_specs, :repository, :prefix
 
   sig { void }
   def initialize
@@ -433,15 +431,6 @@ class BottleSpecification
     @repository = Homebrew::DEFAULT_REPOSITORY
     @collector = Utils::Bottles::Collector.new
     @root_url_specs = {}
-  end
-
-  def prefix=(prefix)
-    if [HOMEBREW_DEFAULT_PREFIX,
-        HOMEBREW_MACOS_ARM_DEFAULT_PREFIX,
-        HOMEBREW_LINUX_DEFAULT_PREFIX].exclude?(prefix)
-      odisabled "setting 'prefix' for bottles"
-    end
-    @prefix = prefix
   end
 
   def root_url(var = nil, specs = {})
@@ -461,14 +450,23 @@ class BottleSpecification
     end
   end
 
+  def path_resolved_basename(name, checksum, filename)
+    if root_url.match?(GitHubPackages::URL_REGEX)
+      image_name = GitHubPackages.image_formula_name(name)
+      ["#{image_name}/blobs/sha256:#{checksum}", filename&.github_packages]
+    else
+      # TODO: this can be removed when we no longer use Bintray
+      filename&.bintray
+    end
+  end
+
   def cellar(val = nil)
-    # TODO: (3.1) uncomment to deprecate the old bottle syntax
-    # if val.present?
-    #   odeprecated(
-    #     "`cellar` in a bottle block",
-    #     "`brew style --fix` on the formula to update the style or use `sha256` with a `cellar:` argument",
-    #   )
-    # end
+    if val.present?
+      odeprecated(
+        "`cellar` in a bottle block",
+        "`brew style --fix` on the formula to update the style or use `sha256` with a `cellar:` argument",
+      )
+    end
 
     if val.nil?
       return collector.dig(Utils::Bottles.tag.to_sym, :cellar) || @all_tags_cellar || Homebrew::DEFAULT_CELLAR
@@ -495,9 +493,9 @@ class BottleSpecification
     cellar == :any_skip_relocation
   end
 
-  sig { params(tag: T.any(Symbol, Utils::Bottles::Tag), exact: T::Boolean).returns(T::Boolean) }
-  def tag?(tag, exact: false)
-    checksum_for(tag, exact: exact) ? true : false
+  sig { params(tag: T.any(Symbol, Utils::Bottles::Tag), no_older_versions: T::Boolean).returns(T::Boolean) }
+  def tag?(tag, no_older_versions: false)
+    checksum_for(tag, no_older_versions: no_older_versions) ? true : false
   end
 
   # Checksum methods in the DSL's bottle block take
@@ -524,13 +522,12 @@ class BottleSpecification
         key.is_a?(String) && value.is_a?(Symbol) && key.match?(sha256_regex)
       end
 
-      # TODO: (3.1) uncomment to deprecate the old bottle syntax
-      # if digest && tag
-      #   odeprecated(
-      #     '`sha256 "digest" => :tag` in a bottle block',
-      #     '`brew style --fix` on the formula to update the style or use `sha256 tag: "digest"`',
-      #   )
-      # end
+      if digest && tag
+        odeprecated(
+          '`sha256 "digest" => :tag` in a bottle block',
+          '`brew style --fix` on the formula to update the style or use `sha256 tag: "digest"`',
+        )
+      end
     end
 
     tag = Utils::Bottles::Tag.from_symbol(tag)
@@ -543,14 +540,14 @@ class BottleSpecification
 
   sig {
     params(
-      tag:   T.any(Symbol, Utils::Bottles::Tag),
-      exact: T::Boolean,
+      tag:               T.any(Symbol, Utils::Bottles::Tag),
+      no_older_versions: T::Boolean,
     ).returns(
       T.nilable([Checksum, Symbol, T.any(Symbol, String)]),
     )
   }
-  def checksum_for(tag, exact: false)
-    collector.fetch_checksum_for(tag, exact: exact)
+  def checksum_for(tag, no_older_versions: false)
+    collector.fetch_checksum_for(tag, no_older_versions: no_older_versions)
   end
 
   def checksums

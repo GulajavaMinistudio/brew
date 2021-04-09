@@ -16,11 +16,6 @@ BOTTLE_ERB = <<-EOS
            "#{HOMEBREW_BOTTLE_DEFAULT_DOMAIN}/bottles"].exclude?(root_url) %>
     root_url "<%= root_url %>"
     <% end %>
-    <% if ![HOMEBREW_DEFAULT_PREFIX,
-            HOMEBREW_MACOS_ARM_DEFAULT_PREFIX,
-            HOMEBREW_LINUX_DEFAULT_PREFIX].include?(prefix) %>
-    prefix "<%= prefix %>"
-    <% end %>
     <% if rebuild.positive? %>
     rebuild <%= rebuild %>
     <% end %>
@@ -91,7 +86,7 @@ module Homebrew
     return merge(args: args) if args.merge?
 
     ensure_relocation_formulae_installed! unless args.skip_relocation?
-    args.named.to_resolved_formulae.each do |f|
+    args.named.to_resolved_formulae(uniq: false).each do |f|
       bottle_formula f, args: args
     end
   end
@@ -344,7 +339,7 @@ module Homebrew
         end
       end
 
-      _, _, bottle_cellar = Formula[f.name].bottle_specification.checksum_for(bottle_tag, exact: true)
+      _, _, bottle_cellar = Formula[f.name].bottle_specification.checksum_for(bottle_tag, no_older_versions: true)
       relocatable = [:any, :any_skip_relocation].include?(bottle_cellar)
       skip_relocation = bottle_cellar == :any_skip_relocation
 
@@ -471,19 +466,18 @@ module Homebrew
     bottle = BottleSpecification.new
     bottle.tap = tap
     bottle.root_url(root_url) if root_url
-    if relocatable
+    bottle_cellar = if relocatable
       if skip_relocation
-        bottle.cellar :any_skip_relocation
+        :any_skip_relocation
       else
-        bottle.cellar :any
+        :any
       end
     else
-      bottle.cellar cellar
-      bottle.prefix prefix
+      cellar
     end
     bottle.rebuild rebuild
     sha256 = bottle_path.sha256
-    bottle.sha256 sha256 => bottle_tag.to_sym
+    bottle.sha256 cellar: bottle_cellar, bottle_tag.to_sym => sha256
 
     old_spec = f.bottle_specification
     if args.keep_old? && !old_spec.checksums.empty?
@@ -541,10 +535,10 @@ module Homebrew
           "prefix"   => bottle.prefix,
           "cellar"   => bottle.cellar.to_s,
           "rebuild"  => bottle.rebuild,
-          "date"     => Time.now.strftime("%F"),
+          "date"     => Pathname(local_filename).mtime.strftime("%F"),
           "tags"     => {
             bottle_tag.to_s => {
-              "filename"              => filename.bintray,
+              "filename"              => filename.github_packages,
               "local_filename"        => local_filename,
               "sha256"                => sha256,
               "formulae_brew_sh_path" => formulae_brew_sh_path,
@@ -585,13 +579,18 @@ module Homebrew
   def merge(args:)
     bottles_hash = merge_json_files(parse_json_files(args.named))
 
+    # TODO: deduplicate --no-json bottles by:
+    # 1. throwing away bottles for newer versions of macOS if their SHA256 is
+    #    identical
+    # 2. generating `all: $SHA256` bottles that can be used on macOS and Linux
+    #    i.e. need to be `any_skip_relocation` and contain no ELF/MachO files.
+
     any_cellars = ["any", "any_skip_relocation"]
     bottles_hash.each do |formula_name, bottle_hash|
       ohai formula_name
 
       bottle = BottleSpecification.new
       bottle.root_url bottle_hash["bottle"]["root_url"]
-      bottle.prefix bottle_hash["bottle"]["prefix"]
       bottle.rebuild bottle_hash["bottle"]["rebuild"]
       bottle_hash["bottle"]["tags"].each do |tag, tag_hash|
         cellar = tag_hash["cellar"]

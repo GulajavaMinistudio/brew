@@ -273,7 +273,7 @@ the installed formulae or, every 30 days, for all formulae.
 * `--formula`:
   Treat all named arguments as formulae.
 * `--env`:
-  If `std` is passed, use the standard build environment instead of superenv. If `super` is passed, use superenv even if the formula specifies the standard build environment.
+  Disabled other than for internal Homebrew use.
 * `--ignore-dependencies`:
   An unsupported Homebrew development flag to skip installing any dependencies of any kind. If the dependencies are not already present, the formula will have issues. If you're not developing Homebrew, consider adjusting your PATH rather than using this flag.
 * `--only-dependencies`:
@@ -482,19 +482,16 @@ reinstalled formulae or, every 30 days, for all formulae.
 * `--skip-cask-deps`:
   Skip installing cask dependencies.
 
-### `search`, `-S` [*`options`*] [*`text`*|`/`*`regex`*`/` ...]
+### `search`, `-S` [*`options`*] *`text`*|`/`*`regex`*`/` [...]
 
 Perform a substring search of cask tokens and formula names for *`text`*. If *`text`*
 is flanked by slashes, it is interpreted as a regular expression.
 The search for *`text`* is extended online to `homebrew/core` and `homebrew/cask`.
 
-If no *`text`* is provided, list all locally available formulae (including tapped ones).
-No online search is performed.
-
 * `--formula`:
-  Without *`text`*, list all locally available formulae (no online search is performed). With *`text`*, search online and locally for formulae.
+  Search online and locally for formulae.
 * `--cask`:
-  Without *`text`*, list all locally available casks (including tapped ones, no online search is performed). With *`text`*, search online and locally for casks.
+  Search online and locally for casks.
 * `--desc`:
   Search for formulae with a description matching *`text`* and casks with a name matching *`text`*.
 * `--pull-request`:
@@ -1116,17 +1113,6 @@ Generate Homebrew's manpages.
 
 * `--fail-if-not-changed`:
   Return a failing status code if no changes are detected in the manpage outputs. This can be used to notify CI when the manpages are out of date. Additionally, the date used in new manpages will match those in the existing manpages (to allow comparison without factoring in the date).
-
-### `mirror` [*`options`*] *`formula`* [...]
-
-Reupload the stable URL of a formula to Bintray for use as a mirror.
-
-* `--bintray-org`:
-  Upload to the specified Bintray organisation (default: `homebrew`).
-* `--bintray-repo`:
-  Upload to the specified Bintray repository (default: `mirror`).
-* `--no-publish`:
-  Upload to Bintray, but don't publish.
 
 ### `pr-automerge` [*`options`*]
 
@@ -1750,7 +1736,7 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 - `HOMEBREW_BOTTLE_DOMAIN`
   <br>Use this URL as the download mirror for bottles. If bottles at that URL are temporarily unavailable, the default bottle domain will be used as a fallback mirror. For example, `HOMEBREW_BOTTLE_DOMAIN=http://localhost:8080` will cause all bottles to download from the prefix `http://localhost:8080/`. If bottles are not available at `HOMEBREW_BOTTLE_DOMAIN` they will be downloaded from the default bottle domain.
 
-  *Default:* macOS: `https://ghcr.io/v2/homebrew/core`, Linux: `https://linuxbrew.bintray.com`.
+  *Default:* macOS: `https://ghcr.io/v2/homebrew/core`, Linux: `https://ghcr.io/v2/linuxbrew/core`.
 
 - `HOMEBREW_BREW_GIT_REMOTE`
   <br>Use this URL as the Homebrew/brew `git`(1) remote.

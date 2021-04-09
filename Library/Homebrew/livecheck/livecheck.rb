@@ -274,7 +274,7 @@ module Homebrew
         end
       end
 
-      puts JSON.generate(formulae_checked.compact)
+      puts JSON.pretty_generate(formulae_checked.compact)
     end
 
     sig { params(formula_or_cask: T.any(Formula, Cask::Cask), full_name: T::Boolean).returns(String) }
@@ -534,7 +534,6 @@ module Homebrew
           raise unless e.message.include?("unknown keyword: cask")
 
           odeprecated "`def self.find_versions` in `#{strategy}` without a `cask` parameter"
-          strategy.find_versions(url, livecheck_regex, &livecheck.strategy_block)
         end
         match_version_map = strategy_data[:matches]
         regex = strategy_data[:regex]

@@ -14,6 +14,7 @@ require "build_options"
 require "formulary"
 require "software_spec"
 require "livecheck"
+require "service"
 require "install_renamed"
 require "pkg_version"
 require "keg"
@@ -390,6 +391,11 @@ class Formula
   # @!method livecheckable?
   # @see .livecheckable?
   delegate livecheckable?: :"self.class"
+
+  # Is a service specification defined for the software?
+  # @!method service?
+  # @see .service?
+  delegate service?: :"self.class"
 
   # The version for the currently active {SoftwareSpec}.
   # The version is autodetected from the URL and/or tag so only needs to be
@@ -960,6 +966,13 @@ class Formula
   sig { returns(Pathname) }
   def plist_path
     prefix/"#{plist_name}.plist"
+  end
+
+  # The service specification of the software.
+  def service
+    return unless service?
+
+    Homebrew::Service.new(self, &self.class.service)
   end
 
   # @private
@@ -1883,17 +1896,22 @@ class Formula
     bottle_spec = stable.bottle_specification
     hash = {
       "rebuild"  => bottle_spec.rebuild,
-      "cellar"   => (cellar = bottle_spec.cellar).is_a?(Symbol) ? cellar.inspect : cellar,
-      "prefix"   => bottle_spec.prefix,
       "root_url" => bottle_spec.root_url,
       "files"    => {},
     }
     bottle_spec.collector.each_key do |os|
-      bottle_url = "#{bottle_spec.root_url}/#{Bottle::Filename.create(self, os, bottle_spec.rebuild).bintray}"
-      checksum = bottle_spec.collector[os][:checksum]
+      collector_os = bottle_spec.collector[os]
+      os_cellar = collector_os[:cellar]
+      os_cellar = os_cellar.is_a?(Symbol) ? os_cellar.inspect : os_cellar
+
+      checksum = collector_os[:checksum].hexdigest
+      path, = bottle_spec.path_resolved_basename(name, checksum, nil)
+      url = "#{bottle_spec.root_url}/#{path}"
+
       hash["files"][os] = {
-        "url"    => bottle_url,
-        "sha256" => checksum.hexdigest,
+        "cellar" => os_cellar,
+        "url"    => url,
+        "sha256" => checksum,
       }
     end
     hash
@@ -2382,6 +2400,13 @@ class Formula
       @livecheckable == true
     end
 
+    # Whether a service specification is defined or not.
+    # It returns true when a service block is present in the {Formula} and
+    # false otherwise, and is used by service.
+    def service?
+      @service_block.present?
+    end
+
     # The `:startup` attribute set by {.plist_options}.
     # @private
     attr_reader :plist_startup
@@ -2846,6 +2871,21 @@ class Formula
       @livecheck.instance_eval(&block)
     end
 
+    # @!attribute [w] service
+    # Service can be used to define services.
+    # This method evaluates the DSL specified in the service block of the
+    # {Formula} (if it exists) and sets the instance variables of a Service
+    # object accordingly. This is used by `brew install` to generate a plist.
+    #
+    # <pre>service do
+    #   run [opt_bin/"foo"]
+    # end</pre>
+    def service(&block)
+      return @service_block unless block
+
+      @service_block = block
+    end
+
     # Defines whether the {Formula}'s bottle can be used on the given Homebrew
     # installation.
     #
@@ -2871,8 +2911,8 @@ class Formula
     # @see https://docs.brew.sh/Deprecating-Disabling-and-Removing-Formulae
     # @see DeprecateDisable::DEPRECATE_DISABLE_REASONS
     def deprecate!(date: nil, because: nil)
-      odeprecated "`deprecate!` without a reason", "`deprecate! because: \"reason\"`" if because.blank?
-      odeprecated "`deprecate!` without a date", "`deprecate! date: \"#{Date.today}\"`" if date.blank?
+      odisabled "`deprecate!` without a reason", "`deprecate! because: \"reason\"`" if because.blank?
+      odisabled "`deprecate!` without a date", "`deprecate! date: \"#{Date.today}\"`" if date.blank?
 
       @deprecation_date = Date.parse(date) if date.present?
 
@@ -2910,8 +2950,8 @@ class Formula
     # @see https://docs.brew.sh/Deprecating-Disabling-and-Removing-Formulae
     # @see DeprecateDisable::DEPRECATE_DISABLE_REASONS
     def disable!(date: nil, because: nil)
-      odeprecated "`disable!` without a reason", "`disable! because: \"reason\"`" if because.blank?
-      odeprecated "`disable!` without a date", "`disable! date: \"#{Date.today}\"`" if date.blank?
+      odisabled "`disable!` without a reason", "`disable! because: \"reason\"`" if because.blank?
+      odisabled "`disable!` without a date", "`disable! date: \"#{Date.today}\"`" if date.blank?
 
       @disable_date = Date.parse(date) if date.present?
 
