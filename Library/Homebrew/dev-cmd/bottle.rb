@@ -326,6 +326,8 @@ module Homebrew
       local_filename = bottle_path.basename.to_s
 
       tab_path = Utils::Bottles.receipt_path(f.local_bottle_path)
+      raise "This bottle does not contain the file INSTALL_RECEIPT.json: #{bottle_path}" unless tab_path
+
       tab_json = Utils.safe_popen_read("tar", "xfO", f.local_bottle_path, tab_path)
       tab = Tab.from_file_content(tab_json, tab_path)
 
@@ -378,8 +380,9 @@ module Homebrew
         tab.poured_from_bottle = false
         tab.HEAD = nil
         tab.time = nil
-        tab.changed_files = changed_files
+        tab.changed_files = changed_files.dup
         if args.only_json_tab?
+          tab.changed_files.delete(Pathname.new(Tab::FILENAME))
           tab.tabfile.unlink
         else
           tab.write
@@ -567,7 +570,7 @@ module Homebrew
 
   def parse_json_files(filenames)
     filenames.map do |filename|
-      JSON.parse(IO.read(filename))
+      JSON.parse(File.read(filename))
     end
   end
 
