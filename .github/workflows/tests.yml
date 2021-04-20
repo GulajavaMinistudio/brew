@@ -106,6 +106,8 @@ jobs:
 
       - name: Run brew style on homebrew-core
         run: brew style --display-cop-names homebrew/core
+        env:
+          HOMEBREW_SIMULATE_MACOS_ON_LINUX: 1
 
       - name: Run brew audit --skip-style on homebrew-core
         run: brew audit --skip-style --tap=homebrew/core
@@ -220,7 +222,7 @@ jobs:
         env:
           HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: codecov/codecov-action@9b0b9bbe2c64e9ed41413180dd7398450dfeee14
+      - uses: codecov/codecov-action@0e28ff86a50029a44d10df6ed4c308711925a6a8
 
   test-default-formula-linux:
     name: test default formula (Linux)
@@ -312,4 +314,4 @@ jobs:
 
       - run: brew test-bot --only-formulae --test-default-formula
 
-      - uses: codecov/codecov-action@9b0b9bbe2c64e9ed41413180dd7398450dfeee14
+      - uses: codecov/codecov-action@0e28ff86a50029a44d10df6ed4c308711925a6a8
