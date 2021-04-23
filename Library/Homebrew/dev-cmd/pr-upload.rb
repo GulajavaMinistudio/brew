@@ -45,7 +45,7 @@ module Homebrew
     end
   end
 
-  def check_bottled_formulae(bottles_hash)
+  def check_bottled_formulae!(bottles_hash)
     bottles_hash.each do |name, bottle_hash|
       formula_path = HOMEBREW_REPOSITORY/bottle_hash["formula"]["path"]
       formula_version = Formulary.factory(formula_path).pkg_version
@@ -84,21 +84,27 @@ module Homebrew
     end
   end
 
-  def pr_upload
-    args = pr_upload_args.parse
-
+  def json_files_and_bottles_hash_(root_url)
     json_files = Dir["*.bottle.json"]
-    odie "No bottle JSON files found in the current working directory" if json_files.empty?
+    odie "No bottle JSON files found in the current working directory" if json_files.blank?
 
     bottles_hash = json_files.reduce({}) do |hash, json_file|
       hash.deep_merge(JSON.parse(File.read(json_file)))
     end
 
-    if args.root_url
+    if root_url
       bottles_hash.each_value do |bottle_hash|
-        bottle_hash["bottle"]["root_url"] = args.root_url
+        bottle_hash["bottle"]["root_url"] = root_url
       end
     end
+
+    [json_files, bottles_hash]
+  end
+
+  def pr_upload
+    args = pr_upload_args.parse
+
+    json_files, bottles_hash = json_files_and_bottles_hash_(args.root_url)
 
     bottle_args = ["bottle", "--merge", "--write"]
     bottle_args << "--verbose" if args.verbose?
@@ -133,9 +139,13 @@ module Homebrew
       end
     end
 
-    check_bottled_formulae(bottles_hash)
+    check_bottled_formulae!(bottles_hash)
 
     safe_system HOMEBREW_BREW_FILE, *bottle_args
+
+    # Reload the JSON files (in case `brew bottle --merge` generated
+    # `all: $SHA256` bottles)
+    _, bottles_hash = json_files_and_bottles_hash_(args.root_url)
 
     # Check the bottle commits did not break `brew audit`
     unless args.no_commit?
