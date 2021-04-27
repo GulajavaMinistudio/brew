@@ -254,33 +254,34 @@ module Homebrew
     system "/usr/bin/sudo", "--non-interactive", "/usr/sbin/purge"
   end
 
-  def setup_tar_owner_group_args!
-    # Unset the owner/group for reproducible bottles.
-    # Use gnu-tar on Linux
-    return ["--owner", "0", "--group", "0"].freeze if OS.linux?
+  def setup_tar_and_args!(args)
+    # Without --only-json-tab bottles are never reproducible
+    default_tar_args = ["tar", [].freeze].freeze
+    return default_tar_args unless args.only_json_tab?
 
-    bsdtar_args = ["--uid", "0", "--gid", "0"].freeze
+    # Ensure tar is set up for reproducibility.
+    # https://reproducible-builds.org/docs/archives/
+    gnutar_args = [
+      "--format", "pax", "--owner", "0", "--group", "0", "--sort", "name",
+      # Set exthdr names to exclude PID (for GNU tar <1.33). Also don't store atime and ctime.
+      "--pax-option", "globexthdr.name=/GlobalHead.%n,exthdr.name=%d/PaxHeaders/%f,delete=atime,delete=ctime"
+    ].freeze
 
-    # System bsdtar is new enough on macOS Catalina and above.
-    return bsdtar_args if OS.mac? && MacOS.version >= :catalina
+    return ["tar", gnutar_args].freeze if OS.linux?
 
-    # Use newish libarchive on older macOS versions for reproducibility.
+    # Use gnu-tar on macOS as it can be set up for reproducibility better than libarchive.
     begin
-      libarchive = Formula["libarchive"]
+      gnu_tar = Formula["gnu-tar"]
     rescue FormulaUnavailableError
-      return [].freeze
+      return default_tar_args
     end
 
-    unless libarchive.any_version_installed?
-      ohai "Installing `libarchive` for bottling..."
-      safe_system HOMEBREW_BREW_FILE, "install", "--formula", libarchive.full_name
+    unless gnu_tar.any_version_installed?
+      ohai "Installing `gnu-tar` for bottling..."
+      safe_system HOMEBREW_BREW_FILE, "install", "--formula", gnu_tar.full_name
     end
 
-    path = PATH.new(ENV["PATH"])
-    path.prepend(libarchive.opt_bin.to_s)
-    ENV["PATH"] = path
-
-    bsdtar_args
+    ["#{gnu_tar.opt_bin}/gtar", gnutar_args].freeze
   end
 
   def bottle_formula(f, args:)
@@ -417,9 +418,9 @@ module Homebrew
         cd cellar do
           sudo_purge
           # Tar then gzip for reproducible bottles.
-          owner_group_args = setup_tar_owner_group_args!
-          safe_system "tar", "--create", "--numeric-owner",
-                      *owner_group_args,
+          tar, tar_args = setup_tar_and_args!(args)
+          safe_system tar, "--create", "--numeric-owner",
+                      *tar_args,
                       "--file", tar_path, "#{f.name}/#{f.pkg_version}"
           sudo_purge
           # Set more times for reproducible bottles.
