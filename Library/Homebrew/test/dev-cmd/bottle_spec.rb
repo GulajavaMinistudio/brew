@@ -273,25 +273,6 @@ describe "brew bottle" do
       EOS
     end
 
-    it "fails to add the bottle block to a formula that has no bottle block when using --keep-old" do
-      core_tap.path.cd do
-        system "git", "init"
-        setup_test_formula("testball")
-        system "git", "add", "--all"
-        system "git", "commit", "-m", "testball 0.1"
-      end
-
-      expect {
-        brew "bottle",
-             "--merge",
-             "--write",
-             "--keep-old",
-             "#{TEST_TMPDIR}/testball-1.0.arm64_big_sur.bottle.json",
-             "#{TEST_TMPDIR}/testball-1.0.big_sur.bottle.json",
-             "#{TEST_TMPDIR}/testball-1.0.catalina.bottle.json"
-      }.to output("Error: `--keep-old` was passed but there was no existing bottle block!\n").to_stderr
-    end
-
     it "updates the bottle block in a formula that already has a bottle block (old format) when using --keep-old" do
       core_tap.path.cd do
         system "git", "init"
@@ -643,6 +624,39 @@ describe "brew bottle" do
         end
       end
     end
+
+    describe "::bottle_output" do
+      it "includes a custom root_url" do
+        bottle = BottleSpecification.new
+        bottle.root_url("https://example.com")
+        bottle.sha256(catalina: "109c0cb581a7b5d84da36d84b221fb9dd0f8a927b3044d82611791c9907e202e")
+
+        expect(homebrew.bottle_output(bottle, nil)).to eq(
+          <<~RUBY.indent(2),
+            bottle do
+              root_url "https://example.com"
+              sha256 catalina: "109c0cb581a7b5d84da36d84b221fb9dd0f8a927b3044d82611791c9907e202e"
+            end
+          RUBY
+        )
+      end
+
+      it "includes download strategy for custom root_url" do
+        bottle = BottleSpecification.new
+        bottle.root_url("https://example.com")
+        bottle.sha256(catalina: "109c0cb581a7b5d84da36d84b221fb9dd0f8a927b3044d82611791c9907e202e")
+
+        expect(homebrew.bottle_output(bottle, "ExampleStrategy")).to eq(
+          <<~RUBY.indent(2),
+            bottle do
+              root_url "https://example.com",
+                using: ExampleStrategy
+              sha256 catalina: "109c0cb581a7b5d84da36d84b221fb9dd0f8a927b3044d82611791c9907e202e"
+            end
+          RUBY
+        )
+      end
+    end
   end
 end
 
@@ -655,7 +669,7 @@ def stub_hash(parameters)
             "path":"#{parameters[:path]}"
          },
          "bottle":{
-            "root_url":"#{HOMEBREW_BOTTLE_DEFAULT_DOMAIN}",
+            "root_url":"#{parameters[:root_url] || HOMEBREW_BOTTLE_DEFAULT_DOMAIN}",
             "prefix":"/usr/local",
             "cellar":"#{parameters[:cellar]}",
             "rebuild":0,

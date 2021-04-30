@@ -16,7 +16,9 @@ BOTTLE_ERB = <<-EOS
   bottle do
     <% if [HOMEBREW_BOTTLE_DEFAULT_DOMAIN.to_s,
            "#{HOMEBREW_BOTTLE_DEFAULT_DOMAIN}/bottles"].exclude?(root_url) %>
-    root_url "<%= root_url %>"
+    root_url "<%= root_url %>"<% if root_url_using.present? %>,
+      using: <%= root_url_using %>
+    <% end %>
     <% end %>
     <% if rebuild.positive? %>
     rebuild <%= rebuild %>
@@ -75,6 +77,9 @@ module Homebrew
              description: "Specify a committer name and email in `git`'s standard author format."
       flag   "--root-url=",
              description: "Use the specified <URL> as the root of the bottle's URL instead of Homebrew's default."
+      flag   "--root-url-using=",
+             description: "Use the specified download strategy class for downloading the bottle's URL instead of "\
+                          "Homebrew's default."
 
       conflicts "--no-rebuild", "--keep-old"
 
@@ -85,7 +90,10 @@ module Homebrew
   def bottle
     args = bottle_args.parse
 
-    return merge(args: args) if args.merge?
+    if args.merge?
+      Homebrew.install_bundler_gems!
+      return merge(args: args)
+    end
 
     ensure_relocation_formulae_installed! unless args.skip_relocation?
     args.named.to_resolved_formulae(uniq: false).each do |f|
@@ -221,7 +229,7 @@ module Homebrew
     %Q(#{line}"#{digest}")
   end
 
-  def bottle_output(bottle)
+  def bottle_output(bottle, root_url_using)
     cellars = bottle.checksums.map do |checksum|
       cellar = checksum["cellar"]
       next unless cellar_parameter_needed? cellar
@@ -244,6 +252,7 @@ module Homebrew
     end
     erb_binding = bottle.instance_eval { binding }
     erb_binding.local_variable_set(:sha256_lines, sha256_lines)
+    erb_binding.local_variable_set(:root_url_using, root_url_using)
     erb = ERB.new BOTTLE_ERB
     erb.result(erb_binding).gsub(/^\s*$\n/, "")
   end
@@ -529,7 +538,7 @@ module Homebrew
       end
     end
 
-    output = bottle_output bottle
+    output = bottle_output(bottle, args.root_url_using)
 
     puts "./#{local_filename}"
     puts output
@@ -640,93 +649,113 @@ module Homebrew
         break if all_bottle
       end
 
-      if args.write?
-        if all_bottle
-          all_bottle_hash = nil
-          bottle_hash["bottle"]["tags"].each do |tag, tag_hash|
-            filename = Bottle::Filename.new(
-              formula_name,
-              bottle_hash["formula"]["pkg_version"],
-              tag,
-              bottle_hash["bottle"]["rebuild"],
-            )
+      unless args.write?
+        puts bottle_output(bottle, args.root_url_using)
+        next
+      end
 
-            if all_bottle_hash.nil?
-              all_bottle_tag_hash = tag_hash.dup
+      path = HOMEBREW_REPOSITORY/bottle_hash["formula"]["path"]
+      formula = Formulary.factory(path)
+      old_bottle_spec = formula.bottle_specification
 
-              all_filename = Bottle::Filename.new(
-                formula_name,
-                bottle_hash["formula"]["pkg_version"],
-                "all",
-                bottle_hash["bottle"]["rebuild"],
-              )
+      no_bottle_changes = if old_bottle_spec &&
+                             bottle_hash["formula"]["pkg_version"] == formula.pkg_version.to_s &&
+                             bottle.rebuild  != old_bottle_spec.rebuild &&
+                             bottle.root_url == old_bottle_spec.root_url
+        bottle.collector.keys.all? do |tag|
+          bottle_collector_tag = bottle.collector[tag]
+          next false if bottle_collector_tag.blank?
 
-              all_bottle_tag_hash["filename"] = all_filename.url_encode
-              all_bottle_tag_hash["local_filename"] = all_filename.to_s
-              cellar = all_bottle_tag_hash.delete("cellar")
+          old_bottle_spec_collector_tag = old_bottle_spec.collector[tag]
+          next false if old_bottle_spec_collector_tag.blank?
 
-              all_bottle_formula_hash = bottle_hash.dup
-              all_bottle_formula_hash["bottle"]["cellar"] = cellar
-              all_bottle_formula_hash["bottle"]["tags"] = { all: all_bottle_tag_hash }
+          next false if bottle_collector_tag[:cellar] != old_bottle_spec_collector_tag[:cellar]
 
-              all_bottle_hash = { formula_name => all_bottle_formula_hash }
+          bottle_collector_tag[:checksum].hexdigest == old_bottle_spec_collector_tag[:checksum].hexdigest
+        end
+      end
 
-              puts "Copying #{filename} to #{all_filename}" if args.verbose?
-              FileUtils.cp filename.to_s, all_filename.to_s
+      all_bottle_hash = nil
+      bottle_hash["bottle"]["tags"].each do |tag, tag_hash|
+        filename = Bottle::Filename.new(
+          formula_name,
+          bottle_hash["formula"]["pkg_version"],
+          tag,
+          bottle_hash["bottle"]["rebuild"],
+        )
 
-              puts "Writing #{all_filename.json}" if args.verbose?
-              all_local_json_path = Pathname(all_filename.json)
-              all_local_json_path.unlink if all_local_json_path.exist?
-              all_local_json_path.write(JSON.pretty_generate(all_bottle_hash))
-            end
+        if all_bottle && all_bottle_hash.nil?
+          all_bottle_tag_hash = tag_hash.dup
 
-            puts "Removing #{filename} and #{filename.json}" if args.verbose?
-            FileUtils.rm_f [filename.to_s, filename.json]
-          end
+          all_filename = Bottle::Filename.new(
+            formula_name,
+            bottle_hash["formula"]["pkg_version"],
+            "all",
+            bottle_hash["bottle"]["rebuild"],
+          )
+
+          all_bottle_tag_hash["filename"] = all_filename.url_encode
+          all_bottle_tag_hash["local_filename"] = all_filename.to_s
+          cellar = all_bottle_tag_hash.delete("cellar")
+
+          all_bottle_formula_hash = bottle_hash.dup
+          all_bottle_formula_hash["bottle"]["cellar"] = cellar
+          all_bottle_formula_hash["bottle"]["tags"] = { all: all_bottle_tag_hash }
+
+          all_bottle_hash = { formula_name => all_bottle_formula_hash }
+
+          puts "Copying #{filename} to #{all_filename}" if args.verbose?
+          FileUtils.cp filename.to_s, all_filename.to_s
+
+          puts "Writing #{all_filename.json}" if args.verbose?
+          all_local_json_path = Pathname(all_filename.json)
+          all_local_json_path.unlink if all_local_json_path.exist?
+          all_local_json_path.write(JSON.pretty_generate(all_bottle_hash))
         end
 
-        Homebrew.install_bundler_gems!
-        require "utils/ast"
-
-        path = Pathname.new((HOMEBREW_REPOSITORY/bottle_hash["formula"]["path"]).to_s)
-        formula = Formulary.factory(path)
-        formula_ast = Utils::AST::FormulaAST.new(path.read)
-        checksums = old_checksums(formula, formula_ast, bottle_hash, args: args)
-        update_or_add = checksums.nil? ? "add" : "update"
-
-        checksums&.each(&bottle.method(:sha256))
-        output = bottle_output(bottle)
-        puts output
-
-        case update_or_add
-        when "update"
-          formula_ast.replace_bottle_block(output)
-        when "add"
-          formula_ast.add_bottle_block(output)
+        if all_bottle || no_bottle_changes
+          puts "Removing #{filename} and #{filename.json}" if args.verbose?
+          FileUtils.rm_f [filename.to_s, filename.json]
         end
-        path.atomic_write(formula_ast.process)
+      end
 
-        unless args.no_commit?
-          Utils::Git.set_name_email!(committer: args.committer.blank?)
-          Utils::Git.setup_gpg!
+      next if no_bottle_changes
 
-          if (committer = args.committer)
-            committer = Utils.parse_author!(committer)
-            ENV["GIT_COMMITTER_NAME"] = committer[:name]
-            ENV["GIT_COMMITTER_EMAIL"] = committer[:email]
-          end
+      require "utils/ast"
+      formula_ast = Utils::AST::FormulaAST.new(path.read)
+      checksums = old_checksums(formula, formula_ast, bottle_hash, args: args)
+      update_or_add = checksums.nil? ? "add" : "update"
 
-          short_name = formula_name.split("/", -1).last
-          pkg_version = bottle_hash["formula"]["pkg_version"]
+      checksums&.each(&bottle.method(:sha256))
+      output = bottle_output(bottle, args.root_url_using)
+      puts output
 
-          path.parent.cd do
-            safe_system "git", "commit", "--no-edit", "--verbose",
-                        "--message=#{short_name}: #{update_or_add} #{pkg_version} bottle.",
-                        "--", path
-          end
-        end
-      else
-        puts bottle_output(bottle)
+      case update_or_add
+      when "update"
+        formula_ast.replace_bottle_block(output)
+      when "add"
+        formula_ast.add_bottle_block(output)
+      end
+      path.atomic_write(formula_ast.process)
+
+      next if args.no_commit?
+
+      Utils::Git.set_name_email!(committer: args.committer.blank?)
+      Utils::Git.setup_gpg!
+
+      if (committer = args.committer)
+        committer = Utils.parse_author!(committer)
+        ENV["GIT_COMMITTER_NAME"] = committer[:name]
+        ENV["GIT_COMMITTER_EMAIL"] = committer[:email]
+      end
+
+      short_name = formula_name.split("/", -1).last
+      pkg_version = bottle_hash["formula"]["pkg_version"]
+
+      path.parent.cd do
+        safe_system "git", "commit", "--no-edit", "--verbose",
+                    "--message=#{short_name}: #{update_or_add} #{pkg_version} bottle.",
+                    "--", path
       end
     end
   end
@@ -774,10 +803,7 @@ module Homebrew
 
   def old_checksums(formula, formula_ast, bottle_hash, args:)
     bottle_node = formula_ast.bottle_block
-    if bottle_node.nil?
-      odie "`--keep-old` was passed but there was no existing bottle block!" if args.keep_old?
-      return
-    end
+    return if bottle_node.nil?
     return [] unless args.keep_old?
 
     old_keys = Utils::AST.body_children(bottle_node.body).map(&:method_name)
