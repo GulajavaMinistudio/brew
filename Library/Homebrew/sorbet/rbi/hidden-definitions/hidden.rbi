@@ -9726,9 +9726,8 @@ class Keg::DirectoryNotWritableError
 end
 
 class Keg::Relocation
-  def self.[](*_); end
-
-  def self.members(); end
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
 end
 
 class Keg
@@ -11344,6 +11343,10 @@ class MiniPortile
 end
 
 class MiniPortile
+  def self.mingw?(); end
+
+  def self.mswin?(); end
+
   def self.windows?(); end
 end
 
