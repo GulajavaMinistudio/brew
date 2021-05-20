@@ -313,9 +313,14 @@ the installed formulae or, every 30 days, for all formulae.
 * `--skip-cask-deps`:
   Skip installing cask dependencies.
 
-### `leaves`
+### `leaves` [*`--installed-on-request`*] [*`--installed-as-dependency`*]
 
 List installed formulae that are not dependencies of another installed formula.
+
+* `-r`, `--installed-on-request`:
+  Only list leaves that were manually installed.
+* `-p`, `--installed-as-dependency`:
+  Only list leaves that were installed as dependencies.
 
 ### `link`, `ln` [*`options`*] *`installed_formula`* [...]
 
@@ -1027,7 +1032,7 @@ Build bottles for these formulae with GitHub Actions.
 * `--workflow`:
   Dispatch specified workflow (default: `dispatch-build-bottle.yml`).
 * `--upload`:
-  Upload built bottles to Bintray.
+  Upload built bottles.
 * `--linux`:
   Dispatch bottle for Linux (using GitHub runners).
 
@@ -1144,6 +1149,8 @@ Requires write access to the repository.
 
 * `--autosquash`:
   If supported on the target tap, automatically reformat and reword commits in the pull request to our preferred format.
+* `--branch`:
+  Branch to publish to (default: `master`).
 * `--message`:
   Message to include when autosquashing revision bumps, deletions, and rebuilds.
 * `--tap`:
@@ -1185,16 +1192,12 @@ Requires write access to the repository.
   Download artifacts with the specified name (default: `bottles`).
 * `--archive-item`:
   Upload to the specified Internet Archive item (default: `homebrew`).
-* `--bintray-org`:
-  Upload to the specified Bintray organisation (default: `homebrew`).
 * `--tap`:
   Target tap repository (default: `homebrew/core`).
 * `--root-url`:
   Use the specified *`URL`* as the root of the bottle's URL instead of Homebrew's default.
 * `--root-url-using`:
   Use the specified download strategy class for downloading the bottle's URL instead of Homebrew's default.
-* `--bintray-mirror`:
-  Use the specified Bintray repository to automatically mirror stable URLs defined in the formulae (default: `mirror`).
 * `--workflows`:
   Retrieve artifacts from the specified workflow (default: `tests.yml`). Can be a comma-separated list to include multiple workflows.
 * `--ignore-missing-artifacts`:
@@ -1218,8 +1221,6 @@ Apply the bottle commit and publish bottles to a host.
   Specify a committer name and email in `git`'s standard author format.
 * `--archive-item`:
   Upload to the specified Internet Archive item (default: `homebrew`).
-* `--bintray-org`:
-  Upload to the specified Bintray organisation (default: `homebrew`).
 * `--github-org`:
   Upload to the specified GitHub organisation's GitHub Packages (default: `homebrew`).
 * `--root-url`:
@@ -1804,12 +1805,6 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
   <br>Use this as the `bat` configuration file.
 
   *Default:* `$HOME/.bat/config`.
-
-- `HOMEBREW_BINTRAY_KEY`
-  <br>Use this API key when accessing the Bintray API (where bottles are stored).
-
-- `HOMEBREW_BINTRAY_USER`
-  <br>Use this username when accessing the Bintray API (where bottles are stored).
 
 - `HOMEBREW_BOOTSNAP`
   <br>If set, use Bootsnap to speed up repeated `brew` calls. A no-op when using Homebrew's vendored, relocatable Ruby on macOS (as it doesn't work).

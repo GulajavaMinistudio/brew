@@ -2893,11 +2893,6 @@ class Binding
   def irb(); end
 end
 
-class Bintray
-  extend ::T::Private::Methods::MethodHooks
-  extend ::T::Private::Methods::SingletonMethodHooks
-end
-
 module Bootsnap
   def bundler?(); end
   VERSION = ::T.let(nil, ::T.untyped)
@@ -8160,10 +8155,6 @@ module Homebrew::EnvConfig
   def self.bat?(); end
 
   def self.bat_config_path(); end
-
-  def self.bintray_key(); end
-
-  def self.bintray_user(); end
 
   def self.bootsnap?(); end
 
@@ -26793,6 +26784,7 @@ end
 
 module RuboCop::AST::NodePattern::Sets
   SET_BUILD_RECOMMENDED_TEST_OPTIONAL = ::T.let(nil, ::T.untyped)
+  SET_DEFINE_METHOD = ::T.let(nil, ::T.untyped)
   SET_DEPENDS_ON_USES_FROM_MACOS = ::T.let(nil, ::T.untyped)
   SET_INCLUDE_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
   SET_SYSTEM_SHELL_OUTPUT_PIPE_OUTPUT = ::T.let(nil, ::T.untyped)
