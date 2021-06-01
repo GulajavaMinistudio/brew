@@ -1461,8 +1461,6 @@ class Formula
   sig { returns(T::Array[String]) }
   def std_cmake_args
     args = %W[
-      -DCMAKE_C_FLAGS_RELEASE=-DNDEBUG
-      -DCMAKE_CXX_FLAGS_RELEASE=-DNDEBUG
       -DCMAKE_INSTALL_PREFIX=#{prefix}
       -DCMAKE_INSTALL_LIBDIR=lib
       -DCMAKE_BUILD_TYPE=Release
@@ -2182,7 +2180,9 @@ class Formula
     eligible_for_cleanup = []
     if latest_version_installed?
       eligible_kegs = if head? && (head_prefix = latest_head_prefix)
-        installed_kegs - [Keg.new(head_prefix)]
+        head, stable = installed_kegs.partition { |k| k.version.head? }
+        # Remove newest head and stable kegs
+        head - [Keg.new(head_prefix)] + stable.sort_by(&:version).slice(0...-1)
       else
         installed_kegs.select do |keg|
           tab = Tab.for_keg(keg)
