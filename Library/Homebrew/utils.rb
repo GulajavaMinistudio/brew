@@ -13,7 +13,6 @@ require "utils/git_repository"
 require "utils/github"
 require "utils/inreplace"
 require "utils/link"
-require "utils/path"
 require "utils/popen"
 require "utils/repology"
 require "utils/svn"
@@ -400,14 +399,6 @@ module Kernel
       safe_system "gzip", path
       Pathname.new("#{path}.gz")
     end
-  end
-
-  # Returns array of architectures that the given command or library is built for.
-  def archs_for_command(cmd)
-    odisabled "archs_for_command"
-
-    cmd = which(cmd) unless Pathname.new(cmd).absolute?
-    Pathname.new(cmd).archs
   end
 
   def ignore_interrupts(_opt = nil)
