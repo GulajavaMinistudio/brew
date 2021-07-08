@@ -309,7 +309,7 @@ the installed formulae or, every 30 days, for all formulae.
 * `--include-test`:
   Install testing dependencies required to run `brew test` *`formula`*.
 * `--HEAD`:
-  If *`formula`* defines it, install the HEAD version, aka. master, trunk, unstable.
+  If *`formula`* defines it, install the HEAD version, aka. main, trunk, unstable, master.
 * `--fetch-HEAD`:
   Fetch the upstream repository to detect if the HEAD installation of the formula is outdated. Otherwise, the repository's HEAD will only be checked for updates when a new stable or development version has been released.
 * `--keep-tmp`:
@@ -1707,6 +1707,8 @@ Only supports GitHub Actions as a CI provider. This is because Homebrew uses Git
   Don't check if the local system is set up correctly.
 * `--build-from-source`:
   Build from source rather than building bottles.
+* `--build-dependents-from-source`:
+  Build dependents from source rather than testing bottles.
 * `--junit`:
   generate a JUnit XML test results file.
 * `--keep-old`:
@@ -1733,8 +1735,14 @@ Only supports GitHub Actions as a CI provider. This is because Homebrew uses Git
   Set the Git author/committer email to the given email.
 * `--publish`:
   Publish the uploaded bottles.
+* `--skip-dependents`:
+  Don't test any dependents.
 * `--skip-recursive-dependents`:
   Only test the direct dependents.
+* `--skip-unbottled-arm`:
+  Only test bottled formulae on Apple Silicon.
+* `--skip-unbottled-linux`:
+  Only test bottled formulae on Linux.
 * `--only-cleanup-before`:
   Only run the pre-cleanup step. Needs `--cleanup`.
 * `--only-setup`:
@@ -1743,8 +1751,20 @@ Only supports GitHub Actions as a CI provider. This is because Homebrew uses Git
   Only run the tap syntax check step.
 * `--only-formulae`:
   Only run the formulae steps.
+* `--only-formulae-detect`:
+  Only run the formulae detection steps.
+* `--only-formulae-dependents`:
+  Only run the formulae dependents steps.
 * `--only-cleanup-after`:
   Only run the post-cleanup step. Needs `--cleanup`.
+* `--testing-formulae`:
+  Use these testing formulae rather than running the formulae detection steps.
+* `--added-formulae`:
+  Use these added formulae rather than running the formulae detection steps.
+* `--deleted-formulae`:
+  Use these deleted formulae rather than running the formulae detection steps.
+* `--skipped-or-failed-formulae`:
+  Use these skipped or failed formulae from formulae steps for a formulae dependents step.
 
 ### `unalias` *`alias`* [...]
 
