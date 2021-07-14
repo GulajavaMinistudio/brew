@@ -29,6 +29,7 @@ require "mktemp"
 require "find"
 require "utils/spdx"
 require "extend/on_os"
+require "bottle_api"
 
 # A formula provides instructions and metadata for Homebrew to install a piece
 # of software. Every Homebrew formula is a {Formula}.
@@ -366,6 +367,13 @@ class Formula
   sig { returns(T.nilable(Bottle)) }
   def bottle
     @bottle ||= Bottle.new(self, bottle_specification) if bottled?
+  end
+
+  # The Bottle object for given tag.
+  # @private
+  sig { params(tag: T.nilable(String)).returns(T.nilable(Bottle)) }
+  def bottle_for_tag(tag = nil)
+    Bottle.new(self, bottle_specification, tag) if bottled?
   end
 
   # The description of the software.
@@ -1325,6 +1333,11 @@ class Formula
     Formula.cache[:outdated_kegs][cache_key] ||= begin
       all_kegs = []
       current_version = T.let(false, T::Boolean)
+      latest_version = if ENV["HOMEBREW_JSON_CORE"].present? && (core_formula? || tap.blank?)
+        BottleAPI.latest_pkg_version(name) || pkg_version
+      else
+        pkg_version
+      end
 
       installed_kegs.each do |keg|
         all_kegs << keg
@@ -1332,8 +1345,8 @@ class Formula
         next if version.head?
 
         tab = Tab.for_keg(keg)
-        next if version_scheme > tab.version_scheme && pkg_version != version
-        next if version_scheme == tab.version_scheme && pkg_version > version
+        next if version_scheme > tab.version_scheme && latest_version != version
+        next if version_scheme == tab.version_scheme && latest_version > version
 
         # don't consider this keg current if there's a newer formula available
         next if follow_installed_alias? && new_formula_available?

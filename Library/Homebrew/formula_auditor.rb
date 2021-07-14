@@ -393,10 +393,7 @@ module Homebrew
 
       if formula.keg_only?
         return if formula.keg_only_reason.versioned_formula?
-        if formula.name.start_with?("openssl", "libressl") &&
-           formula.keg_only_reason.by_macos?
-          return
-        end
+        return if formula.name.start_with?("openssl", "libressl") && formula.keg_only_reason.by_macos?
       end
 
       return if tap_audit_exception :versioned_keg_only_allowlist, formula.name
@@ -555,14 +552,6 @@ module Homebrew
         )
       end
 
-      if (stable = formula.stable)
-        version = stable.version
-        problem "Stable: version (#{version}) is set to a string without a digit" if version.to_s !~ /\d/
-        if version.to_s.start_with?("HEAD")
-          problem "Stable: non-HEAD version name (#{version}) should not begin with HEAD"
-        end
-      end
-
       return unless @core_tap
 
       if formula.head && @versioned_formula &&
@@ -574,7 +563,14 @@ module Homebrew
       return unless stable
       return unless stable.url
 
-      stable_version_string = stable.version.to_s
+      version = stable.version
+      problem "Stable: version (#{version}) is set to a string without a digit" if version.to_s !~ /\d/
+
+      stable_version_string = version.to_s
+      if stable_version_string.start_with?("HEAD")
+        problem "Stable: non-HEAD version name (#{stable_version_string}) should not begin with HEAD"
+      end
+
       stable_url_version = Version.parse(stable.url)
       stable_url_minor_version = stable_url_version.minor.to_i
 
