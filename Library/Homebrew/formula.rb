@@ -520,7 +520,13 @@ class Formula
   # exists and is not empty.
   # @private
   def latest_version_installed?
-    (dir = latest_installed_prefix).directory? && !dir.children.empty?
+    latest_prefix = if ENV["HOMEBREW_JSON_CORE"].present? && (latest_pkg_version = BottleAPI.latest_pkg_version(name))
+      prefix latest_pkg_version
+    else
+      latest_installed_prefix
+    end
+
+    (dir = latest_prefix).directory? && !dir.children.empty?
   end
 
   # If at least one version of {Formula} is installed.
