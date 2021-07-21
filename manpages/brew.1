@@ -742,28 +742,32 @@ Search for only open GitHub pull requests\.
 Search for only closed GitHub pull requests\.
 .
 .TP
+\fB\-\-repology\fR
+Search for \fItext\fR in the given database\.
+.
+.TP
 \fB\-\-macports\fR
-Search for \fItext\fR in the given package manager\'s list\.
+Search for \fItext\fR in the given database\.
 .
 .TP
 \fB\-\-fink\fR
-Search for \fItext\fR in the given package manager\'s list\.
+Search for \fItext\fR in the given database\.
 .
 .TP
 \fB\-\-opensuse\fR
-Search for \fItext\fR in the given package manager\'s list\.
+Search for \fItext\fR in the given database\.
 .
 .TP
 \fB\-\-fedora\fR
-Search for \fItext\fR in the given package manager\'s list\.
+Search for \fItext\fR in the given database\.
 .
 .TP
 \fB\-\-debian\fR
-Search for \fItext\fR in the given package manager\'s list\.
+Search for \fItext\fR in the given database\.
 .
 .TP
 \fB\-\-ubuntu\fR
-Search for \fItext\fR in the given package manager\'s list\.
+Search for \fItext\fR in the given database\.
 .
 .SS "\fBshellenv\fR"
 Print export statements\. When run in a shell, this installation of Homebrew will be added to your \fBPATH\fR, \fBMANPATH\fR, and \fBINFOPATH\fR\.
@@ -1658,6 +1662,10 @@ Run \fBbrew pr\-publish\fR on matching pull requests\.
 Instruct \fBbrew pr\-publish\fR to automatically reformat and reword commits in the pull request to our preferred format\.
 .
 .TP
+\fB\-\-no\-autosquash\fR
+Instruct \fBbrew pr\-publish\fR to skip automatically reformatting and rewording commits in the pull request to the preferred format\.
+.
+.TP
 \fB\-\-ignore\-failures\fR
 Include pull requests that have failing status checks\.
 .
@@ -1667,6 +1675,10 @@ Publish bottles for a pull request with GitHub Actions\. Requires write access t
 .TP
 \fB\-\-autosquash\fR
 If supported on the target tap, automatically reformat and reword commits in the pull request to our preferred format\.
+.
+.TP
+\fB\-\-no\-autosquash\fR
+Skip automatically reformatting and rewording commits in the pull request to the preferred format, even if supported on the target tap\.
 .
 .TP
 \fB\-\-branch\fR

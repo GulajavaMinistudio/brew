@@ -314,6 +314,49 @@ module FormulaCellarChecks
     "No `cpuid` instruction detected. #{formula} should not use `ENV.runtime_cpu_detection`."
   end
 
+  def check_binary_arches(formula)
+    return unless formula.prefix.directory?
+    # There is no `binary_executable_or_library_files` method for the generic OS
+    return if !OS.mac? && !OS.linux?
+
+    keg = Keg.new(formula.prefix)
+    mismatches = keg.binary_executable_or_library_files.reject do |file|
+      file.arch == Hardware::CPU.arch
+    end
+    return if mismatches.empty?
+
+    compatible_universal_binaries, mismatches = mismatches.partition do |file|
+      file.arch == :universal && file.archs.include?(Hardware::CPU.arch)
+    end
+
+    universal_binaries_expected = if formula.tap.present? && formula.tap.core_tap?
+      tap_audit_exception(:universal_binary_allowlist, formula.name)
+    else
+      true
+    end
+    return if mismatches.empty? && universal_binaries_expected
+
+    s = ""
+
+    if mismatches.present?
+      s += <<~EOS
+        Binaries built for an incompatible architecture were installed into #{formula}'s prefix.
+        The offending files are:
+          #{mismatches * "\n  "}
+      EOS
+    end
+
+    if compatible_universal_binaries.present? && !universal_binaries_expected
+      s += <<~EOS
+        Unexpected universal binaries were found.
+        The offending files are:
+          #{compatible_universal_binaries * "\n  "}
+      EOS
+    end
+
+    s
+  end
+
   def audit_installed
     @new_formula ||= false
 
@@ -334,6 +377,7 @@ module FormulaCellarChecks
     problem_if_output(check_plist(formula.prefix, formula.plist))
     problem_if_output(check_python_symlinks(formula.name, formula.keg_only?))
     problem_if_output(check_cpuid_instruction(formula))
+    problem_if_output(check_binary_arches(formula))
   end
   alias generic_audit_installed audit_installed
 
