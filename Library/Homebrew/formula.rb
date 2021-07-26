@@ -986,13 +986,13 @@ class Formula
   # The generated launchd {.plist} file path.
   sig { returns(Pathname) }
   def plist_path
-    prefix/"#{plist_name}.plist"
+    opt_prefix/"#{plist_name}.plist"
   end
 
   # The generated systemd {.service} file path.
   sig { returns(Pathname) }
   def systemd_service_path
-    prefix/"#{service_name}.service"
+    opt_prefix/"#{service_name}.service"
   end
 
   # The service specification of the software.
@@ -1479,9 +1479,9 @@ class Formula
   end
 
   # Standard parameters for cargo builds.
-  sig { returns(T::Array[T.any(String, Pathname)]) }
-  def std_cargo_args
-    ["--locked", "--root", prefix, "--path", "."]
+  sig { params(root: String, path: String).returns(T::Array[T.any(String, Pathname)]) }
+  def std_cargo_args(root: prefix, path: ".")
+    ["--locked", "--root", root, "--path", path]
   end
 
   # Standard parameters for CMake builds.
