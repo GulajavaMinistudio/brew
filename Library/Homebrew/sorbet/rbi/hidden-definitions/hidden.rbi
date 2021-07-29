@@ -8331,8 +8331,6 @@ module Homebrew::EnvConfig
 
   def self.bootsnap?(); end
 
-  def self.bottle_domain(); end
-
   def self.brew_git_remote(); end
 
   def self.browser(); end
@@ -8362,6 +8360,8 @@ module Homebrew::EnvConfig
   def self.display(); end
 
   def self.display_install_times?(); end
+
+  def self.docker_registry_token(); end
 
   def self.editor(); end
 
