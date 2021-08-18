@@ -391,7 +391,7 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
       resolved_url, _, url_time, _, is_redirection =
         resolve_url_basename_time_file_size(url, timeout: end_time&.remaining!)
       # Authorization is no longer valid after redirects
-      meta[:headers]&.delete_if { |header| header.first&.start_with?("Authorization") } if is_redirection
+      meta[:headers]&.delete_if { |header| header.start_with?("Authorization") } if is_redirection
 
       fresh = if cached_location.exist? && url_time
         url_time <= cached_location.mtime
@@ -524,7 +524,11 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
       raise CurlDownloadStrategyError, url
     end
 
-    curl_download resolved_url, to: temporary_path, timeout: timeout
+    _curl_download resolved_url, temporary_path, timeout
+  end
+
+  def _curl_download(resolved_url, to, timeout)
+    curl_download resolved_url, to: to, timeout: timeout
   end
 
   # Curl options to be always passed to curl,
@@ -559,6 +563,19 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
   end
 end
 
+# Strategy for downloading a file using homebrew's curl.
+#
+# @api public
+class HomebrewCurlDownloadStrategy < CurlDownloadStrategy
+  private
+
+  def _curl_download(resolved_url, to, timeout)
+    raise HomebrewCurlDownloadStrategyError, url unless Formula["curl"].any_version_installed?
+
+    curl_download resolved_url, to: to, timeout: timeout, use_homebrew_curl: true
+  end
+end
+
 # Strategy for downloading a file from an GitHub Packages URL.
 #
 # @api public
@@ -569,7 +586,7 @@ class CurlGitHubPackagesDownloadStrategy < CurlDownloadStrategy
     meta ||= {}
     meta[:headers] ||= []
     token = Homebrew::EnvConfig.artifact_domain ? Homebrew::EnvConfig.docker_registry_token : "QQ=="
-    meta[:headers] << ["Authorization: Bearer #{token}"] if token.present?
+    meta[:headers] << "Authorization: Bearer #{token}" if token.present?
     super(url, name, version, meta)
   end
 
@@ -1368,6 +1385,7 @@ class DownloadStrategyDetector
     when :bzr                    then BazaarDownloadStrategy
     when :svn                    then SubversionDownloadStrategy
     when :curl                   then CurlDownloadStrategy
+    when :homebrew_curl          then HomebrewCurlDownloadStrategy
     when :cvs                    then CVSDownloadStrategy
     when :post                   then CurlPostDownloadStrategy
     when :fossil                 then FossilDownloadStrategy
