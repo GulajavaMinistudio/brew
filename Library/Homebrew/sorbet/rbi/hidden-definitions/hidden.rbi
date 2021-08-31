@@ -9669,6 +9669,10 @@ module Homebrew::API::Cask
   extend ::T::Private::Methods::SingletonMethodHooks
 end
 
+module Homebrew::API::CaskSource
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
 module Homebrew::API::Formula
   extend ::T::Private::Methods::SingletonMethodHooks
 end
@@ -9844,6 +9848,8 @@ module Homebrew::EnvConfig
   def self.no_auto_update?(); end
 
   def self.no_bootsnap?(); end
+
+  def self.no_cleanup_formulae(); end
 
   def self.no_color?(); end
 
