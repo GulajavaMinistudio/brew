@@ -417,13 +417,15 @@ if no formula is provided.
 * `-n`, `--max-count`:
   Print only a specified number of commits.
 
-### `migrate` [*`--force`*] *`installed_formula`* [...]
+### `migrate` [*`--force`*] [*`--dry-run`*] *`installed_formula`* [...]
 
 Migrate renamed packages to new names, where *`formula`* are old names of
 packages.
 
 * `-f`, `--force`:
   Treat installed *`formula`* and provided *`formula`* as if they are from the same taps and migrate them anyway.
+* `-n`, `--dry-run`:
+  Show what would be migrated, but do not actually migrate anything.
 
 ### `missing` [*`--hide`*`=`] [*`formula`* ...]
 
@@ -2072,6 +2074,9 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 
 - `HOMEBREW_SIMULATE_MACOS_ON_LINUX`
   <br>If set, running Homebrew on Linux will simulate certain macOS code paths. This is useful when auditing macOS formulae while on Linux. Implies `HOMEBREW_FORCE_HOMEBREW_ON_LINUX`.
+
+- `HOMEBREW_FORCE_HOMEBREW_CORE_REPO_ON_LINUX`
+  <br>If set, running Homebrew on Linux will use homebrew-core instead of linuxbrew-core.
 
 - `HOMEBREW_SKIP_OR_LATER_BOTTLES`
   <br>If set along with `HOMEBREW_DEVELOPER`, do not use bottles from older versions of macOS. This is useful in development on new macOS versions.
