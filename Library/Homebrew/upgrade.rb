@@ -6,6 +6,7 @@ require "formula_installer"
 require "development_tools"
 require "messages"
 require "cleanup"
+require "utils/topological_hash"
 
 module Homebrew
   # Helper functions for upgrading formulae.
@@ -42,6 +43,13 @@ module Homebrew
         end
       end
 
+      dependency_graph = Utils::TopologicalHash.graph_package_dependencies(formulae_to_install)
+      begin
+        formulae_to_install = dependency_graph.tsort & formulae_to_install
+      rescue TSort::Cyclic
+        raise CyclicDependencyError, dependency_graph.strongly_connected_components if Homebrew::EnvConfig.developer?
+      end
+
       formula_installers = formulae_to_install.map do |formula|
         Migrator.migrate_if_needed(formula, force: force, dry_run: dry_run)
         begin
@@ -65,6 +73,7 @@ module Homebrew
           fi
         rescue CannotInstallFormulaError => e
           ofail e
+          nil
         rescue UnsatisfiedRequirements, DownloadError => e
           ofail "#{formula}: #{e}"
           nil
@@ -169,8 +178,6 @@ module Homebrew
         return
       end
 
-      formula_installer.check_installation_already_attempted
-
       install_formula(formula_installer, upgrade: true)
     rescue BuildError => e
       e.dump(verbose: verbose)
@@ -182,11 +189,15 @@ module Homebrew
     def install_formula(formula_installer, upgrade:)
       formula = formula_installer.formula
 
+      formula_installer.check_installation_already_attempted
+
       if upgrade
         print_upgrade_message(formula, formula_installer.options)
 
         kegs = outdated_kegs(formula)
         linked_kegs = kegs.select(&:linked?)
+      else
+        formula.print_tap_action
       end
 
       # first we unlink the currently active keg for this formula otherwise it is
