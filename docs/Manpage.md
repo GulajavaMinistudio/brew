@@ -401,10 +401,10 @@ If *`cask`* is provided, list its artifacts.
 * `-t`:
   Sort formulae and/or casks by time modified, listing most recently modified first. Has no effect when a formula or cask name is passed as an argument.
 
-### `log` [*`options`*] [*`formula`*]
+### `log` [*`options`*] [*`formula`*|*`cask`*]
 
-Show the `git log` for *`formula`*, or show the log for the Homebrew repository
-if no formula is provided.
+Show the `git log` for *`formula`* or *`cask`*, or show the log for the Homebrew repository
+if no formula or cask is provided.
 
 * `-p`, `--patch`:
   Also print patch from commit.
@@ -416,6 +416,10 @@ if no formula is provided.
   Print only one commit.
 * `-n`, `--max-count`:
   Print only a specified number of commits.
+* `--formula`:
+  Treat all named arguments as formulae.
+* `--cask`:
+  Treat all named arguments as casks.
 
 ### `migrate` [*`--force`*] [*`--dry-run`*] *`installed_formula`* [...]
 
@@ -2164,7 +2168,7 @@ Homebrew's Technical Steering Committee is Bo Anderson, FX Coudert, Michka Popof
 
 Homebrew's Linux maintainers are Daniel Nachun, Dawid Dziurla, Issy Long, Jonathan Chang, Michka Popoff and Shaun Jackman.
 
-Homebrew's other current maintainers are Alexander Bayandin, Bevan Kay, Branch Vincent, Caleb Xu, Carlo Cabrera, Claudia Pellegrino, Connor Mann, Dustin Rodrigues, Eric Knibbe, Maxim Belkin, Miccal Matthews, Michael Cho, Nanda H Krishna, Randall, Sam Ford, Steve Peters, Thierry Moisan, Tom Schoonjans, Vítor Galvão and rui.
+Homebrew's other current maintainers are Alexander Bayandin, Bevan Kay, Branch Vincent, Caleb Xu, Carlo Cabrera, Connor Mann, Dustin Rodrigues, Eric Knibbe, Maxim Belkin, Miccal Matthews, Michael Cho, Nanda H Krishna, Randall, Sam Ford, Steve Peters, Thierry Moisan, Tom Schoonjans, Vítor Galvão and rui.
 
 Former maintainers with significant contributions include Jan Viljanen, JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs, Chongyu Zhu and Homebrew's creator: Max Howell.
 
