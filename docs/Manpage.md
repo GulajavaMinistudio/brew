@@ -600,6 +600,8 @@ using protocols other than HTTPS, e.g. SSH, git, HTTP, FTP(S), rsync.
   Fetch tap as a shallow clone rather than a full clone. Useful for continuous integration.
 * `--force-auto-update`:
   Auto-update tap even if it is not hosted on GitHub. By default, only taps hosted on GitHub are auto-updated (for performance reasons).
+* `--custom-remote`:
+  Install or change a tap with a custom remote. Useful for mirrors.
 * `--repair`:
   Migrate tapped formulae from symlink-based to directory-based structure.
 * `--list-pinned`:
@@ -968,10 +970,10 @@ nor vice versa. It must use whichever style specification the formula already us
 
 * `-n`, `--dry-run`:
   Print what would be done rather than doing it.
-* `--write`:
+* `--write-only`:
   Make the expected file modifications without taking any Git actions.
 * `--commit`:
-  When passed with `--write`, generate a new commit after writing changes to the formula file.
+  When passed with `--write-only`, generate a new commit after writing changes to the formula file.
 * `--no-audit`:
   Don't run `brew audit` before opening the PR.
 * `--strict`:
