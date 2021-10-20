@@ -274,6 +274,7 @@ __fish_brew_complete_arg '--repository' -a '(__fish_brew_suggest_taps_installed)
 
 
 __fish_brew_complete_cmd '-S' 'Perform a substring search of cask tokens and formula names for text'
+__fish_brew_complete_arg '-S' -l archlinux -d 'Search for text in the given database'
 __fish_brew_complete_arg '-S' -l cask -d 'Search online and locally for casks'
 __fish_brew_complete_arg '-S' -l closed -d 'Search for only closed GitHub pull requests'
 __fish_brew_complete_arg '-S' -l debian -d 'Search for text in the given database'
@@ -388,6 +389,7 @@ __fish_brew_complete_arg 'bump' -l help -d 'Show this message'
 __fish_brew_complete_arg 'bump' -l limit -d 'Limit number of package results returned'
 __fish_brew_complete_arg 'bump' -l no-pull-requests -d 'Do not retrieve pull requests from GitHub'
 __fish_brew_complete_arg 'bump' -l quiet -d 'Make some output more quiet'
+__fish_brew_complete_arg 'bump' -l start-with -d 'Letter or word that the list of package results should alphabetically follow'
 __fish_brew_complete_arg 'bump' -l verbose -d 'Make some output more verbose'
 __fish_brew_complete_arg 'bump; and not __fish_seen_argument -l cask -l casks' -a '(__fish_brew_suggest_formulae_all)'
 __fish_brew_complete_arg 'bump; and not __fish_seen_argument -l formula -l formulae' -a '(__fish_brew_suggest_casks_all)'
@@ -411,7 +413,7 @@ __fish_brew_complete_arg 'bump-cask-pr' -l sha256 -d 'Specify the SHA-256 checks
 __fish_brew_complete_arg 'bump-cask-pr' -l url -d 'Specify the URL for the new download'
 __fish_brew_complete_arg 'bump-cask-pr' -l verbose -d 'Make some output more verbose'
 __fish_brew_complete_arg 'bump-cask-pr' -l version -d 'Specify the new version for the cask'
-__fish_brew_complete_arg 'bump-cask-pr' -l write -d 'Make the expected file modifications without taking any Git actions'
+__fish_brew_complete_arg 'bump-cask-pr' -l write-only -d 'Make the expected file modifications without taking any Git actions'
 __fish_brew_complete_arg 'bump-cask-pr' -a '(__fish_brew_suggest_casks_all)'
 
 
@@ -632,6 +634,7 @@ __fish_brew_complete_arg 'edit' -l cask -d 'Treat all named arguments as casks'
 __fish_brew_complete_arg 'edit' -l debug -d 'Display any debugging information'
 __fish_brew_complete_arg 'edit' -l formula -d 'Treat all named arguments as formulae'
 __fish_brew_complete_arg 'edit' -l help -d 'Show this message'
+__fish_brew_complete_arg 'edit' -l print-path -d 'Print the file path to be edited, without opening an editor'
 __fish_brew_complete_arg 'edit' -l quiet -d 'Make some output more quiet'
 __fish_brew_complete_arg 'edit' -l verbose -d 'Make some output more verbose'
 __fish_brew_complete_arg 'edit; and not __fish_seen_argument -l cask -l casks' -a '(__fish_brew_suggest_formulae_all)'
@@ -992,14 +995,6 @@ __fish_brew_complete_arg 'ls; and not __fish_seen_argument -l cask -l casks' -a 
 __fish_brew_complete_arg 'ls; and not __fish_seen_argument -l formula -l formulae' -a '(__fish_brew_suggest_casks_installed)'
 
 
-__fish_brew_complete_cmd 'man' 'Generate Homebrew\'s manpages'
-__fish_brew_complete_arg 'man' -l debug -d 'Display any debugging information'
-__fish_brew_complete_arg 'man' -l fail-if-not-changed -d 'Return a failing status code if no changes are detected in the manpage outputs. This can be used to notify CI when the manpages are out of date. Additionally, the date used in new manpages will match those in the existing manpages (to allow comparison without factoring in the date)'
-__fish_brew_complete_arg 'man' -l help -d 'Show this message'
-__fish_brew_complete_arg 'man' -l quiet -d 'Make some output more quiet'
-__fish_brew_complete_arg 'man' -l verbose -d 'Make some output more verbose'
-
-
 __fish_brew_complete_cmd 'migrate' 'Migrate renamed packages to new names, where formula are old names of packages'
 __fish_brew_complete_arg 'migrate' -l debug -d 'Display any debugging information'
 __fish_brew_complete_arg 'migrate' -l dry-run -d 'Show what would be migrated, but do not actually migrate anything'
@@ -1235,6 +1230,7 @@ __fish_brew_complete_arg 'ruby' -l r -d 'Load a library using `require`'
 
 
 __fish_brew_complete_cmd 'search' 'Perform a substring search of cask tokens and formula names for text'
+__fish_brew_complete_arg 'search' -l archlinux -d 'Search for text in the given database'
 __fish_brew_complete_arg 'search' -l cask -d 'Search online and locally for casks'
 __fish_brew_complete_arg 'search' -l closed -d 'Search for only closed GitHub pull requests'
 __fish_brew_complete_arg 'search' -l debian -d 'Search for text in the given database'

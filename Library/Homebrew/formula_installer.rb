@@ -590,7 +590,9 @@ class FormulaInstaller
       end
     end
 
-    if pour_bottle && !Keg.bottle_dependencies.empty?
+    # We require some dependencies (glibc, GCC 5, etc.) if binaries were built.
+    # Native binaries shouldn't exist in cross-platform `all` bottles.
+    if pour_bottle && !formula.bottled?(:all) && !Keg.bottle_dependencies.empty?
       bottle_deps = if Keg.bottle_dependencies.exclude?(formula.name)
         Keg.bottle_dependencies
       elsif Keg.relocation_formulae.exclude?(formula.name)
@@ -800,6 +802,7 @@ class FormulaInstaller
     if formula.name == "ca-certificates" &&
        !DevelopmentTools.ca_file_handles_most_https_certificates?
       ENV["SSL_CERT_FILE"] = ENV["GIT_SSL_CAINFO"] = formula.pkgetc/"cert.pem"
+      ENV["GIT_SSL_CAPATH"] = formula.pkgetc
     end
 
     # use installed curl when it's needed and available

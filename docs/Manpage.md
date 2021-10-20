@@ -565,6 +565,8 @@ The search for *`text`* is extended online to `homebrew/core` and `homebrew/cask
   Search for *`text`* in the given database.
 * `--fedora`:
   Search for *`text`* in the given database.
+* `--archlinux`:
+  Search for *`text`* in the given database.
 * `--debian`:
   Search for *`text`* in the given database.
 * `--ubuntu`:
@@ -899,8 +901,9 @@ value, while `--no-rebuild` will remove it.
 
 ### `bump` [*`options`*] [*`formula`*|*`cask`* ...]
 
-Display out-of-date brew formulae and the latest version available.
-Also displays whether a pull request has been opened with the URL.
+Display out-of-date brew formulae and the latest version available. If the
+returned current and livecheck versions differ or when querying specific
+formulae, also displays whether a pull request has been opened with the URL.
 
 * `--full-name`:
   Print formulae/casks with fully-qualified names.
@@ -912,6 +915,8 @@ Also displays whether a pull request has been opened with the URL.
   Check only casks.
 * `--limit`:
   Limit number of package results returned.
+* `--start-with`:
+  Letter or word that the list of package results should alphabetically follow.
 
 ### `bump-cask-pr` [*`options`*] *`cask`*
 
@@ -922,7 +927,7 @@ supplied by the user.
 
 * `-n`, `--dry-run`:
   Print what would be done rather than doing it.
-* `--write`:
+* `--write-only`:
   Make the expected file modifications without taking any Git actions.
 * `--commit`:
   When passed with `--write`, generate a new commit after writing changes to the cask file.
@@ -1105,7 +1110,7 @@ Build bottles for these formulae with GitHub Actions.
 * `--linux-wheezy`:
   Use Debian Wheezy container for building the bottle on Linux.
 
-### `edit` [*`--formula`*] [*`--cask`*] [*`formula`*|*`cask`* ...]
+### `edit` [*`options`*] [*`formula`*|*`cask`* ...]
 
 Open a *`formula`* or *`cask`* in the editor set by `EDITOR` or `HOMEBREW_EDITOR`,
 or open the Homebrew repository for editing if no formula is provided.
@@ -1114,6 +1119,8 @@ or open the Homebrew repository for editing if no formula is provided.
   Treat all named arguments as formulae.
 * `--cask`:
   Treat all named arguments as casks.
+* `--print-path`:
+  Print the file path to be edited, without opening an editor.
 
 ### `extract` [*`--version`*`=`] [*`--force`*] *`formula`* *`tap`*
 
@@ -1871,6 +1878,9 @@ Note that environment variables must have a value set to be detected. For
 example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 `export HOMEBREW_NO_INSECURE_REDIRECT`.
 
+- `HOMEBREW_ADDITIONAL_GOOGLE_ANALYTICS_ID`
+  <br>Additional Google Analytics tracking ID to emit user behaviour analytics to. For more information, see: <https://docs.brew.sh/Analytics>
+
 - `HOMEBREW_ARCH`
   <br>Linux only: Pass this value to a type name representing the compiler's `-march` option.
 
@@ -1898,7 +1908,7 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 - `HOMEBREW_BOTTLE_DOMAIN`
   <br>Use this URL as the download mirror for bottles. If bottles at that URL are temporarily unavailable, the default bottle domain will be used as a fallback mirror. For example, `HOMEBREW_BOTTLE_DOMAIN=http://localhost:8080` will cause all bottles to download from the prefix `http://localhost:8080/`. If bottles are not available at `HOMEBREW_BOTTLE_DOMAIN` they will be downloaded from the default bottle domain.
 
-  *Default:* macOS: `https://ghcr.io/v2/homebrew/core`, Linux: `https://ghcr.io/v2/linuxbrew/core`.
+  *Default:* `https://ghcr.io/v2/homebrew/core`.
 
 - `HOMEBREW_BREW_GIT_REMOTE`
   <br>Use this URL as the Homebrew/brew `git`(1) remote.
@@ -1936,7 +1946,7 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 - `HOMEBREW_CORE_GIT_REMOTE`
   <br>Use this URL as the Homebrew/homebrew-core `git`(1) remote.
 
-  *Default:* macOS: `https://github.com/Homebrew/homebrew-core`, Linux: `https://github.com/Homebrew/linuxbrew-core`.
+  *Default:* `https://github.com/Homebrew/homebrew-core`.
 
 - `HOMEBREW_CURLRC`
   <br>If set, do not pass `--disable` when invoking `curl`(1), which disables the use of `curlrc`.
@@ -1986,9 +1996,6 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 
 - `HOMEBREW_FORCE_BREWED_GIT`
   <br>If set, always use a Homebrew-installed `git`(1) rather than the system version. Automatically set if the system version of `git` is too old.
-
-- `HOMEBREW_FORCE_HOMEBREW_ON_LINUX`
-  <br>If set, running Homebrew on Linux will use URLs for macOS and will use homebrew-core instead of linuxbrew-core. This is useful when merging pull requests for macOS while on Linux.
 
 - `HOMEBREW_FORCE_VENDOR_RUBY`
   <br>If set, always use Homebrew's vendored, relocatable Ruby version even if the system version of Ruby is new enough.
@@ -2079,10 +2086,12 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
   <br>If set, use Pry for the `brew irb` command.
 
 - `HOMEBREW_SIMULATE_MACOS_ON_LINUX`
-  <br>If set, running Homebrew on Linux will simulate certain macOS code paths. This is useful when auditing macOS formulae while on Linux. Implies `HOMEBREW_FORCE_HOMEBREW_ON_LINUX`.
+  <br>If set, running Homebrew on Linux will simulate certain macOS code paths. This is useful when auditing macOS formulae while on Linux.
 
-- `HOMEBREW_FORCE_HOMEBREW_CORE_REPO_ON_LINUX`
-  <br>If set, running Homebrew on Linux will use homebrew-core instead of linuxbrew-core.
+- `HOMEBREW_SSH_CONFIG_PATH`
+  <br>If set, Homebrew will use the given config file instead of `~/.ssh/config` when fetching `git` repos over `ssh`.
+
+  *Default:* `$HOME/.ssh/config`
 
 - `HOMEBREW_SKIP_OR_LATER_BOTTLES`
   <br>If set along with `HOMEBREW_DEVELOPER`, do not use bottles from older versions of macOS. This is useful in development on new macOS versions.

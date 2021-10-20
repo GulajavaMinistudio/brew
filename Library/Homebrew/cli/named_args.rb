@@ -110,9 +110,8 @@ module Homebrew
             when :default_kegs
               resolve_default_keg(name)
             when :keg
-              odeprecated "`load_formula_or_cask` with `method: :keg`",
-                          "`load_formula_or_cask` with `method: :default_kegs`"
-              resolve_default_keg(name)
+              odisabled "`load_formula_or_cask` with `method: :keg`",
+                        "`load_formula_or_cask` with `method: :default_kegs`"
             when :kegs
               _, kegs = resolve_kegs(name)
               kegs
@@ -185,10 +184,6 @@ module Homebrew
 
       def to_resolved_formulae_to_casks(only: parent&.only_formula_or_cask)
         to_formulae_to_casks(only: only, method: :resolve)
-      end
-
-      def to_formulae_paths
-        to_paths(only: :formula)
       end
 
       # Keep existing paths and try to convert others to tap, formula or cask paths.

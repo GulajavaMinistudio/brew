@@ -193,6 +193,9 @@ module Homebrew
       def limit; end
 
       sig { returns(T.nilable(String)) }
+      def start_with; end
+
+      sig { returns(T.nilable(String)) }
       def message; end
 
       sig { returns(T.nilable(String)) }
@@ -296,6 +299,9 @@ module Homebrew
 
       sig { returns(T::Boolean) }
       def custom_remote?; end
+
+      sig { returns(T::Boolean) }
+      def print_path?; end
     end
   end
 end
