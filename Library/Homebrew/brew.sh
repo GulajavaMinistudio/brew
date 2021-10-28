@@ -351,10 +351,11 @@ export HOMEBREW_COMMAND_DEPTH="$((HOMEBREW_COMMAND_DEPTH + 1))"
 setup_curl() {
   # This is set by the user environment.
   # shellcheck disable=SC2154
-  if [[ -n "${HOMEBREW_FORCE_BREWED_CURL}" && -x "${HOMEBREW_PREFIX}/opt/curl/bin/curl" ]] &&
-     "${HOMEBREW_PREFIX}/opt/curl/bin/curl" --version &>/dev/null
+  HOMEBREW_BREWED_CURL_PATH="${HOMEBREW_PREFIX}/opt/curl/bin/curl"
+  if [[ -n "${HOMEBREW_FORCE_BREWED_CURL}" && -x "${HOMEBREW_BREWED_CURL_PATH}" ]] &&
+     "${HOMEBREW_BREWED_CURL_PATH}" --version &>/dev/null
   then
-    HOMEBREW_CURL="${HOMEBREW_PREFIX}/opt/curl/bin/curl"
+    HOMEBREW_CURL="${HOMEBREW_BREWED_CURL_PATH}"
   elif [[ -n "${HOMEBREW_DEVELOPER}" && -x "${HOMEBREW_CURL_PATH}" ]]
   then
     HOMEBREW_CURL="${HOMEBREW_CURL_PATH}"
@@ -592,6 +593,7 @@ export HOMEBREW_CELLAR
 export HOMEBREW_SYSTEM
 export HOMEBREW_SYSTEM_CA_CERTIFICATES_TOO_OLD
 export HOMEBREW_CURL
+export HOMEBREW_BREWED_CURL_PATH
 export HOMEBREW_CURL_WARNING
 export HOMEBREW_SYSTEM_CURL_TOO_OLD
 export HOMEBREW_GIT
@@ -716,25 +718,61 @@ then
 fi
 export HOMEBREW_CORE_GIT_REMOTE
 
+# Set HOMEBREW_DEVELOPER_COMMAND if the command being run is a developer command
+if [[ -f "${HOMEBREW_LIBRARY}/Homebrew/dev-cmd/${HOMEBREW_COMMAND}.sh" ]] ||
+   [[ -f "${HOMEBREW_LIBRARY}/Homebrew/dev-cmd/${HOMEBREW_COMMAND}.rb" ]]
+then
+  export HOMEBREW_DEVELOPER_COMMAND="1"
+fi
+
+# Set HOMEBREW_DEVELOPER_MODE if this command will turn (or keep) developer mode on. This is the case if:
+# - The command being run is not `brew developer off`
+# - Any of the following are true
+#   - HOMEBREW_DEVELOPER is set
+#   - HOMEBREW_DEV_CMD_RUN is set
+#   - A developer command is being run
+#   - The command being run is `brew developer on`
+if [[ "${HOMEBREW_COMMAND}" != "developer" || ! $* =~ "off" ]] &&
+   [[ -n "${HOMEBREW_DEVELOPER}" ||
+      -n "${HOMEBREW_DEV_CMD_RUN}" ||
+      -n "${HOMEBREW_DEVELOPER_COMMAND}" ||
+      "${HOMEBREW_COMMAND}" == "developer" && $* =~ "on" ]]
+then
+  export HOMEBREW_DEVELOPER_MODE="1"
+fi
+
+if [[ -n "${HOMEBREW_INSTALL_FROM_API}" && -n "${HOMEBREW_DEVELOPER_COMMAND}" ]]
+then
+  odie "Developer commands cannot be run while HOMEBREW_INSTALL_FROM_API is set!"
+elif [[ -n "${HOMEBREW_INSTALL_FROM_API}" && -n "${HOMEBREW_DEVELOPER_MODE}" ]]
+then
+  message="Developers should not have HOMEBREW_INSTALL_FROM_API set!
+Please unset HOMEBREW_INSTALL_FROM_API or turn developer mode off by running:
+  brew developer off
+"
+  opoo "${message}"
+fi
+
+if [[ -n "${HOMEBREW_DEVELOPER_COMMAND}" && -z "${HOMEBREW_DEVELOPER}" ]]
+then
+  if [[ -z "${HOMEBREW_DEV_CMD_RUN}" ]]
+  then
+    message="$(bold "${HOMEBREW_COMMAND}") is a developer command, so
+Homebrew's developer mode has been automatically turned on.
+To turn developer mode off, run $(bold "brew developer off")
+"
+    opoo "${message}"
+  fi
+
+  git config --file="${HOMEBREW_GIT_CONFIG_FILE}" --replace-all homebrew.devcmdrun true 2>/dev/null
+  export HOMEBREW_DEV_CMD_RUN="1"
+fi
+
 if [[ -f "${HOMEBREW_LIBRARY}/Homebrew/cmd/${HOMEBREW_COMMAND}.sh" ]]
 then
   HOMEBREW_BASH_COMMAND="${HOMEBREW_LIBRARY}/Homebrew/cmd/${HOMEBREW_COMMAND}.sh"
 elif [[ -f "${HOMEBREW_LIBRARY}/Homebrew/dev-cmd/${HOMEBREW_COMMAND}.sh" ]]
 then
-  if [[ -z "${HOMEBREW_DEVELOPER}" ]]
-  then
-    if [[ -z "${HOMEBREW_DEV_CMD_RUN}" ]]
-    then
-      message="$(bold "${HOMEBREW_COMMAND}") is a developer command, so
-Homebrew's developer mode has been automatically turned on.
-To turn developer mode off, run $(bold "brew developer off")
-"
-      opoo "${message}"
-    fi
-
-    git config --file="${HOMEBREW_GIT_CONFIG_FILE}" --replace-all homebrew.devcmdrun true 2>/dev/null
-    export HOMEBREW_DEV_CMD_RUN="1"
-  fi
   HOMEBREW_BASH_COMMAND="${HOMEBREW_LIBRARY}/Homebrew/dev-cmd/${HOMEBREW_COMMAND}.sh"
 fi
 
