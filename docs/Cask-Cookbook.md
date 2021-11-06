@@ -748,6 +748,8 @@ If the version depends on multiple header fields, a block can be specified, e.g.
 strategy :header_match do |headers|
   v = headers["content-disposition"][/MyApp-(\d+(?:\.\d+)*)\.zip/i, 1]
   id = headers["location"][%r{/(\d+)/download$}i, 1]
+  next if v.blank? || id.blank?
+  
   "#{v},#{id}"
 end
 ```
@@ -757,6 +759,8 @@ Similarly, the `:page_match` strategy can also be used for more complex versions
 ```ruby
 strategy :page_match do |page|
   match = page.match(%r{href=.*?/(\d+)/MyApp-(\d+(?:\.\d+)*)\.zip}i)
+  next if match.blank?
+  
   "#{match[2]},#{match[1]}"
 end
 ```
@@ -1111,7 +1115,7 @@ Example of using `header:`: [issue-325182724](https://github.com/Homebrew/brew/p
 
 #### When URL and Homepage Hostnames Differ, Add `verified:`
 
-When the hostnames of `url` and `homepage` differ, the discrepancy should be documented with the `verified:` parameter, repeating the smallest possible portion of the URL that uniquely identifies the app or vendor, excluding the protocol. Example: [`shotcut.rb`](https://github.com/Homebrew/homebrew-cask/blob/08733296b49c59c58b6beeada59ed4207cef60c3/Casks/shotcut.rb#L5L6).
+When the domains of `url` and `homepage` differ, the discrepancy should be documented with the `verified:` parameter, repeating the smallest possible portion of the URL that uniquely identifies the app or vendor, excluding the protocol. Example: [`shotcut.rb`](https://github.com/Homebrew/homebrew-cask/blob/08733296b49c59c58b6beeada59ed4207cef60c3/Casks/shotcut.rb#L5L6).
 
 This must be added so a user auditing the cask knows the URL was verified by the Homebrew Cask team as the one provided by the vendor, even though it may look unofficial. It is our responsibility as Homebrew Cask maintainers to verify both the `url` and `homepage` information when first added (or subsequently modified, apart from versioning).
 
