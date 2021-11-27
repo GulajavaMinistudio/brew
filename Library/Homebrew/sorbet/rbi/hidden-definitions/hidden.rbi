@@ -2660,6 +2660,8 @@ module Homebrew::EnvConfig
 
   def self.no_emoji?(); end
 
+  def self.no_env_hints?(); end
+
   def self.no_github_api?(); end
 
   def self.no_insecure_redirect?(); end
@@ -4277,6 +4279,12 @@ class RBI::Rewriters::Merge::Conflict
 end
 
 class RBI::Rewriters::Merge
+  extend ::T::Sig
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
+class RBI::Rewriters::RemoveKnownDefinitions::Operation
   extend ::T::Sig
   extend ::T::Private::Methods::MethodHooks
   extend ::T::Private::Methods::SingletonMethodHooks
