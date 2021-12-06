@@ -91,7 +91,7 @@ GEM
       sorbet-runtime (>= 0.5.9204)
       unparser
     rdiscount (2.2.0.2)
-    regexp_parser (2.1.1)
+    regexp_parser (2.2.0)
     rexml (3.2.5)
     ronn (0.7.3)
       hpricot (>= 0.8.2)
@@ -144,8 +144,8 @@ GEM
       rubocop (>= 1.7.0, < 2.0)
     rubocop-rspec (2.6.0)
       rubocop (~> 1.19)
-    rubocop-sorbet (0.6.2)
-      rubocop
+    rubocop-sorbet (0.6.3)
+      rubocop (>= 0.90.0)
     ruby-macho (2.5.1)
     ruby-progressbar (1.11.0)
     rubyntlm (0.6.3)
