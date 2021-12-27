@@ -9,7 +9,7 @@ GEM
       zeitwerk (~> 2.2, >= 2.2.2)
     addressable (2.8.0)
       public_suffix (>= 2.0.2, < 5.0)
-    chef-utils (17.8.25)
+    chef-utils (17.9.18)
       concurrent-ruby
     coffee-script (2.4.1)
       coffee-script-source
@@ -293,7 +293,7 @@ GEM
     unf_ext (0.0.8)
     unicode-display_width (1.8.0)
     yell (2.2.2)
-    zeitwerk (2.5.1)
+    zeitwerk (2.5.2)
 
 PLATFORMS
   ruby
