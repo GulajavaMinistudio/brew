@@ -2620,6 +2620,8 @@ module Homebrew::EnvConfig
 
   def self.display_install_times?(); end
 
+  def self.docker_registry_basic_auth_token(); end
+
   def self.docker_registry_token(); end
 
   def self.editor(); end
