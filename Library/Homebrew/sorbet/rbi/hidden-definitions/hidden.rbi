@@ -18,12 +18,6 @@ class ActiveRecordColumnTypeHelper
   extend ::T::Private::Methods::SingletonMethodHooks
 end
 
-module ActiveSupport
-  def parse_json_times(); end
-
-  def parse_json_times=(val); end
-end
-
 class ActiveSupport::Deprecation
   def self.deprecation_warning(*args, &block); end
 
@@ -34,28 +28,6 @@ end
 
 module ActiveSupport::ForkTracker::CoreExtPrivate
   include ::ActiveSupport::ForkTracker::CoreExt
-end
-
-module ActiveSupport
-  def self.escape_html_entities_in_json(*args, &block); end
-
-  def self.escape_html_entities_in_json=(arg); end
-
-  def self.json_encoder(*args, &block); end
-
-  def self.json_encoder=(arg); end
-
-  def self.parse_json_times(); end
-
-  def self.parse_json_times=(val); end
-
-  def self.time_precision(*args, &block); end
-
-  def self.time_precision=(arg); end
-
-  def self.use_standard_json_time_format(*args, &block); end
-
-  def self.use_standard_json_time_format=(arg); end
 end
 
 class Addrinfo
@@ -4154,9 +4126,6 @@ end
 class Pathname
   include ::ELFShim
   include ::MachOShim
-  def fnmatch?(*arg); end
-
-  def make_symlink(arg); end
 end
 
 class Pathname
@@ -5132,7 +5101,7 @@ end
 module RuboCop::AST::NodePattern::Sets
   SET_BLANK_EMPTY = ::T.let(nil, ::T.untyped)
   SET_BUILD_RECOMMENDED_TEST_OPTIONAL = ::T.let(nil, ::T.untyped)
-  SET_CHANGE_COLUMN_EXECUTE_REMOVE_BELONGS_TO_REMOVE_REFERENCE = ::T.let(nil, ::T.untyped)
+  SET_CHANGE_COLUMN_EXECUTE = ::T.let(nil, ::T.untyped)
   SET_DEPENDS_ON_USES_FROM_MACOS = ::T.let(nil, ::T.untyped)
   SET_INCLUDE_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
   SET_ROOT_PUBLIC_PATH = ::T.let(nil, ::T.untyped)
