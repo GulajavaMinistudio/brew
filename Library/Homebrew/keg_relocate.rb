@@ -8,6 +8,8 @@ class Keg
   LIBRARY_PLACEHOLDER = "@@HOMEBREW_LIBRARY@@"
   PERL_PLACEHOLDER = "@@HOMEBREW_PERL@@"
   JAVA_PLACEHOLDER = "@@HOMEBREW_JAVA@@"
+  NULL_BYTE = "\x00"
+  NULL_BYTE_STRING = "\\x00"
 
   class Relocation
     extend T::Sig
@@ -173,18 +175,46 @@ class Keg
   end
   alias generic_recursive_fgrep_args recursive_fgrep_args
 
-  def each_unique_file_matching(string)
-    Utils.popen_read("fgrep", recursive_fgrep_args, string, to_s) do |io|
-      hardlinks = Set.new
+  def egrep_args
+    grep_bin = "grep"
+    grep_args = recursive_fgrep_args
+    grep_args += "Pa"
+    [grep_bin, grep_args]
+  end
+  alias generic_egrep_args egrep_args
 
-      until io.eof?
-        file = Pathname.new(io.readline.chomp)
-        next if file.symlink?
+  def each_unique_file(io, block)
+    hardlinks = Set.new
 
-        yield file if hardlinks.add? file.stat.ino
-      end
+    until io.eof?
+      file = Pathname.new(io.readline.chomp)
+      # Don't return symbolic links.
+      next if file.symlink?
+
+      # To avoid returning hardlinks, only return files with unique inodes.
+      # Hardlinks will have the same inode as the file they point to.
+      block.call file if hardlinks.add? file.stat.ino
     end
   end
+
+  def each_unique_file_matching(string, &block)
+    Utils.popen_read("fgrep", recursive_fgrep_args, string, to_s) do |io|
+      each_unique_file(io, block)
+    end
+  end
+
+  def each_unique_binary_file(&block)
+    grep_bin, grep_args = egrep_args
+
+    # We need to pass NULL_BYTE_STRING, the literal string "\x00", to grep
+    # rather than NULL_BYTE, a literal null byte, because grep will internally
+    # convert the literal string "\x00" to a null byte.
+    Utils.popen_read(grep_bin, grep_args, NULL_BYTE_STRING, to_s) do |io|
+      each_unique_file(io, block)
+    end
+  end
+
+  def codesign_patched_binary(_binary_file); end
 
   def lib
     path/"lib"
