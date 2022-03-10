@@ -848,6 +848,8 @@ non-zero status if any errors are found.
   Run additional, slower style checks that navigate the Git repository.
 * `--online`:
   Run additional, slower style checks that require a network connection.
+* `--installed`:
+  Only check formulae and casks that are currently installed.
 * `--new`:
   Run various additional style checks to determine if a new formula or cask is eligible for Homebrew. This should be used when creating new formula and implies `--strict` and `--online`.
 * `--[no-]appcast`:
@@ -1477,7 +1479,7 @@ Show the unbottled dependents of formulae.
   Use the specified bottle tag (e.g. `big_sur`) instead of the current OS.
 * `--dependents`:
   Skip getting analytics data and sort by number of dependents instead.
-* `--total`:
+* `--all`:
   Print the number of unbottled and total formulae.
 
 ### `unpack` [*`options`*] *`formula`* [...]
@@ -1648,7 +1650,7 @@ to send a notification when the autoupdate process has finished successfully.
 * `--upgrade`:
   Automatically upgrade your installed formulae. If the Caskroom exists locally Casks will be upgraded as well. Must be passed with `start`.
 * `--greedy`:
-  Upgrade casks with --greedy. See brew(1).Must be passed with `start`.
+  Upgrade casks with --greedy (include auto-updating casks). Must be passed with `start`.
 * `--cleanup`:
   Automatically clean brew's cache and logs. Must be passed with `start`.
 * `--enable-notification`:
