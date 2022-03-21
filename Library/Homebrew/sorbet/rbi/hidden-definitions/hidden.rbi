@@ -24,6 +24,10 @@ module ActiveSupport::ForkTracker::CoreExtPrivate
   include ::ActiveSupport::ForkTracker::CoreExt
 end
 
+module ActiveSupport::VERSION
+  PRE = ::T.let(nil, ::T.untyped)
+end
+
 class Addrinfo
   def connect_internal(local_addrinfo, timeout=T.unsafe(nil)); end
 end
@@ -4200,6 +4204,12 @@ class RBI::Rewriters::RemoveKnownDefinitions::Operation
   extend ::T::Private::Methods::SingletonMethodHooks
 end
 
+class RBI::UnexpectedParserError
+  extend ::T::Sig
+  extend ::T::Private::Methods::MethodHooks
+  extend ::T::Private::Methods::SingletonMethodHooks
+end
+
 class RBI::Visitor
   extend ::T::Helpers
   extend ::T::Sig
@@ -5023,7 +5033,11 @@ module RuboCop::AST::NodePattern::Sets
   SET_BUILD_RECOMMENDED_TEST_OPTIONAL = ::T.let(nil, ::T.untyped)
   SET_DEPENDS_ON_USES_FROM_MACOS = ::T.let(nil, ::T.untyped)
   SET_INCLUDE_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
+  SET_MESSAGES_DETAILS = ::T.let(nil, ::T.untyped)
+  SET_NOTICE_ALERT = ::T.let(nil, ::T.untyped)
+  SET_REJECT_DELETE_IF_REJECT = ::T.let(nil, ::T.untyped)
   SET_SYSTEM_SHELL_OUTPUT_PIPE_OUTPUT = ::T.let(nil, ::T.untyped)
+  SET_TRANSLATE_T = ::T.let(nil, ::T.untyped)
   SET_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
 end
 
