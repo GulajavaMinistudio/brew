@@ -1754,6 +1754,9 @@ Otherwise, operate on `~/Library/LaunchAgents` (started at login).
 [`sudo`] `brew services stop` (*`formula`*|`--all`)
 <br>Stop the service *`formula`* immediately and unregister it from launching at login (or boot).
 
+[`sudo`] `brew services kill` (*`formula`*|`--all`)
+<br>Stop the service *`formula`* immediately but keep it registered to launch at login (or boot).
+
 [`sudo`] `brew services restart` (*`formula`*|`--all`)
 <br>Stop (if necessary) and start the service *`formula`* immediately and register it to launch at login (or boot).
 
@@ -2208,7 +2211,7 @@ Homebrew API: <https://rubydoc.brew.sh>
 
 Homebrew's Project Leader is Mike McQuaid.
 
-Homebrew's Project Leadership Committee is Issy Long, Jonathan Chang, Markus Reiter, Misty De Meo and Sean Molenaar.
+Homebrew's Project Leadership Committee is Issy Long, Jonathan Chang, Markus Reiter, Misty De Méo and Sean Molenaar.
 
 Homebrew's Technical Steering Committee is Bo Anderson, FX Coudert, Michka Popoff, Mike McQuaid and Rylan Polster.
 
