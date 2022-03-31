@@ -177,7 +177,7 @@ show the intersection of dependencies for each formula.
 * `--cask`:
   Treat all named arguments as casks.
 
-### `desc` [*`options`*] *`formula`*|*`text`*|`/`*`regex`*`/` [...]
+### `desc` [*`options`*] *`formula`*|*`cask`*|*`text`*|`/`*`regex`*`/` [...]
 
 Display *`formula`*'s name and one-line description.
 Formula descriptions are cached; the cache is created on the
@@ -189,6 +189,10 @@ first search, making that search slower than subsequent ones.
   Search just names for *`text`*. If *`text`* is flanked by slashes, it is interpreted as a regular expression.
 * `-d`, `--description`:
   Search just descriptions for *`text`*. If *`text`* is flanked by slashes, it is interpreted as a regular expression.
+* `--formula`:
+  Treat all named arguments as formulae.
+* `--cask`:
+  Treat all named arguments as casks.
 
 ### `developer` [*`subcommand`*]
 
@@ -563,7 +567,7 @@ The search for *`text`* is extended online to `homebrew/core` and `homebrew/cask
 * `--cask`:
   Search online and locally for casks.
 * `--desc`:
-  Search for formulae with a description matching *`text`* and casks with a name matching *`text`*.
+  Search for formulae with a description matching *`text`* and casks with a name or description matching *`text`*.
 * `--pull-request`:
   Search for GitHub pull requests containing *`text`*.
 * `--open`:
@@ -2215,7 +2219,7 @@ Homebrew's Project Leadership Committee is Issy Long, Jonathan Chang, Markus Rei
 
 Homebrew's Technical Steering Committee is Bo Anderson, FX Coudert, Michka Popoff, Mike McQuaid and Rylan Polster.
 
-Homebrew's other current maintainers are Alexander Bayandin, Bevan Kay, Branch Vincent, Caleb Xu, Carlo Cabrera, Connor, Daniel Nachun, Dawid Dziurla, Dustin Rodrigues, Eric Knibbe, George Adams, Maxim Belkin, Miccal Matthews, Michael Cho, Nanda H Krishna, Randall, Sam Ford, Shaun Jackman, Steve Peters, Thierry Moisan, Tom Schoonjans, Vítor Galvão and rui.
+Homebrew's other current maintainers are Alexander Bayandin, Bevan Kay, Branch Vincent, Caleb Xu, Carlo Cabrera, Connor, Daniel Nachun, Dawid Dziurla, Dustin Rodrigues, Eric Knibbe, George Adams, Maxim Belkin, Miccal Matthews, Michael Cho, Nanda H Krishna, Randall, Rui Chen, Sam Ford, Shaun Jackman, Steve Peters, Thierry Moisan, Tom Schoonjans and Vítor Galvão.
 
 Former maintainers with significant contributions include Claudia Pellegrino, Seeker, William Woodruff, Jan Viljanen, JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs, Chongyu Zhu and Homebrew's creator: Max Howell.
 
