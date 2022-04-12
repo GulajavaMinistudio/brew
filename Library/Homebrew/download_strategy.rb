@@ -327,7 +327,7 @@ class AbstractFileDownloadStrategy < AbstractDownloadStrategy
     @resolved_url_and_basename = [url, parse_basename(url)]
   end
 
-  def parse_basename(url)
+  def parse_basename(url, search_query: true)
     uri_path = if url.match?(URI::DEFAULT_PARSER.make_regexp)
       uri = URI(url)
 
@@ -339,23 +339,29 @@ class AbstractFileDownloadStrategy < AbstractDownloadStrategy
         end
       end
 
-      uri.query ? "#{uri.path}?#{uri.query}" : uri.path
+      if uri.query && search_query
+        "#{uri.path}?#{uri.query}"
+      else
+        uri.path
+      end
     else
       url
     end
 
     uri_path = URI.decode_www_form_component(uri_path)
+    query_regex = /[^?&]+/
 
     # We need a Pathname because we've monkeypatched extname to support double
     # extensions (e.g. tar.gz).
     # Given a URL like https://example.com/download.php?file=foo-1.0.tar.gz
     # the basename we want is "foo-1.0.tar.gz", not "download.php".
     Pathname.new(uri_path).ascend do |path|
-      ext = path.extname[/[^?&]+/]
-      return path.basename.to_s[/[^?&]+#{Regexp.escape(ext)}/] if ext
+      ext = path.extname[query_regex]
+      return path.basename.to_s[/#{query_regex.source}#{Regexp.escape(ext)}/] if ext
     end
 
-    File.basename(uri_path)
+    # Strip query string
+    File.basename(uri_path)[query_regex]
   end
 end
 
@@ -509,8 +515,8 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
            .map(&:to_i)
            .last
 
-    basename = filenames.last || parse_basename(redirect_url)
     is_redirection = url != redirect_url
+    basename = filenames.last || parse_basename(redirect_url, search_query: !is_redirection)
 
     @resolved_info_cache[url] = [redirect_url, basename, time, file_size, is_redirection]
   end
