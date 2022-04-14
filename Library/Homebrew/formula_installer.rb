@@ -460,7 +460,7 @@ class FormulaInstaller
       end
       s = formula_contents.gsub(/  bottle do.+?end\n\n?/m, "")
       brew_prefix = formula.prefix/".brew"
-      brew_prefix.mkdir
+      brew_prefix.mkpath
       Pathname(brew_prefix/"#{formula.name}.rb").atomic_write(s)
 
       keg = Keg.new(formula.prefix)
@@ -1228,6 +1228,14 @@ class FormulaInstaller
     keg = Keg.new(formula.prefix)
     skip_linkage = formula.bottle_specification.skip_relocation?
     keg.replace_placeholders_with_locations tab.changed_files, skip_linkage: skip_linkage
+
+    cellar = formula.bottle_specification.tag_to_cellar(Utils::Bottles.tag)
+    return if [:any, :any_skip_relocation].include?(cellar)
+
+    prefix = Pathname(cellar).parent.to_s
+    return if cellar == HOMEBREW_CELLAR.to_s && prefix == HOMEBREW_PREFIX.to_s
+
+    keg.relocate_build_prefix(keg, prefix, HOMEBREW_PREFIX)
   end
 
   sig { params(output: T.nilable(String)).void }
