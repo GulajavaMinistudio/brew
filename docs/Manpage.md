@@ -1034,6 +1034,12 @@ nor vice versa. It must use whichever style specification the formula already us
   Specify the new commit *`revision`* corresponding to the specified git *`tag`* or specified *`version`*.
 * `-f`, `--force`:
   Ignore duplicate open PRs. Remove all mirrors if `--mirror` was not specified.
+* `--python-package-name`:
+  Use the specified *`package-name`* when finding Python resources for *`formula`*. If no package name is specified, it will be inferred from the formula's stable URL.
+* `--python-extra-packages`:
+  Include these additional Python packages when finding resources.
+* `--python-exclude-packages`:
+  Exclude these Python packages when finding resources.
 
 ### `bump-revision` [*`options`*] *`formula`* [...]
 
@@ -1453,6 +1459,8 @@ Run Homebrew's unit and integration tests.
   Include tests that use the GitHub API and tests that use any of the taps for official external commands.
 * `--byebug`:
   Enable debugging using byebug.
+* `--changed`:
+  Only runs tests on files that were changed from the master branch.
 * `--only`:
   Run only *`test_script`*`_spec.rb`. Appending `:`*`line_number`* will start at a specific line.
 * `--seed`:

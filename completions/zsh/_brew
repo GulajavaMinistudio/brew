@@ -531,6 +531,9 @@ _brew_bump_formula_pr() {
     '--no-browse[Print the pull request URL instead of opening in a browser]' \
     '--no-fork[Don'\''t try to fork the repository]' \
     '(--no-audit)--online[Run `brew audit --online` before opening the PR]' \
+    '--python-exclude-packages[Exclude these Python packages when finding resources]' \
+    '--python-extra-packages[Include these additional Python packages when finding resources]' \
+    '--python-package-name[Use the specified package-name when finding Python resources for formula. If no package name is specified, it will be inferred from the formula'\''s stable URL]' \
     '--quiet[Make some output more quiet]' \
     '--revision[Specify the new commit revision corresponding to the specified git tag or specified version]' \
     '--sha256[Specify the SHA-256 checksum of the new download]' \
@@ -1659,13 +1662,14 @@ _brew_test() {
 _brew_tests() {
   _arguments \
     '--byebug[Enable debugging using byebug]' \
+    '(--only)--changed[Only runs tests on files that were changed from the master branch]' \
     '--coverage[Generate code coverage reports]' \
     '--debug[Display any debugging information]' \
     '--generic[Run only OS-agnostic tests]' \
     '--help[Show this message]' \
     '--no-compat[Do not load the compatibility layer when running tests]' \
     '--online[Include tests that use the GitHub API and tests that use any of the taps for official external commands]' \
-    '--only[Run only test_script`_spec.rb`. Appending `:`line_number will start at a specific line]' \
+    '(--changed)--only[Run only test_script`_spec.rb`. Appending `:`line_number will start at a specific line]' \
     '--quiet[Make some output more quiet]' \
     '--seed[Randomise tests with the specified value instead of a random seed]' \
     '--verbose[Make some output more verbose]'
