@@ -200,19 +200,18 @@ module Utils
     # Check if a URL is protected by CloudFlare (e.g. badlion.net and jaxx.io).
     def url_protected_by_cloudflare?(details)
       return false if details[:headers].blank?
+      return unless [403, 503].include?(details[:status].to_i)
 
-      [403, 503].include?(details[:status].to_i) &&
-        details[:headers].match?(/^Set-Cookie: (__cfduid|__cf_bm)=/i) &&
-        details[:headers].match?(/^Server: cloudflare/i)
+      details[:headers].fetch("set-cookie", nil)&.match?(/^(__cfduid|__cf_bm)=/i) &&
+        details[:headers].fetch("server", nil)&.match?(/^cloudflare/i)
     end
 
     # Check if a URL is protected by Incapsula (e.g. corsair.com).
     def url_protected_by_incapsula?(details)
       return false if details[:headers].blank?
+      return false if details[:status].to_i != 403
 
-      details[:status].to_i == 403 &&
-        details[:headers].match?(/^Set-Cookie: visid_incap_/i) &&
-        details[:headers].match?(/^Set-Cookie: incap_ses_/i)
+      details[:headers].fetch("set-cookie", nil)&.match?(/^(visid_incap|incap_ses)_/i)
     end
 
     def curl_check_http_content(url, url_type, specs: {}, user_agents: [:default],
@@ -345,20 +344,20 @@ module Utils
         user_agent:        user_agent
       )
 
+      parsed_output = parse_curl_output(output)
+      responses = parsed_output[:responses]
+
+      final_url = curl_response_last_location(responses)
+      headers = if responses.last.present?
+        status_code = responses.last[:status_code]
+        responses.last[:headers]
+      else
+        {}
+      end
+      etag = headers["etag"][ETAG_VALUE_REGEX, 1] if headers["etag"].present?
+      content_length = headers["content-length"]
+
       if status.success?
-        parsed_output = parse_curl_output(output)
-        responses = parsed_output[:responses]
-
-        final_url = curl_response_last_location(responses)
-        headers = if responses.last.present?
-          status_code = responses.last[:status_code]
-          responses.last[:headers]
-        else
-          {}
-        end
-        etag = headers["etag"][ETAG_VALUE_REGEX, 1] if headers["etag"].present?
-        content_length = headers["content-length"]
-
         file_contents = File.read(file.path)
         file_hash = Digest::SHA2.hexdigest(file_contents) if hash_needed
       end
@@ -401,7 +400,7 @@ module Utils
     # @return [Hash] A hash containing an array of response hashes and the body
     #   content, if found.
     sig { params(output: String, max_iterations: Integer).returns(T::Hash[Symbol, T.untyped]) }
-    def parse_curl_output(output, max_iterations: 5)
+    def parse_curl_output(output, max_iterations: 25)
       responses = []
 
       iterations = 0
