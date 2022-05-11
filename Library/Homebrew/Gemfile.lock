@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (6.1.5.1)
+    activesupport (6.1.6)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (>= 1.6, < 2)
       minitest (>= 5.1)
@@ -62,13 +62,13 @@ GEM
     net-http-digest_auth (1.4.1)
     net-http-persistent (4.0.1)
       connection_pool (~> 2.2)
-    nokogiri (1.13.5)
+    nokogiri (1.13.6)
       mini_portile2 (~> 2.8.0)
       racc (~> 1.4)
     parallel (1.22.1)
     parallel_tests (3.8.1)
       parallel
-    parlour (7.0.0)
+    parlour (8.0.0)
       commander (~> 4.5)
       parser
       rainbow (~> 3.0)
@@ -91,7 +91,7 @@ GEM
       sorbet-runtime (>= 0.5.9204)
       unparser
     rdiscount (2.2.0.2)
-    regexp_parser (2.3.1)
+    regexp_parser (2.4.0)
     rexml (3.2.5)
     ronn (0.7.3)
       hpricot (>= 0.8.2)
@@ -157,11 +157,11 @@ GEM
       simplecov (~> 0.19)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
-    sorbet (0.5.9967)
-      sorbet-static (= 0.5.9967)
-    sorbet-runtime (0.5.9967)
+    sorbet (0.5.9992)
+      sorbet-static (= 0.5.9992)
+    sorbet-runtime (0.5.9992)
     sorbet-runtime-stub (0.2.0)
-    sorbet-static (0.5.9967-universal-darwin-14)
+    sorbet-static (0.5.9992-universal-darwin-14)
     spoom (1.1.11)
       sorbet (>= 0.5.9204)
       sorbet-runtime (>= 0.5.9204)
