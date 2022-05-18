@@ -6,6 +6,7 @@ source "https://rubygems.org"
 # * nokogiri - use rexml instead for XML parsing
 
 # installed gems (should all be require: false)
+gem "addressable", require: false
 gem "bootsnap", require: false
 gem "byebug", require: false
 gem "json_schemer", require: false
@@ -27,8 +28,7 @@ gem "warning", require: false
 group :sorbet, optional: true do
   gem "parlour", require: false
   gem "rspec-sorbet", require: false
-  gem "sorbet", require: false
-  gem "sorbet-runtime", require: false
+  gem "sorbet-static-and-runtime", require: false
   gem "tapioca", require: false
 end
 
