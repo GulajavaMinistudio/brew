@@ -936,7 +936,7 @@ Fetch the newest version of Homebrew and all formulae from GitHub using \fBgit\f
 Use \fBgit merge\fR to apply updates (rather than \fBgit rebase\fR)\.
 .
 .TP
-\fB\-\-preinstall\fR
+\fB\-\-auto\-update\fR
 Run on auto\-updates (e\.g\. before \fBbrew install\fR)\. Skips some slower steps\.
 .
 .TP
@@ -2745,7 +2745,7 @@ Linux only: Pass this value to a type name representing the compiler\'s \fB\-mar
 \fBHOMEBREW_ARTIFACT_DOMAIN\fR
 .
 .br
-Prefix all download URLs, including those for bottles, with this value\. For example, \fBHOMEBREW_ARTIFACT_DOMAIN=http://localhost:8080\fR will cause a formula with the URL \fBhttps://example\.com/foo\.tar\.gz\fR to instead download from \fBhttp://localhost:8080/example\.com/foo\.tar\.gz\fR\.
+Prefix all download URLs, including those for bottles, with this value\. For example, \fBHOMEBREW_ARTIFACT_DOMAIN=http://localhost:8080\fR will cause a formula with the URL \fBhttps://example\.com/foo\.tar\.gz\fR to instead download from \fBhttp://localhost:8080/https://example\.com/foo\.tar\.gz\fR\. Bottle URLs however, have their domain replaced with this prefix\. This results in e\.g\. \fBhttps://ghcr\.io/v2/homebrew/core/gettext/manifests/0\.21\fR to instead be downloaded from \fBhttp://localhost:8080/v2/homebrew/core/gettext/manifests/0\.21\fR
 .
 .TP
 \fBHOMEBREW_AUTO_UPDATE_SECS\fR
@@ -3183,10 +3183,16 @@ Use this path as the temporary directory for building packages\. Changing this m
 \fIDefault:\fR macOS: \fB/private/tmp\fR, Linux: \fB/tmp\fR\.
 .
 .TP
-\fBHOMEBREW_UPDATE_REPORT_ONLY_INSTALLED\fR
+\fBHOMEBREW_UPDATE_REPORT_ALL_FORMULAE\fR
 .
 .br
-If set, \fBbrew update\fR only lists updates to installed software\.
+If set, \fBbrew update\fR lists updates to all software\.
+.
+.TP
+\fBHOMEBREW_UPDATE_REPORT_VERSION_CHANGED_FORMULAE\fR
+.
+.br
+If set, \fBbrew update\fR only lists updates to formulae with differing versions\. Note this is slower than the default behaviour\.
 .
 .TP
 \fBHOMEBREW_UPDATE_TO_TAG\fR
