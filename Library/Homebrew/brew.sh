@@ -441,8 +441,8 @@ then
     HOMEBREW_OS_VERSION="macOS ${HOMEBREW_MACOS_VERSION}"
   fi
 
-  # Refuse to run on pre-Yosemite
-  if [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -lt "101000" ]]
+  # Refuse to run on pre-El Capitan
+  if [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -lt "101100" ]]
   then
     printf "ERROR: Your version of macOS (%s) is too old to run Homebrew!\\n" "${HOMEBREW_MACOS_VERSION}" >&2
     if [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -lt "100700" ]]
@@ -466,11 +466,17 @@ then
     HOMEBREW_FORCE_BREWED_CA_CERTIFICATES="1"
   fi
 
-  # The system Git on macOS versions before Sierra is too old for some Homebrew functionality we rely on.
-  HOMEBREW_MINIMUM_GIT_VERSION="2.14.3"
-  if [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -lt "101200" ]]
+  if [[ -n "${HOMEBREW_FAKE_EL_CAPITAN}" ]]
   then
-    HOMEBREW_FORCE_BREWED_GIT="1"
+    # We only need this to work enough to update brew and build the set portable formulae, so relax the requirement.
+    HOMEBREW_MINIMUM_GIT_VERSION="2.7.4"
+  else
+    # The system Git on macOS versions before Sierra is too old for some Homebrew functionality we rely on.
+    HOMEBREW_MINIMUM_GIT_VERSION="2.14.3"
+    if [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -lt "101200" ]]
+    then
+      HOMEBREW_FORCE_BREWED_GIT="1"
+    fi
   fi
 
   # Set a variable when the macOS system Ruby is new enough to avoid spawning
