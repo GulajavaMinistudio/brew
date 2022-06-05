@@ -2574,8 +2574,6 @@ module Homebrew::EnvConfig
 
   def self.update_report_all_formulae?(); end
 
-  def self.update_report_version_changed_formulae?(); end
-
   def self.update_to_tag?(); end
 
   def self.verbose?(); end
@@ -2995,17 +2993,9 @@ module Kernel
 
   def choose(*args, &block); end
 
-  def itself(); end
-
-  def object_id(); end
-
   def pretty_inspect(); end
 
   def say(*args, &block); end
-
-  def then(); end
-
-  def yield_self(); end
 end
 
 module Kernel
