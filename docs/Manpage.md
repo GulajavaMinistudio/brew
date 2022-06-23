@@ -489,11 +489,11 @@ information is displayed in interactive shells, and suppressed otherwise.
 * `--fetch-HEAD`:
   Fetch the upstream repository to detect if the HEAD installation of the formula is outdated. Otherwise, the repository's HEAD will only be checked for updates when a new stable or development version has been released.
 * `--greedy`:
-  Print outdated casks with `auto_updates true` or `version :latest`.
+  Also include outdated casks with `auto_updates true` or `version :latest`.
 * `--greedy-latest`:
-  Print outdated casks including those with `version :latest`.
+  Also include outdated casks including those with `version :latest`.
 * `--greedy-auto-updates`:
-  Print outdated casks including those with `auto_updates true`.
+  Also include outdated casks including those with `auto_updates true`.
 
 ### `pin` *`installed_formula`* [...]
 
@@ -2102,7 +2102,7 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 - `HOMEBREW_LIVECHECK_WATCHLIST`
   <br>Consult this file for the list of formulae to check by default when no formula argument is passed to `brew livecheck`.
 
-  *Default:* `$HOME/.brew_livecheck_watchlist`.
+  *Default:* `$HOME/.brew_livecheck_watchlist`
 
 - `HOMEBREW_LOGS`
   <br>Use this directory to store log files.
