@@ -2672,6 +2672,10 @@ Don\'t pass \fB\-\-online\fR to \fBbrew audit\fR and skip \fBbrew livecheck\fR\.
 Don\'t test any dependents\.
 .
 .TP
+\fB\-\-skip\-livecheck\fR
+Don\'t test livecheck\.
+.
+.TP
 \fB\-\-skip\-recursive\-dependents\fR
 Only test the direct dependents\.
 .
@@ -3219,6 +3223,15 @@ If set, \fBbrew install\fR, \fBbrew upgrade\fR and \fBbrew reinstall\fR will nev
 .
 .br
 If set, \fBbrew install <formula>\fR will not upgrade \fB<formula>\fR if it is installed but outdated\.
+.
+.TP
+\fBHOMEBREW_PIP_INDEX_URL\fR
+.
+.br
+If set, \fBbrew install <formula>\fR will use this URL to download PyPI package resources\.
+.
+.IP
+\fIDefault:\fR \fBhttps://pypi\.org/simple\fR\.
 .
 .TP
 \fBHOMEBREW_PRY\fR
