@@ -341,13 +341,19 @@ module Homebrew
 
         @args_parsed = true
 
-        if !ignore_invalid_options && @args.help?
-          puts generate_help_text
-          exit
+        unless ignore_invalid_options
+          if @args.help?
+            puts generate_help_text
+            exit
+          end
+
+          validate_options
         end
 
         @args
       end
+
+      def validate_options; end
 
       def generate_help_text
         Formatter.format_help_text(@parser.to_s, width: COMMAND_DESC_WIDTH)
@@ -361,8 +367,9 @@ module Homebrew
       end
 
       def cask_options
-        self.class.global_cask_options.each do |method, *args, **options|
-          send(method, *args, **options)
+        self.class.global_cask_options.each do |args|
+          options = args.pop
+          send(*args, **options)
           conflicts "--formula", args.last
         end
         @cask_options = true
@@ -701,3 +708,5 @@ module Homebrew
     end
   end
 end
+
+require "extend/os/parser"

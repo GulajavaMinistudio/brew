@@ -1615,6 +1615,10 @@ class Formula
   # </pre>
   sig { params(source: Pathname, target: Pathname).returns(String) }
   def rpath(source: bin, target: lib)
+    unless target.to_s.start_with?(HOMEBREW_PREFIX)
+      raise "rpath `target` should only be used for paths inside HOMEBREW_PREFIX!"
+    end
+
     "#{loader_path}/#{target.relative_path_from(source)}"
   end
 
@@ -2130,6 +2134,7 @@ class Formula
         "used_options"            => tab.used_options.as_flags,
         "built_as_bottle"         => tab.built_as_bottle,
         "poured_from_bottle"      => tab.poured_from_bottle,
+        "time"                    => tab.time,
         "runtime_dependencies"    => tab.runtime_dependencies,
         "installed_as_dependency" => tab.installed_as_dependency,
         "installed_on_request"    => tab.installed_on_request,
@@ -2323,7 +2328,8 @@ class Formula
   # @api public
   def inreplace(paths, before = nil, after = nil, audit_result = true) # rubocop:disable Style/OptionalBooleanParameter
     super(paths, before, after, audit_result)
-  rescue Utils::Inreplace::Error
+  rescue Utils::Inreplace::Error => e
+    onoe e.to_s
     raise BuildError.new(self, "inreplace", paths, {})
   end
 

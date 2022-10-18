@@ -45,6 +45,7 @@ git_init_if_necessary() {
     trap '{ rm -rf .git; exit 1; }' EXIT
     git init
     git config --bool core.autocrlf false
+    git config --bool core.symlinks true
     if [[ "${HOMEBREW_BREW_DEFAULT_GIT_REMOTE}" != "${HOMEBREW_BREW_GIT_REMOTE}" ]]
     then
       echo "HOMEBREW_BREW_GIT_REMOTE set: using ${HOMEBREW_BREW_GIT_REMOTE} for Homebrew/brew Git remote URL."
@@ -67,6 +68,7 @@ git_init_if_necessary() {
     trap '{ rm -rf .git; exit 1; }' EXIT
     git init
     git config --bool core.autocrlf false
+    git config --bool core.symlinks true
     if [[ "${HOMEBREW_CORE_DEFAULT_GIT_REMOTE}" != "${HOMEBREW_CORE_GIT_REMOTE}" ]]
     then
       echo "HOMEBREW_CORE_GIT_REMOTE set: using ${HOMEBREW_CORE_GIT_REMOTE} for Homebrew/core Git remote URL."
@@ -269,7 +271,10 @@ EOS
   export HOMEBREW_UPDATE_BEFORE"${TAP_VAR}"="${INITIAL_REVISION}"
 
   # ensure we don't munge line endings on checkout
-  git config core.autocrlf false
+  git config --bool core.autocrlf false
+
+  # make sure symlinks are saved as-is
+  git config --bool core.symlinks true
 
   if [[ "${DIR}" == "${HOMEBREW_CORE_REPOSITORY}" && -n "${HOMEBREW_LINUXBREW_CORE_MIGRATION}" ]]
   then
@@ -749,6 +754,10 @@ EOS
   if [[ -n "${HOMEBREW_INSTALL_FROM_API}" ]]
   then
     mkdir -p "${HOMEBREW_CACHE}/api"
+    if [[ -f "${HOMEBREW_CACHE}/api/formula.json" ]]
+    then
+      INITIAL_JSON_BYTESIZE="$(wc -c "${HOMEBREW_CACHE}"/api/formula.json)"
+    fi
     curl \
       "${CURL_DISABLE_CURLRC_ARGS[@]}" \
       --fail --compressed --silent --max-time 5 \
@@ -756,8 +765,17 @@ EOS
       --time-cond "${HOMEBREW_CACHE}/api/formula.json" \
       --user-agent "${HOMEBREW_USER_AGENT_CURL}" \
       "https://formulae.brew.sh/api/formula.json"
-    # TODO: we probably want to print an error if this fails.
-    # TODO: set HOMEBREW_UPDATED or HOMEBREW_UPDATE_FAILED
+    curl_exit_code=$?
+    if [[ ${curl_exit_code} -eq 0 ]]
+    then
+      CURRENT_JSON_BYTESIZE="$(wc -c "${HOMEBREW_CACHE}"/api/formula.json)"
+      if [[ "${INITIAL_JSON_BYTESIZE}" != "${CURRENT_JSON_BYTESIZE}" ]]
+      then
+        HOMEBREW_UPDATED="1"
+      fi
+    else
+      echo "Failed to download formula.json!" >>"${update_failed_file}"
+    fi
   fi
 
   safe_cd "${HOMEBREW_REPOSITORY}"

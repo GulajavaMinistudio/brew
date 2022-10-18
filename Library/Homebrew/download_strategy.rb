@@ -580,6 +580,13 @@ class HomebrewCurlDownloadStrategy < CurlDownloadStrategy
 
     curl_download resolved_url, to: to, try_partial: @try_partial, timeout: timeout, use_homebrew_curl: true
   end
+
+  def curl_output(*args, **options)
+    raise HomebrewCurlDownloadStrategyError, url unless Formula["curl"].any_version_installed?
+
+    options[:use_homebrew_curl] = true
+    super(*args, **options)
+  end
 end
 
 # Strategy for downloading a file from an GitHub Packages URL.
@@ -594,7 +601,7 @@ class CurlGitHubPackagesDownloadStrategy < CurlDownloadStrategy
     # GitHub Packages authorization header.
     # HOMEBREW_GITHUB_PACKAGES_AUTH set in brew.sh
     meta[:headers] << "Authorization: #{HOMEBREW_GITHUB_PACKAGES_AUTH}"
-    super(url, name, version, meta)
+    super(url, name, version, **meta)
   end
 
   private
