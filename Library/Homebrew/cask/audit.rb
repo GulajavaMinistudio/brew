@@ -545,6 +545,45 @@ module Cask
       false
     end
 
+    def check_livecheck_min_os
+      return unless online?
+      return unless cask.livecheckable?
+      return unless cask.livecheck.strategy == :sparkle
+
+      out, _, status = curl_output("--fail", "--silent", "--location", cask.livecheck.url)
+      return unless status.success?
+
+      require "rexml/document"
+
+      xml = begin
+        REXML::Document.new(out)
+      rescue REXML::ParseException
+        nil
+      end
+
+      return if xml.blank?
+
+      item = xml.elements["//rss//channel//item"]
+      return if item.blank?
+
+      min_os = item.elements["sparkle:minimumSystemVersion"]&.text
+      return if min_os.blank?
+
+      begin
+        min_os_string = OS::Mac::Version.new(min_os).strip_patch
+      rescue MacOSVersionError
+        return
+      end
+
+      return if min_os_string == MacOS::Version::OLDEST_ALLOWED
+
+      cask_min_os = cask.depends_on.macos&.version
+
+      return if cask_min_os == min_os_string
+
+      add_error "Upstream defined #{min_os_string} as minimal OS version and the cask defined #{cask_min_os}"
+    end
+
     sig { void }
     def check_appcast_contains_version
       return unless appcast?
