@@ -1004,7 +1004,7 @@ supplied by the user.
 * `--version`:
   Specify the new *`version`* for the cask.
 * `--message`:
-  Append *`message`* to the default pull request message.
+  Prepend *`message`* to the default pull request message.
 * `--url`:
   Specify the *`URL`* for the new download.
 * `--sha256`:
@@ -1056,7 +1056,7 @@ nor vice versa. It must use whichever style specification the formula already us
 * `--version`:
   Use the specified *`version`* to override the value parsed from the URL or tag. Note that `--version=0` can be used to delete an existing version override from a formula if it has become redundant.
 * `--message`:
-  Append *`message`* to the default pull request message.
+  Prepend *`message`* to the default pull request message.
 * `--url`:
   Specify the *`URL`* for the new download. If a *`URL`* is specified, the *`SHA-256`* checksum of the new download should also be specified.
 * `--sha256`:
@@ -1416,6 +1416,8 @@ Installs, configures and runs Homebrew's `rubocop`.
 
 Run a Ruby instance with Homebrew's libraries loaded. For example,
 `brew ruby -e "puts :gcc.f.deps"` or `brew ruby script.rb`.
+
+Run e.g. `brew ruby -- --version` to pass arbitrary arguments to `ruby`.
 
 * `-r`:
   Load a library using `require`.

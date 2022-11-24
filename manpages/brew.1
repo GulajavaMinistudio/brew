@@ -1437,7 +1437,7 @@ Specify the new \fIversion\fR for the cask\.
 .
 .TP
 \fB\-\-message\fR
-Append \fImessage\fR to the default pull request message\.
+Prepend \fImessage\fR to the default pull request message\.
 .
 .TP
 \fB\-\-url\fR
@@ -1516,7 +1516,7 @@ Use the specified \fIversion\fR to override the value parsed from the URL or tag
 .
 .TP
 \fB\-\-message\fR
-Append \fImessage\fR to the default pull request message\.
+Prepend \fImessage\fR to the default pull request message\.
 .
 .TP
 \fB\-\-url\fR
@@ -2038,6 +2038,9 @@ Installs, configures and runs Homebrew\'s \fBrubocop\fR\.
 .
 .SS "\fBruby\fR [\fIoptions\fR] (\fB\-e\fR \fItext\fR|\fIfile\fR)"
 Run a Ruby instance with Homebrew\'s libraries loaded\. For example, \fBbrew ruby \-e "puts :gcc\.f\.deps"\fR or \fBbrew ruby script\.rb\fR\.
+.
+.P
+Run e\.g\. \fBbrew ruby \-\- \-\-version\fR to pass arbitrary arguments to \fBruby\fR\.
 .
 .TP
 \fB\-r\fR
