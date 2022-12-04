@@ -6723,10 +6723,6 @@ class RuboCop::AST::Node
 
   def cask_block?(param0=T.unsafe(nil)); end
 
-  def forwarded_kwrestarg_type?(); end
-
-  def forwarded_restarg_type?(); end
-
   def key_node(param0=T.unsafe(nil)); end
 
   def method_node(param0=T.unsafe(nil)); end
@@ -6744,18 +6740,12 @@ module RuboCop::AST::NodePattern::Sets
   SET_BUILD_RECOMMENDED_TEST_OPTIONAL = ::T.let(nil, ::T.untyped)
   SET_DEPENDS_ON_USES_FROM_MACOS = ::T.let(nil, ::T.untyped)
   SET_INCLUDE_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
+  SET_MAC_LINUX = ::T.let(nil, ::T.untyped)
   SET_ON_INTEL_ON_ARM = ::T.let(nil, ::T.untyped)
   SET_OR_NEWER_OR_OLDER = ::T.let(nil, ::T.untyped)
-  SET_STDOUT_STDERR = ::T.let(nil, ::T.untyped)
   SET_SYSTEM_SHELL_OUTPUT_PIPE_OUTPUT = ::T.let(nil, ::T.untyped)
   SET_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
   SET____ETC_4 = ::T.let(nil, ::T.untyped)
-end
-
-module RuboCop::AST::Traversal
-  def on_forwarded_kwrestarg(node); end
-
-  def on_forwarded_restarg(node); end
 end
 
 class RuboCop::Cask::AST::Stanza
@@ -6948,6 +6938,10 @@ class RuboCop::Cop::FormulaCop
   def required_dependency?(param0); end
 
   def required_dependency_name?(param0, param1); end
+end
+
+class RuboCop::Cop::Homebrew::MoveToExtendOS
+  def os_check?(param0=T.unsafe(nil)); end
 end
 
 module RuboCop::Cop::OnSystemConditionalsHelper
