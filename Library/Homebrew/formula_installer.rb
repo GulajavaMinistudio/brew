@@ -416,9 +416,7 @@ class FormulaInstaller
 
     if formula.tap&.installed? && !formula.tap&.private?
       action = "#{formula.full_name} #{options}".strip
-      Utils::Analytics.report_event("install", action)
-
-      Utils::Analytics.report_event("install_on_request", action) if installed_on_request?
+      Utils::Analytics.report_event("install", action, on_request: installed_on_request?)
     end
 
     self.class.attempted << formula
@@ -1033,7 +1031,7 @@ class FormulaInstaller
       return
     end
 
-    if formula.service?
+    if formula.service? && formula.service.command.present?
       service_path = formula.systemd_service_path
       service_path.atomic_write(formula.service.to_systemd_unit)
       service_path.chmod 0644
@@ -1045,7 +1043,7 @@ class FormulaInstaller
       end
     end
 
-    service = if formula.service?
+    service = if formula.service? && formula.service.command.present?
       formula.service.to_plist
     elsif formula.plist
       formula.plist
@@ -1059,6 +1057,7 @@ class FormulaInstaller
     log = formula.var/"log"
     log.mkpath if service.include? log.to_s
   rescue Exception => e # rubocop:disable Lint/RescueException
+    puts e
     ofail "Failed to install service files"
     odebug e, e.backtrace
   end
