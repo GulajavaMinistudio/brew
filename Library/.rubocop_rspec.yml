@@ -5,19 +5,13 @@ RSpec/AnyInstance:
   Enabled: false
 RSpec/FilePath:
   Enabled: false
-RSpec/ImplicitBlockExpectation:
-  Enabled: false
 RSpec/SubjectStub:
   Enabled: false
 
 # TODO: try to enable these
 RSpec/DescribeClass:
   Enabled: false
-RSpec/LeakyConstantDeclaration:
-  Enabled: false
 RSpec/MessageSpies:
-  Enabled: false
-RSpec/RepeatedDescription:
   Enabled: false
 RSpec/StubbedMock:
   Enabled: false
@@ -37,10 +31,3 @@ RSpec/MultipleMemoizedHelpers:
 # Annoying to have these autoremoved.
 RSpec/Focus:
   AutoCorrect: false
-
-# Gets confused on these tests for a `skip` DSL
-RSpec/PendingWithoutReason:
-  Exclude:
-    - "**/dependency_expansion_spec.rb"
-    - "**/livecheck/skip_conditions_spec.rb"
-    - "**/livecheck_spec.rb"
