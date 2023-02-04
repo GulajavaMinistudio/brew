@@ -4390,15 +4390,7 @@ module Homebrew::API::Cask
   extend ::T::Private::Methods::SingletonMethodHooks
 end
 
-module Homebrew::API::CaskSource
-  extend ::T::Private::Methods::SingletonMethodHooks
-end
-
 module Homebrew::API::Formula
-  extend ::T::Private::Methods::SingletonMethodHooks
-end
-
-module Homebrew::API::Versions
   extend ::T::Private::Methods::SingletonMethodHooks
 end
 
@@ -4411,6 +4403,8 @@ module Homebrew::EnvConfig
   def self.additional_google_analytics_id(); end
 
   def self.all_proxy(); end
+
+  def self.api_domain(); end
 
   def self.arch(); end
 
@@ -5466,6 +5460,7 @@ class Object
   FORMULA_COMPONENT_PRECEDENCE_LIST = ::T.let(nil, ::T.untyped)
   GZIP_BUFFER_SIZE = ::T.let(nil, ::T.untyped)
   HIDDEN_DESC_PLACEHOLDER = ::T.let(nil, ::T.untyped)
+  HOMEBREW_API_DEFAULT_DOMAIN = ::T.let(nil, ::T.untyped)
   HOMEBREW_BOTTLES_EXTNAME_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_BOTTLE_DEFAULT_DOMAIN = ::T.let(nil, ::T.untyped)
   HOMEBREW_BREWED_CURL_PATH = ::T.let(nil, ::T.untyped)
@@ -5493,6 +5488,7 @@ class Object
   HOMEBREW_LOGS = ::T.let(nil, ::T.untyped)
   HOMEBREW_MACOS_ARM_DEFAULT_PREFIX = ::T.let(nil, ::T.untyped)
   HOMEBREW_MACOS_ARM_DEFAULT_REPOSITORY = ::T.let(nil, ::T.untyped)
+  HOMEBREW_MAIN_TAP_CASK_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_OFFICIAL_REPO_PREFIXES_REGEX = ::T.let(nil, ::T.untyped)
   HOMEBREW_PINNED_KEGS = ::T.let(nil, ::T.untyped)
   HOMEBREW_PREFIX = ::T.let(nil, ::T.untyped)

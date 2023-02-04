@@ -193,11 +193,16 @@ module Cask
       FLIGHT_STANZAS = [:preflight, :postflight, :uninstall_preflight, :uninstall_postflight].freeze
 
       def self.can_load?(ref)
-        Homebrew::API::Cask.all_casks.key? ref
+        return false unless Homebrew::EnvConfig.install_from_api?
+        return false unless ref.is_a?(String)
+        return false unless ref.match?(HOMEBREW_MAIN_TAP_CASK_REGEX)
+
+        token = ref.delete_prefix("homebrew/cask/")
+        Homebrew::API::Cask.all_casks.key?(token)
       end
 
       def initialize(token)
-        @token = token
+        @token = token.delete_prefix("homebrew/cask/")
         @path = CaskLoader.default_path(token)
       end
 
@@ -212,8 +217,9 @@ module Cask
 
         json_cask.deep_symbolize_keys!
 
-        # Download and use the cask source file if there are any `*flight` blocks
-        if json_cask[:artifacts].any? { |artifact| FLIGHT_STANZAS.include?(artifact.keys.first) }
+        # Use the cask-source API if there are any `*flight` blocks or the cask has multiple languages
+        if json_cask[:artifacts].any? { |artifact| FLIGHT_STANZAS.include?(artifact.keys.first) } ||
+           json_cask[:languages].any?
           cask_source = Homebrew::API::Cask.fetch_source(token, git_head: json_cask[:tap_git_head])
           return FromContentLoader.new(cask_source).load(config: config)
         end
@@ -358,22 +364,12 @@ module Cask
         FromInstanceLoader,
         FromContentLoader,
         FromURILoader,
+        FromAPILoader,
         FromTapLoader,
         FromTapPathLoader,
         FromPathLoader,
       ].each do |loader_class|
-        next unless loader_class.can_load?(ref)
-
-        if loader_class == FromTapLoader && Homebrew::EnvConfig.install_from_api? &&
-           ref.start_with?("homebrew/cask/") && FromAPILoader.can_load?(ref)
-          return FromAPILoader.new(ref)
-        end
-
-        return loader_class.new(ref)
-      end
-
-      if Homebrew::EnvConfig.install_from_api? && !need_path && Homebrew::API::Cask.all_casks.key?(ref)
-        return FromAPILoader.new(ref)
+        return loader_class.new(ref) if loader_class.can_load?(ref)
       end
 
       return FromTapPathLoader.new(default_path(ref)) if FromTapPathLoader.can_load?(default_path(ref))

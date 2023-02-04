@@ -601,6 +601,7 @@ then
   unset HOMEBREW_BOTTLE_DOMAIN
 fi
 
+HOMEBREW_API_DEFAULT_DOMAIN="https://formulae.brew.sh/api"
 HOMEBREW_BOTTLE_DEFAULT_DOMAIN="https://ghcr.io/v2/homebrew/core"
 
 HOMEBREW_USER_AGENT="${HOMEBREW_PRODUCT}/${HOMEBREW_USER_AGENT_VERSION} (${HOMEBREW_SYSTEM}; ${HOMEBREW_PROCESSOR} ${HOMEBREW_OS_USER_AGENT_VERSION})"
@@ -633,6 +634,7 @@ export HOMEBREW_MACOS_VERSION
 export HOMEBREW_MACOS_VERSION_NUMERIC
 export HOMEBREW_USER_AGENT
 export HOMEBREW_USER_AGENT_CURL
+export HOMEBREW_API_DEFAULT_DOMAIN
 export HOMEBREW_BOTTLE_DEFAULT_DOMAIN
 export HOMEBREW_MACOS_SYSTEM_RUBY_NEW_ENOUGH
 
@@ -774,16 +776,17 @@ fi
 # folks who haven't run a HOMEBREW_DEVELOPER_COMMAND if they are in a default
 # prefix and on a supported macOS version.
 if [[ -z "${HOMEBREW_NO_INSTALL_FROM_API}" &&
-      -z "${HOMEBREW_INSTALL_FROM_API}" &&
       -z "${HOMEBREW_DEVELOPER_COMMAND}" ]] &&
    [[ -z "${HOMEBREW_MACOS_VERSION_NUMERIC}" ||
    "${HOMEBREW_MACOS_VERSION_NUMERIC}" -ge "110000" ]] &&
    [[ "${HOMEBREW_PREFIX}" == "/usr/local" ||
       "${HOMEBREW_PREFIX}" == "/opt/homebrew" ||
-      "${HOMEBREW_PREFIX}" == "/home/linuxbrew/.linuxbrew" ]] &&
-   [[ -n "${HOMEBREW_DEV_CMD_RUN}" || -n "${HOMEBREW_DEVELOPER}" ]]
+      "${HOMEBREW_PREFIX}" == "/home/linuxbrew/.linuxbrew" ]]
 then
-  export HOMEBREW_INSTALL_FROM_API=1
+  if [[ -n "${HOMEBREW_DEV_CMD_RUN}" || -n "${HOMEBREW_DEVELOPER}" ]]
+  then
+    export HOMEBREW_INSTALL_FROM_API=1
+  fi
 else
   unset HOMEBREW_INSTALL_FROM_API
 fi
