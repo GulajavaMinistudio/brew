@@ -19,15 +19,15 @@ module Cask
     extend Searchable
     include Metadata
 
-    attr_reader :token, :sourcefile_path, :source, :config, :default_config
+    attr_reader :token, :sourcefile_path, :source, :config, :default_config, :loaded_from_api
 
     attr_accessor :download, :allow_reassignment
 
     def self.all
-      # TODO: uncomment for 3.7.0 and ideally avoid using ARGV by moving to e.g. CLI::Parser
-      # if !ARGV.include?("--eval-all") && !Homebrew::EnvConfig.eval_all?
-      #   odeprecated "Cask::Cask#all without --all or HOMEBREW_EVAL_ALL"
-      # end
+      # TODO: ideally avoid using ARGV by moving to e.g. CLI::Parser
+      if ARGV.exclude?("--eval-all") && !Homebrew::EnvConfig.eval_all?
+        odeprecated "Cask::Cask#all without --all or HOMEBREW_EVAL_ALL"
+      end
 
       Tap.flat_map(&:cask_files).map do |f|
         CaskLoader::FromTapPathLoader.new(f).load(config: nil)
@@ -44,12 +44,14 @@ module Cask
       @tap
     end
 
-    def initialize(token, sourcefile_path: nil, source: nil, tap: nil, config: nil, allow_reassignment: false, &block)
+    def initialize(token, sourcefile_path: nil, source: nil, tap: nil, config: nil,
+                   allow_reassignment: false, loaded_from_api: false, &block)
       @token = token
       @sourcefile_path = sourcefile_path
       @source = source
       @tap = tap
       @allow_reassignment = allow_reassignment
+      @loaded_from_api = loaded_from_api
       @block = block
 
       @default_config = config || Config.new
@@ -133,7 +135,10 @@ module Cask
 
     def installed_caskfile
       installed_version = timestamped_versions.last
-      metadata_main_container_path.join(*installed_version, "Casks", "#{token}.rb")
+      caskfile_dir = metadata_main_container_path.join(*installed_version, "Casks")
+      return caskfile_dir.join("#{token}.json") if caskfile_dir.join("#{token}.json").exist?
+
+      caskfile_dir.join("#{token}.rb")
     end
 
     def config_path
@@ -290,16 +295,24 @@ module Cask
 
     def artifacts_list
       artifacts.map do |artifact|
-        next artifact.to_h if artifact.is_a? Artifact::AbstractFlightBlock
-
-        { artifact.class.dsl_key => to_h_gsubs(artifact.to_args) }
+        case artifact
+        when Artifact::AbstractFlightBlock
+          artifact.to_h
+        when Artifact::Relocated
+          # Don't replace the Homebrew prefix in the source path since the source could include /usr/local
+          source, *args = artifact.to_args
+          { artifact.class.dsl_key => [to_h_string_gsubs(source, replace_prefix: false), *to_h_gsubs(args)] }
+        else
+          { artifact.class.dsl_key => to_h_gsubs(artifact.to_args) }
+        end
       end
     end
 
-    def to_h_string_gsubs(string)
-      string.to_s
-            .gsub(Dir.home, "$HOME")
-            .gsub(HOMEBREW_PREFIX, "$(brew --prefix)")
+    def to_h_string_gsubs(string, replace_prefix: true)
+      string = string.to_s.gsub(Dir.home, "$HOME")
+      return string unless replace_prefix
+
+      string.gsub(HOMEBREW_PREFIX, "$(brew --prefix)")
     end
 
     def to_h_array_gsubs(array)
@@ -317,10 +330,14 @@ module Cask
     end
 
     def to_h_gsubs(value)
+      return value if value.blank?
+
       if value.respond_to? :to_h
         to_h_hash_gsubs(value)
       elsif value.respond_to? :to_a
         to_h_array_gsubs(value)
+      elsif [true, false].include? value
+        value
       else
         to_h_string_gsubs(value)
       end
