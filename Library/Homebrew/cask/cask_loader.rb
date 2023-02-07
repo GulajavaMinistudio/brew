@@ -10,6 +10,8 @@ module Cask
   #
   # @api private
   module CaskLoader
+    extend Context
+
     # Loads a cask from a string.
     class FromContentLoader
       attr_reader :content
@@ -175,6 +177,17 @@ module Cask
       end
     end
 
+    # Loads a cask from the default tap path.
+    class FromDefaultTapPathLoader < FromTapPathLoader
+      def self.can_load?(ref)
+        super CaskLoader.default_path(ref)
+      end
+
+      def initialize(ref)
+        super CaskLoader.default_path(ref)
+      end
+    end
+
     # Loads a cask from an existing {Cask} instance.
     class FromInstanceLoader
       def self.can_load?(ref)
@@ -334,8 +347,10 @@ module Cask
           from_h_hash_gsubs(value)
         elsif value.respond_to? :to_a
           from_h_array_gsubs(value)
+        elsif value.is_a? String
+          from_h_string_gsubs(value)
         else
-          { "true" => true, "false" => false }.fetch(value, from_h_string_gsubs(value))
+          value
         end
       end
     end
@@ -376,11 +391,13 @@ module Cask
         FromTapLoader,
         FromTapPathLoader,
         FromPathLoader,
+        FromDefaultTapPathLoader,
       ].each do |loader_class|
-        return loader_class.new(ref) if loader_class.can_load?(ref)
+        if loader_class.can_load?(ref)
+          $stderr.puts "#{$PROGRAM_NAME} (#{loader_class}): loading #{ref}" if debug?
+          return loader_class.new(ref)
+        end
       end
-
-      return FromTapPathLoader.new(default_path(ref)) if FromTapPathLoader.can_load?(default_path(ref))
 
       case (possible_tap_casks = tap_paths(ref)).count
       when 1
