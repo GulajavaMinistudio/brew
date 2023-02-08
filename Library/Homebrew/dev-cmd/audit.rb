@@ -134,16 +134,17 @@ module Homebrew
       [Formula.installed, Cask::Caskroom.casks]
     elsif args.no_named?
       if !args.eval_all? && !Homebrew::EnvConfig.eval_all?
-        odisabled "brew audit",
-                  "brew audit --eval-all or HOMEBREW_EVAL_ALL"
+        odeprecated "brew audit",
+                    "brew audit --eval-all or HOMEBREW_EVAL_ALL"
       end
       no_named_args = true
       [Formula.all, Cask::Cask.all]
     else
-      if args.named.any? { |named_arg| named_arg.end_with?(".rb") }
-        odeprecated "brew audit [path ...]",
-                    "brew audit [name ...]"
-      end
+      # TODO: Add deprecation
+      # if args.named.any? { |named_arg| named_arg.end_with?(".rb") }
+      #   odeprecated "brew audit [path ...]",
+      #               "brew audit [name ...]"
+      # end
 
       args.named.to_formulae_and_casks
           .partition { |formula_or_cask| formula_or_cask.is_a?(Formula) }
@@ -252,6 +253,8 @@ module Homebrew
         language:              nil,
         display_passes:        args.verbose? || args.named.count == 1,
         display_failures_only: args.display_failures_only?,
+        only:                  args.only,
+        except:                args.except,
       )
     end
 
