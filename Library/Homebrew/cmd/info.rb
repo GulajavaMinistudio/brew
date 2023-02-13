@@ -51,17 +51,13 @@ module Homebrew
              description: "Print a JSON representation. Currently the default value for <version> is `v1` for " \
                           "<formula>. For <formula> and <cask> use `v2`. See the docs for examples of using the " \
                           "JSON output: <https://docs.brew.sh/Querying-Brew>"
-      switch "--bottle",
-             depends_on:  "--json",
-             description: "Output information about the bottles for <formula> and its dependencies.",
-             hidden:      true
       switch "--installed",
              depends_on:  "--json",
              description: "Print JSON of formulae that are currently installed."
       switch "--eval-all",
              depends_on:  "--json",
              description: "Evaluate all available formulae and casks, whether installed or not, to print their " \
-                          "JSON. Implied if HOMEBREW_EVAL_ALL is set."
+                          "JSON. Implied if `HOMEBREW_EVAL_ALL` is set."
       switch "--all",
              hidden:     true,
              depends_on: "--json"
@@ -79,10 +75,6 @@ module Homebrew
       conflicts "--installed", "--all"
       conflicts "--formula", "--cask"
 
-      %w[--cask --analytics --github].each do |conflict|
-        conflicts "--bottle", conflict
-      end
-
       named_args [:formula, :cask]
     end
   end
@@ -93,16 +85,17 @@ module Homebrew
 
     if args.analytics?
       if args.days.present? && VALID_DAYS.exclude?(args.days)
-        raise UsageError, "--days must be one of #{VALID_DAYS.join(", ")}"
+        raise UsageError, "`--days` must be one of #{VALID_DAYS.join(", ")}."
       end
 
       if args.category.present?
         if args.named.present? && VALID_FORMULA_CATEGORIES.exclude?(args.category)
-          raise UsageError, "--category must be one of #{VALID_FORMULA_CATEGORIES.join(", ")} when querying formulae"
+          raise UsageError,
+                "`--category` must be one of #{VALID_FORMULA_CATEGORIES.join(", ")} when querying formulae."
         end
 
         unless VALID_CATEGORIES.include?(args.category)
-          raise UsageError, "--category must be one of #{VALID_CATEGORIES.join(", ")}"
+          raise UsageError, "`--category` must be one of #{VALID_CATEGORIES.join(", ")}."
         end
       end
 
@@ -204,7 +197,7 @@ module Homebrew
 
     json = case json_version(args.json)
     when :v1, :default
-      raise UsageError, "cannot specify --cask with --json=v1!" if args.cask?
+      raise UsageError, "Cannot specify `--cask` when using `--json=v1`!" if args.cask?
 
       formulae = if all
         Formula.all.sort
@@ -214,22 +207,12 @@ module Homebrew
         args.named.to_formulae
       end
 
-      if args.bottle?
-        formulae.map(&:to_recursive_bottle_hash)
-      elsif args.variations?
+      if args.variations?
         formulae.map(&:to_hash_with_variations)
       else
         formulae.map(&:to_hash)
       end
     when :v2
-      # Cannot generate cask API JSON data from the cask JSON API
-      if EnvConfig.install_from_api?
-        ENV["HOMEBREW_NO_INSTALL_FROM_API"] = "1"
-        core_untapped = !CoreTap.instance.installed?
-        cask_untapped = !Tap.fetch("Homebrew/homebrew-cask").installed?
-        raise UsageError, "tap homebrew/core and/or homebrew/cask to use --json=v2" if core_untapped || cask_untapped
-      end
-
       formulae, casks = if all
         [Formula.all.sort, Cask::Cask.all.sort_by(&:full_name)]
       elsif args.installed?
@@ -238,9 +221,7 @@ module Homebrew
         args.named.to_formulae_to_casks
       end
 
-      if args.bottle?
-        { "formulae" => formulae.map(&:to_recursive_bottle_hash) }
-      elsif args.variations?
+      if args.variations?
         {
           "formulae" => formulae.map(&:to_hash_with_variations),
           "casks"    => casks.map(&:to_hash_with_variations),

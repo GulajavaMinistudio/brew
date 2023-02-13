@@ -218,7 +218,7 @@ module Kernel
       next unless (match = line.match(HOMEBREW_TAP_PATH_REGEX))
 
       tap = Tap.fetch(match[:user], match[:repo])
-      tap_message = +"\nPlease report this issue to the #{tap} tap (not Homebrew/brew or Homebrew/core)"
+      tap_message = +"\nPlease report this issue to the #{tap} tap (not Homebrew/brew or Homebrew/homebrew-core)"
       tap_message += ", or even better, submit a PR to fix it" if replacement
       tap_message << ":\n  #{line.sub(/^(.*:\d+):.*$/, '\1')}\n\n"
       break
@@ -361,7 +361,7 @@ module Kernel
     end.compact.uniq
   end
 
-  def which_editor
+  def which_editor(silent: false)
     editor = Homebrew::EnvConfig.editor
     return editor if editor
 
@@ -371,11 +371,13 @@ module Kernel
     end
     editor ||= "vim"
 
-    opoo <<~EOS
-      Using #{editor} because no editor was set in the environment.
-      This may change in the future, so we recommend setting EDITOR,
-      or HOMEBREW_EDITOR to your preferred text editor.
-    EOS
+    unless silent
+      opoo <<~EOS
+        Using #{editor} because no editor was set in the environment.
+        This may change in the future, so we recommend setting EDITOR,
+        or HOMEBREW_EDITOR to your preferred text editor.
+      EOS
+    end
 
     editor
   end
