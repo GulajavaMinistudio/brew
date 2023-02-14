@@ -2074,11 +2074,6 @@ class Formula
 
   # @private
   def to_hash
-    if self.class.loaded_from_api && Homebrew::EnvConfig.install_from_api?
-      json_formula = Homebrew::API::Formula.all_formulae[name]
-      return Homebrew::API.merge_variations(json_formula)
-    end
-
     dependencies = deps
 
     hsh = {
@@ -2124,7 +2119,7 @@ class Formula
       "uses_from_macos"          => uses_from_macos_elements.uniq,
       "requirements"             => [],
       "conflicts_with"           => conflicts.map(&:name),
-      "caveats"                  => caveats&.gsub(HOMEBREW_PREFIX, "$(brew --prefix)"),
+      "caveats"                  => caveats&.gsub(HOMEBREW_PREFIX, HOMEBREW_PREFIX_PLACEHOLDER),
       "installed"                => [],
       "linked_keg"               => linked_version&.to_s,
       "pinned"                   => pinned?,
@@ -2161,9 +2156,10 @@ class Formula
     end
 
     hsh["requirements"] = requirements.map do |req|
-      req.name.prepend("maximum_") if req.try(:comparator) == "<="
+      req_name = req.name.dup
+      req_name.prepend("maximum_") if req.try(:comparator) == "<="
       {
-        "name"     => req.name,
+        "name"     => req_name,
         "cask"     => req.cask,
         "download" => req.download,
         "version"  => req.try(:version) || req.try(:arch),
@@ -2190,11 +2186,19 @@ class Formula
 
   # @private
   def to_hash_with_variations
+    hash = to_hash
+
+    # Take from API, merging in local install status.
     if self.class.loaded_from_api && Homebrew::EnvConfig.install_from_api?
-      return Homebrew::API::Formula.all_formulae[name]
+      json_formula = Homebrew::API::Formula.all_formulae[name].dup
+      json_formula["name"] = hash["name"]
+      json_formula["installed"] = hash["installed"]
+      json_formula["linked_keg"] = hash["linked_keg"]
+      json_formula["pinned"] = hash["pinned"]
+      json_formula["outdated"] = hash["outdated"]
+      return json_formula
     end
 
-    hash = to_hash
     variations = {}
 
     os_versions = [*MacOSVersions::SYMBOLS.keys, :linux]

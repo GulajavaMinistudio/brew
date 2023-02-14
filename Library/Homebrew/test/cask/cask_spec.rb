@@ -265,46 +265,6 @@ describe Cask::Cask, :cask do
         }
       JSON
     }
-    let(:expected_flight_variations) {
-      <<~JSON
-        {
-          "arm64_big_sur": {
-            "artifacts": [
-              {
-                "preflight": "    preflight do\\n      puts \\"preflight on Big Sur\\"\\n    end\\n"
-              },
-              {
-                "uninstall_postflight": "    uninstall_postflight do\\n      puts \\"uninstall_postflight on Big Sur\\"\\n    end\\n"
-              }
-            ]
-          },
-          "big_sur": {
-            "artifacts": [
-              {
-                "preflight": "    preflight do\\n      puts \\"preflight on Big Sur\\"\\n    end\\n"
-              },
-              {
-                "uninstall_postflight": "    uninstall_postflight do\\n      puts \\"uninstall_postflight on Big Sur\\"\\n    end\\n"
-              }
-            ]
-          },
-          "catalina": {
-            "artifacts": [
-              {
-                "preflight": "    preflight do\\n      puts \\"preflight on Catalina or older\\"\\n    end\\n"
-              }
-            ]
-          },
-          "mojave": {
-            "artifacts": [
-              {
-                "preflight": "    preflight do\\n      puts \\"preflight on Catalina or older\\"\\n    end\\n"
-              }
-            ]
-          }
-        }
-      JSON
-    }
 
     before do
       # Use a more limited symbols list to shorten the variations hash
@@ -341,12 +301,17 @@ describe Cask::Cask, :cask do
       expect(JSON.pretty_generate(h["variations"])).to eq expected_sha256_variations.strip
     end
 
-    it "returns the correct variations hash for a cask with conditional flight blocks" do
-      c = Cask::CaskLoader.load("conditional-flight")
+    it "returns the correct hash placeholders" do
+      described_class.generating_hash!
+      expect(described_class).to be_generating_hash
+      c = Cask::CaskLoader.load("placeholders")
       h = c.to_hash_with_variations
+      described_class.generated_hash!
+      expect(described_class).not_to be_generating_hash
 
       expect(h).to be_a(Hash)
-      expect(JSON.pretty_generate(h["variations"])).to eq expected_flight_variations.strip
+      expect(h["artifacts"].first[:binary].first).to eq "$APPDIR/some/path"
+      expect(h["caveats"]).to eq "$HOMEBREW_PREFIX and $HOME\n"
     end
   end
 end

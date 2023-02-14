@@ -19,9 +19,48 @@ module Cask
     extend Searchable
     include Metadata
 
-    attr_reader :token, :sourcefile_path, :source, :config, :default_config, :loaded_from_api
+    # Needs a leading slash to avoid `File.expand.path` complaining about non-absolute home.
+    HOME_PLACEHOLDER = "/$HOME"
+    HOMEBREW_PREFIX_PLACEHOLDER = "$HOMEBREW_PREFIX"
+    APPDIR_PLACEHOLDER = "$APPDIR"
+
+    # TODO: can be removed when API JSON is regenerated with HOMEBREW_PREFIX_PLACEHOLDER.
+    HOMEBREW_OLD_PREFIX_PLACEHOLDER = "$(brew --prefix)"
+
+    attr_reader :token, :sourcefile_path, :source, :config, :default_config, :loaded_from_api, :loader
 
     attr_accessor :download, :allow_reassignment
+
+    class << self
+      def generating_hash!
+        return if generating_hash?
+
+        # Apply monkeypatches for API generation
+        @old_homebrew_prefix = HOMEBREW_PREFIX
+        @old_home = Dir.home
+        Object.send(:remove_const, :HOMEBREW_PREFIX)
+        Object.const_set(:HOMEBREW_PREFIX, Pathname(HOMEBREW_PREFIX_PLACEHOLDER))
+        ENV["HOME"] = HOME_PLACEHOLDER
+
+        @generating_hash = true
+      end
+
+      def generated_hash!
+        return unless generating_hash?
+
+        # Revert monkeypatches for API generation
+        Object.send(:remove_const, :HOMEBREW_PREFIX)
+        Object.const_set(:HOMEBREW_PREFIX, @old_homebrew_prefix)
+        ENV["HOME"] = @old_home
+
+        @generating_hash = false
+      end
+
+      def generating_hash?
+        @generating_hash ||= false
+        @generating_hash == true
+      end
+    end
 
     def self.all
       # TODO: ideally avoid using ARGV by moving to e.g. CLI::Parser
@@ -45,13 +84,14 @@ module Cask
     end
 
     def initialize(token, sourcefile_path: nil, source: nil, tap: nil, config: nil,
-                   allow_reassignment: false, loaded_from_api: false, &block)
+                   allow_reassignment: false, loaded_from_api: false, loader: nil, &block)
       @token = token
       @sourcefile_path = sourcefile_path
       @source = source
       @tap = tap
       @allow_reassignment = allow_reassignment
       @loaded_from_api = loaded_from_api
+      @loader = loader
       @block = block
 
       @default_config = config || Config.new
@@ -233,7 +273,7 @@ module Cask
     def to_h
       if loaded_from_api && Homebrew::EnvConfig.install_from_api?
         json_cask = Homebrew::API::Cask.all_casks[token]
-        return Homebrew::API.merge_variations(json_cask)
+        return api_to_local_hash(Homebrew::API.merge_variations(json_cask))
       end
 
       {
@@ -251,7 +291,7 @@ module Cask
         "outdated"       => outdated?,
         "sha256"         => sha256,
         "artifacts"      => artifacts_list,
-        "caveats"        => (to_h_string_gsubs(caveats) unless caveats.empty?),
+        "caveats"        => (caveats unless caveats.empty?),
         "depends_on"     => depends_on,
         "conflicts_with" => conflicts_with,
         "container"      => container&.pairs,
@@ -262,7 +302,9 @@ module Cask
     end
 
     def to_hash_with_variations
-      return Homebrew::API::Cask.all_casks[token] if loaded_from_api && Homebrew::EnvConfig.install_from_api?
+      if loaded_from_api && Homebrew::EnvConfig.install_from_api?
+        return api_to_local_hash(Homebrew::API::Cask.all_casks[token])
+      end
 
       hash = to_h
       variations = {}
@@ -300,53 +342,22 @@ module Cask
 
     private
 
+    def api_to_local_hash(hash)
+      hash["token"] = token
+      hash["installed"] = versions.last
+      hash["outdated"] = outdated?
+      hash
+    end
+
     def artifacts_list
       artifacts.map do |artifact|
         case artifact
         when Artifact::AbstractFlightBlock
-          artifact.to_h
-        when Artifact::Relocated
-          # Don't replace the Homebrew prefix in the source path since the source could include /usr/local
-          source, *args = artifact.to_args
-          { artifact.class.dsl_key => [to_h_string_gsubs(source, replace_prefix: false), *to_h_gsubs(args)] }
+          # Only indicate whether this block is used as we don't load it from the API
+          { artifact.summarize => nil }
         else
-          { artifact.class.dsl_key => to_h_gsubs(artifact.to_args) }
+          { artifact.class.dsl_key => artifact.to_args }
         end
-      end
-    end
-
-    def to_h_string_gsubs(string, replace_prefix: true)
-      string = string.to_s.gsub(Dir.home, "$HOME")
-      return string unless replace_prefix
-
-      string.gsub(HOMEBREW_PREFIX, "$(brew --prefix)")
-    end
-
-    def to_h_array_gsubs(array)
-      array.to_a.map do |value|
-        to_h_gsubs(value)
-      end
-    end
-
-    def to_h_hash_gsubs(hash)
-      hash.to_h.transform_values do |value|
-        to_h_gsubs(value)
-      end
-    rescue TypeError
-      to_h_array_gsubs(hash)
-    end
-
-    def to_h_gsubs(value)
-      return value if value.blank?
-
-      if value.respond_to? :to_h
-        to_h_hash_gsubs(value)
-      elsif value.respond_to? :to_a
-        to_h_array_gsubs(value)
-      elsif [true, false].include? value
-        value
-      else
-        to_h_string_gsubs(value)
       end
     end
   end
