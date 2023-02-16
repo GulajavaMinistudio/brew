@@ -1998,12 +1998,12 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 - `HOMEBREW_API_AUTO_UPDATE_SECS`
   <br>Check Homebrew's API for new formulae or cask data every `HOMEBREW_API_AUTO_UPDATE_SECS` seconds. Alternatively, disable API auto-update checks entirely with HOMEBREW_NO_AUTO_UPDATE.
 
-  *Default:* `1800`.
+  *Default:* `450`.
 
 - `HOMEBREW_AUTO_UPDATE_SECS`
   <br>Run `brew update` once every `HOMEBREW_AUTO_UPDATE_SECS` seconds before some commands, e.g. `brew install`, `brew upgrade` and `brew tap`. Alternatively, disable auto-update entirely with `HOMEBREW_NO_AUTO_UPDATE`.
 
-  *Default:* 86400 (24 hours) or 300 (5 minutes) if `HOMEBREW_NO_INSTALL_FROM_API` is set.
+  *Default:* 86400 (24 hours), 3600 (1 hour) if a developer command has been run or 300 (5 minutes) if `HOMEBREW_NO_INSTALL_FROM_API` is set.
 
 - `HOMEBREW_AUTOREMOVE`
   <br>If set, calls to `brew cleanup` and `brew uninstall` will automatically remove unused formula dependents and if `HOMEBREW_NO_INSTALL_CLEANUP` is not set, `brew cleanup` will start running `brew autoremove` periodically.
@@ -2201,6 +2201,9 @@ example, run `export HOMEBREW_NO_INSECURE_REDIRECT=1` rather than just
 
 - `HOMEBREW_NO_ENV_HINTS`
   <br>If set, do not print any hints about changing Homebrew's behaviour with environment variables.
+
+- `HOMEBREW_NO_GOOGLE_ANALYTICS`
+  <br>If set, do not send analytics to Google Analytics but allow sending to Homebrew's InfluxDB analytics server. For more information, see: <https://docs.brew.sh/Analytics>
 
 - `HOMEBREW_NO_GITHUB_API`
   <br>If set, do not use the GitHub API, e.g. for searches or fetching relevant issues after a failed install.

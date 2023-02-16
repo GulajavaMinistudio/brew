@@ -2855,7 +2855,7 @@ Prefix all download URLs, including those for bottles, with this value\. For exa
 Check Homebrew\'s API for new formulae or cask data every \fBHOMEBREW_API_AUTO_UPDATE_SECS\fR seconds\. Alternatively, disable API auto\-update checks entirely with HOMEBREW_NO_AUTO_UPDATE\.
 .
 .IP
-\fIDefault:\fR \fB1800\fR\.
+\fIDefault:\fR \fB450\fR\.
 .
 .TP
 \fBHOMEBREW_AUTO_UPDATE_SECS\fR
@@ -2864,7 +2864,7 @@ Check Homebrew\'s API for new formulae or cask data every \fBHOMEBREW_API_AUTO_U
 Run \fBbrew update\fR once every \fBHOMEBREW_AUTO_UPDATE_SECS\fR seconds before some commands, e\.g\. \fBbrew install\fR, \fBbrew upgrade\fR and \fBbrew tap\fR\. Alternatively, disable auto\-update entirely with \fBHOMEBREW_NO_AUTO_UPDATE\fR\.
 .
 .IP
-\fIDefault:\fR 86400 (24 hours) or 300 (5 minutes) if \fBHOMEBREW_NO_INSTALL_FROM_API\fR is set\.
+\fIDefault:\fR 86400 (24 hours), 3600 (1 hour) if a developer command has been run or 300 (5 minutes) if \fBHOMEBREW_NO_INSTALL_FROM_API\fR is set\.
 .
 .TP
 \fBHOMEBREW_AUTOREMOVE\fR
@@ -3237,6 +3237,12 @@ If set, do not print \fBHOMEBREW_INSTALL_BADGE\fR on a successful build\.
 .
 .br
 If set, do not print any hints about changing Homebrew\'s behaviour with environment variables\.
+.
+.TP
+\fBHOMEBREW_NO_GOOGLE_ANALYTICS\fR
+.
+.br
+If set, do not send analytics to Google Analytics but allow sending to Homebrew\'s InfluxDB analytics server\. For more information, see: \fIhttps://docs\.brew\.sh/Analytics\fR
 .
 .TP
 \fBHOMEBREW_NO_GITHUB_API\fR
