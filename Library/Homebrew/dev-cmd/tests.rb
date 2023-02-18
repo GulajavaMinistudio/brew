@@ -62,10 +62,11 @@ module Homebrew
 
     ohai "Sending test results to BuildPulse"
 
-    safe_system Formula["buildpulse-test-reporter"].opt_bin/"buildpulse-test-reporter",
-                "submit", "#{HOMEBREW_LIBRARY_PATH}/test/junit",
-                "--account-id", ENV.fetch("HOMEBREW_BUILDPULSE_ACCOUNT_ID"),
-                "--repository-id", ENV.fetch("HOMEBREW_BUILDPULSE_REPOSITORY_ID")
+    result = quiet_system Formula["buildpulse-test-reporter"].opt_bin/"buildpulse-test-reporter",
+                          "submit", "#{HOMEBREW_LIBRARY_PATH}/test/junit",
+                          "--account-id", ENV.fetch("HOMEBREW_BUILDPULSE_ACCOUNT_ID"),
+                          "--repository-id", ENV.fetch("HOMEBREW_BUILDPULSE_REPOSITORY_ID")
+    odie "Failed to send test results to BuildPulse!" unless result
   end
 
   def changed_test_files
@@ -169,6 +170,12 @@ module Homebrew
         files = files.grep_v(%r{^test/os/linux(/.*|_spec\.rb)$})
       end
       # rubocop:enable Homebrew/MoveToExtendOS
+
+      bundle_args << "--tag" << "~needs_network" unless args.online?
+      unless ENV["CI"]
+        bundle_args << "--tag" << "~needs_ci" \
+                    << "--tag" << "~needs_svn"
+      end
 
       puts "Randomized with seed #{seed}"
 

@@ -1,5 +1,11 @@
 # Bash completion script for brew(1)
 
+if [[ -n ${POSIXLY_CORRECT} ]] || shopt -oq posix
+then
+  echo "Homebrew Bash completions do not work in POSIX mode" 1>&2
+  return
+fi
+
 __brewcomp_words_include() {
   local element idx 
   for (( idx = 1; idx < COMP_CWORD; idx++ ))
@@ -672,6 +678,7 @@ _brew_contributions() {
   case "${cur}" in
     -*)
       __brewcomp "
+      --csv
       --debug
       --from
       --help
