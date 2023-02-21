@@ -9,6 +9,7 @@ inherit_mode:
   merge:
     - Include
     - Exclude
+    - AllowedMethods
 
 AllCops:
   TargetRubyVersion: 2.6
@@ -20,9 +21,8 @@ AllCops:
     - "**/*.rbi"
   Exclude:
     - "Homebrew/sorbet/rbi/gems/**/*.rbi"
-    - "Homebrew/sorbet/rbi/hidden-definitions/**/*.rbi"
+    - "Homebrew/sorbet/rbi/hidden-definitions/*.rbi"
     - "Homebrew/sorbet/rbi/todo.rbi"
-    - "Homebrew/sorbet/rbi/upstream.rbi"
     - "Homebrew/bin/*"
     - "Homebrew/vendor/**/*"
     - "Taps/*/*/vendor/**/*"
@@ -76,10 +76,6 @@ Layout/SpaceBeforeBrackets:
     - "/**/{Formula,Casks}/*.rb"
     - "**/{Formula,Casks}/*.rb"
 
-# Use `<<~` for heredocs.
-Layout/HeredocIndentation:
-  Enabled: true
-
 # Keyword arguments don't have the same readability
 # problems as normal parameters.
 Metrics/ParameterLists:
@@ -117,7 +113,6 @@ Naming/VariableNumber:
 
 # Require &&/|| instead of and/or
 Style/AndOr:
-  Enabled: true
   EnforcedStyle: always
 
 # Avoid leaking resources.
@@ -145,24 +140,12 @@ Style/FetchEnvVar:
 Style/FormatStringToken:
   EnforcedStyle: annotated
 
-# autocorrectable and more readable
-Style/HashEachMethods:
-  Enabled: true
-Style/HashTransformKeys:
-  Enabled: true
-Style/HashTransformValues:
-  Enabled: true
-
 # Allow for license expressions
 Style/HashAsLastArrayItem:
   Exclude:
     - "Taps/*/*/*.rb"
     - "/**/Formula/*.rb"
     - "**/Formula/*.rb"
-
-# Enabled now LineLength is lowish.
-Style/IfUnlessModifier:
-  Enabled: true
 
 # Only use this for numbers >= `1_000_000`.
 Style/NumericLiterals:
@@ -297,10 +280,6 @@ Layout/EndAlignment:
 Layout/SpaceAroundOperators:
   Enabled: false
 
-# layout is not configurable (https://github.com/rubocop-hq/rubocop/issues/6254).
-Layout/RescueEnsureAlignment:
-  Enabled: false
-
 # significantly less indentation involved; more consistent
 Layout/FirstArrayElementIndentation:
   EnforcedStyle: consistent
@@ -311,27 +290,11 @@ Layout/FirstHashElementIndentation:
 Lint/AmbiguousBlockAssociation:
   Enabled: false
 
-Lint/RequireRelativeSelfPath:
-  # bugged on formula-analytics
-  # https://github.com/Homebrew/brew/pull/12152/checks?check_run_id=3755137378#step:15:60
-  Exclude:
-    - "Taps/homebrew/homebrew-formula-analytics/*/*.rb"
-
 Lint/DuplicateBranch:
   Exclude:
     - "Taps/*/*/*.rb"
     - "/**/{Formula,Casks}/*.rb"
     - "**/{Formula,Casks}/*.rb"
-
-# needed for lazy_object magic
-Naming/MemoizedInstanceVariableName:
-  Exclude:
-    - "Homebrew/lazy_object.rb"
-
-# useful for metaprogramming in RSpec
-Lint/ConstantDefinitionInBlock:
-  Exclude:
-    - "**/*_spec.rb"
 
 # so many of these in formulae and can't be autocorrected
 Lint/ParenthesesAsGroupedExpression:
@@ -452,11 +415,6 @@ Sorbet/StrictSigil:
 Sorbet/ConstantsFromStrings:
   Enabled: false
 
-# Avoid false positives on modifiers used on symbols of methods
-# See https://github.com/rubocop-hq/rubocop/issues/5953
-Style/AccessModifierDeclarations:
-  Enabled: false
-
 # Conflicts with type signatures on `attr_*`s.
 Style/AccessorGrouping:
   Enabled: false
@@ -506,10 +464,6 @@ Style/GuardClause:
     - "Taps/*/*/*.rb"
     - "/**/{Formula,Casks}/*.rb"
     - "**/{Formula,Casks}/*.rb"
-
-# avoid hash rockets where possible
-Style/HashSyntax:
-  EnforcedStyle: ruby19
 
 # OpenStruct is a nice helper.
 Style/OpenStructUse:

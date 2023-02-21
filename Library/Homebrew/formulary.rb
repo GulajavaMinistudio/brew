@@ -168,11 +168,10 @@ module Formulary
 
       if (bottles_stable = json_formula["bottle"]["stable"]).present?
         bottle do
-          if Homebrew::EnvConfig.bottle_domain != HOMEBREW_BOTTLE_DEFAULT_DOMAIN \
-              && bottles_stable["root_url"] == HOMEBREW_BOTTLE_DEFAULT_DOMAIN
-            root_url Homebrew::EnvConfig.bottle_domain
+          if Homebrew::EnvConfig.bottle_domain == HOMEBREW_BOTTLE_DEFAULT_DOMAIN
+            root_url HOMEBREW_BOTTLE_DEFAULT_DOMAIN
           else
-            root_url bottles_stable["root_url"]
+            root_url Homebrew::EnvConfig.bottle_domain
           end
           rebuild bottles_stable["rebuild"]
           bottles_stable["files"].each do |tag, bottle_spec|
@@ -243,6 +242,14 @@ module Formulary
         end
 
         depends_on req_name => req_tags
+      end
+
+      json_formula["conflicts_with"].each_with_index do |conflict, index|
+        conflicts_with conflict, because: json_formula.dig("conflicts_with_reasons", index)
+      end
+
+      json_formula["link_overwrite"]&.each do |overwrite_path|
+        link_overwrite overwrite_path
       end
 
       def install
