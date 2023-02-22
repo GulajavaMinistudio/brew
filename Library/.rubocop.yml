@@ -47,11 +47,6 @@ Cask/StanzaOrder:
   Description: "Ensure that cask stanzas are sorted correctly. More info at https://docs.brew.sh/Cask-Cookbook#stanza-order"
   Enabled: true
 
-# This was intended to be an abstract Cop class for Homebrew formulae, but rubocop doesn't know that.
-# TODO: refactor this as a module for formulae Cop classes to include instead
-FormulaCop:
-  Enabled: false
-
 # enable all formulae audits
 FormulaAudit:
   Enabled: true
@@ -75,11 +70,6 @@ Layout/SpaceBeforeBrackets:
     - "Taps/*/*/*.rb"
     - "/**/{Formula,Casks}/*.rb"
     - "**/{Formula,Casks}/*.rb"
-
-# Keyword arguments don't have the same readability
-# problems as normal parameters.
-Metrics/ParameterLists:
-  CountKeywordArgs: false
 
 # Allow dashes in filenames.
 Naming/FileName:
@@ -303,42 +293,9 @@ Lint/ParenthesesAsGroupedExpression:
     - "/**/Formula/*.rb"
     - "**/Formula/*.rb"
 
-# Most metrics don't make sense to apply for casks/formulae/taps.
-Metrics/AbcSize:
-  Exclude:
-    - "Taps/**/*"
-    - "/**/{Formula,Casks}/*.rb"
-    - "**/{Formula,Casks}/*.rb"
-Metrics/BlockLength:
-  Exclude:
-    - "Taps/**/*"
-    - "/**/{Formula,Casks}/*.rb"
-    - "**/{Formula,Casks}/*.rb"
-Metrics/ClassLength:
-  Exclude:
-    - "Taps/**/*"
-    - "/**/{Formula,Casks}/*.rb"
-    - "**/{Formula,Casks}/*.rb"
-Metrics/CyclomaticComplexity:
-  Exclude:
-    - "Taps/**/*"
-    - "/**/{Formula,Casks}/*.rb"
-    - "**/{Formula,Casks}/*.rb"
-Metrics/MethodLength:
-  Exclude:
-    - "Taps/**/*"
-    - "/**/{Formula,Casks}/*.rb"
-    - "**/{Formula,Casks}/*.rb"
-Metrics/ModuleLength:
-  Exclude:
-    - "Taps/**/*"
-    - "/**/{Formula,Casks}/*.rb"
-    - "**/{Formula,Casks}/*.rb"
-Metrics/PerceivedComplexity:
-  Exclude:
-    - "Taps/**/*"
-    - "/**/{Formula,Casks}/*.rb"
-    - "**/{Formula,Casks}/*.rb"
+# These metrics didn't end up helping.
+Metrics:
+  Enabled: false
 
 # allow those that are standard
 # TODO: try to remove some of these
