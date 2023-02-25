@@ -45,7 +45,10 @@ module Cask
       private
 
       def cask(header_token, **options, &block)
-        Cask.new(header_token, source: content, **options, config: @config, &block)
+        checksum = {
+          "sha256" => Digest::SHA256.hexdigest(content),
+        }
+        Cask.new(header_token, source: content, source_checksum: checksum, **options, config: @config, &block)
       end
     end
 
@@ -167,7 +170,9 @@ module Cask
 
       def initialize(tapped_name)
         user, repo, token = tapped_name.split("/", 3)
-        super Tap.fetch(user, repo).cask_dir/"#{token}.rb"
+        tap = Tap.fetch(user, repo)
+        cask = CaskLoader.find_cask_in_tap(token, tap)
+        super cask
       end
 
       def load(config:)
@@ -210,7 +215,7 @@ module Cask
       FLIGHT_STANZAS = [:preflight, :postflight, :uninstall_preflight, :uninstall_postflight].freeze
 
       def self.can_load?(ref)
-        return false unless Homebrew::EnvConfig.install_from_api?
+        return false if Homebrew::EnvConfig.no_install_from_api?
         return false unless ref.is_a?(String)
         return false unless ref.match?(HOMEBREW_MAIN_TAP_CASK_REGEX)
 
@@ -241,6 +246,12 @@ module Cask
 
         tap = Tap.fetch(json_cask[:tap]) if json_cask[:tap].to_s.include?("/")
 
+        user_agent = json_cask.dig(:url_specs, :user_agent)
+        json_cask[:url_specs][:user_agent] = user_agent[1..].to_sym if user_agent && user_agent[0] == ":"
+        if (using = json_cask.dig(:url_specs, :using))
+          json_cask[:url_specs][:using] = using.to_sym
+        end
+
         Cask.new(token,
                  tap:             tap,
                  source:          cask_source,
@@ -256,7 +267,7 @@ module Cask
             sha256 json_cask[:sha256]
           end
 
-          url json_cask[:url]
+          url json_cask[:url], **json_cask.fetch(:url_specs, {})
           appcast json_cask[:appcast] if json_cask[:appcast].present?
           json_cask[:name].each do |cask_name|
             name cask_name
@@ -421,8 +432,15 @@ module Cask
     end
 
     def self.tap_paths(token)
-      Tap.map { |t| t.cask_dir/"#{token.to_s.downcase}.rb" }
-         .select(&:exist?)
+      Tap.map do |tap|
+        find_cask_in_tap(token.to_s.downcase, tap)
+      end.select(&:exist?)
+    end
+
+    def self.find_cask_in_tap(token, tap)
+      filename = "#{token}.rb"
+
+      Tap.cask_files_by_name(tap).fetch(filename, tap.cask_dir/filename)
     end
   end
 end

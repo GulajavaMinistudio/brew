@@ -9,7 +9,6 @@ require "description_cache_store"
 require "cli/parser"
 require "settings"
 require "linuxbrew-core-migration"
-require "extend/os/cmd/update-report"
 
 module Homebrew
   extend T::Sig
@@ -147,7 +146,7 @@ module Homebrew
     end
 
     # Check if we can parse the JSON and do any Ruby-side follow-up.
-    if Homebrew::EnvConfig.install_from_api?
+    unless Homebrew::EnvConfig.no_install_from_api?
       Homebrew::API::Formula.write_names_and_aliases
       Homebrew::API::Cask.write_names
     end
@@ -162,7 +161,7 @@ module Homebrew
     updated_taps = []
     Tap.each do |tap|
       next unless tap.git?
-      next if (tap.core_tap? || tap == "homebrew/cask") && Homebrew::EnvConfig.install_from_api?
+      next if (tap.core_tap? || tap == "homebrew/cask") && !Homebrew::EnvConfig.no_install_from_api?
 
       if ENV["HOMEBREW_MIGRATE_LINUXBREW_FORMULAE"].present? && tap.core_tap? &&
          Settings.read("linuxbrewmigrated") != "true"
@@ -276,7 +275,7 @@ module Homebrew
 
   def install_core_tap_if_necessary
     return if ENV["HOMEBREW_UPDATE_TEST"]
-    return if Homebrew::EnvConfig.install_from_api?
+    return unless Homebrew::EnvConfig.no_install_from_api?
     return if Homebrew::EnvConfig.automatically_set_no_install_from_api?
 
     core_tap = CoreTap.instance
@@ -304,6 +303,8 @@ module Homebrew
     # do nothing
   end
 end
+
+require "extend/os/cmd/update-report"
 
 class Reporter
   class ReporterRevisionUnsetError < RuntimeError

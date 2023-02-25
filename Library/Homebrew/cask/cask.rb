@@ -272,9 +272,17 @@ module Cask
     alias == eql?
 
     def to_h
-      if loaded_from_api && Homebrew::EnvConfig.install_from_api?
+      if loaded_from_api && !Homebrew::EnvConfig.no_install_from_api?
         json_cask = Homebrew::API::Cask.all_casks[token]
         return api_to_local_hash(Homebrew::API.merge_variations(json_cask))
+      end
+
+      url_specs = url&.specs.dup
+      case url_specs&.dig(:user_agent)
+      when :default
+        url_specs.delete(:user_agent)
+      when Symbol
+        url_specs[:user_agent] = ":#{url_specs[:user_agent]}"
       end
 
       {
@@ -285,6 +293,7 @@ module Cask
         "desc"                 => desc,
         "homepage"             => homepage,
         "url"                  => url,
+        "url_specs"            => url_specs,
         "appcast"              => appcast,
         "version"              => version,
         "versions"             => os_versions,
@@ -304,7 +313,7 @@ module Cask
     end
 
     def to_hash_with_variations
-      if loaded_from_api && Homebrew::EnvConfig.install_from_api?
+      if loaded_from_api && !Homebrew::EnvConfig.no_install_from_api?
         return api_to_local_hash(Homebrew::API::Cask.all_casks[token])
       end
 
