@@ -61,21 +61,7 @@ module GitHub
   end
 
   def search_code(repo: nil, user: "Homebrew", path: ["Formula", "Casks", "."], filename: nil, extension: "rb")
-    matches = search_results_items(
-      "code",
-      user:      user,
-      path:      path,
-      filename:  filename,
-      extension: extension,
-      repo:      repo,
-    )
-    return matches if matches.blank?
-
-    matches.map do |match|
-      # .sub workaround for GitHub returning preceding /
-      match["path"] = match["path"].delete_prefix("/")
-      match
-    end
+    search_results_items("code", user: user, path: path, filename: filename, extension: extension, repo: repo)
   end
 
   def issues_for_formula(name, tap: CoreTap.instance, tap_remote_repo: tap&.full_name, state: nil)
@@ -147,7 +133,7 @@ module GitHub
     API.open_rest(url, data: data, scopes: scopes)
   end
 
-  def check_fork_exists(repo, org: nil)
+  def fork_exists?(repo, org: nil)
     _, reponame = repo.split("/")
 
     username = org || API.open_rest(url_to("user")) { |json| json["login"] }
@@ -173,11 +159,21 @@ module GitHub
   def search_query_string(*main_params, **qualifiers)
     params = main_params
 
-    params += qualifiers.flat_map do |key, value|
+    if (args = qualifiers.fetch(:args, nil))
+      params << if args.from && args.to
+        "created:#{args.from}..#{args.to}"
+      elsif args.from
+        "created:>=#{args.from}"
+      elsif args.to
+        "created:<=#{args.to}"
+      end
+    end
+
+    params += qualifiers.except(:args).flat_map do |key, value|
       Array(value).map { |v| "#{key.to_s.tr("_", "-")}:#{v}" }
     end
 
-    "q=#{URI.encode_www_form_component(params.join(" "))}&per_page=100"
+    "q=#{URI.encode_www_form_component(params.compact.join(" "))}&per_page=100"
   end
 
   def url_to(*subroutes)
@@ -555,7 +551,7 @@ module GitHub
   def forked_repo_info!(tap_remote_repo, org: nil)
     response = create_fork(tap_remote_repo, org: org)
     # GitHub API responds immediately but fork takes a few seconds to be ready.
-    sleep 1 until check_fork_exists(tap_remote_repo, org: org)
+    sleep 1 until fork_exists?(tap_remote_repo, org: org)
     remote_url = if system("git", "config", "--local", "--get-regexp", "remote..*.url", "git@github.com:.*")
       response.fetch("ssh_url")
     else
