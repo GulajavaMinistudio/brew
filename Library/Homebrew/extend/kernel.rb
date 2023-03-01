@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+# Contains shorthand Homebrew utility methods like `ohai`, `opoo`, `odisabled`.
+# TODO: move these out of `Kernel`.
 module Kernel
   extend T::Sig
 
@@ -218,7 +220,7 @@ module Kernel
       FileUtils.touch "#{home}/.zshrc"
     end
 
-    Process.wait fork { exec preferred_shell }
+    Process.wait fork { exec Utils::Shell.preferred_path(default: "/bin/bash") }
 
     return if $CHILD_STATUS.success?
     raise "Aborted due to non-zero exit status (#{$CHILD_STATUS.exitstatus})" if $CHILD_STATUS.exited?
@@ -528,11 +530,13 @@ module Kernel
 
   sig { returns(String) }
   def preferred_shell
-    ENV.fetch("SHELL", "/bin/sh")
+    odeprecated "preferred_shell"
+    Utils::Shell.preferred_path(default: "/bin/sh")
   end
 
   sig { returns(String) }
   def shell_profile
+    odeprecated "shell_profile"
     Utils::Shell.profile
   end
 
