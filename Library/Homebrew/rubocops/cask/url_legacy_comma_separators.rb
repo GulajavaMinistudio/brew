@@ -1,14 +1,11 @@
 # typed: true
 # frozen_string_literal: true
 
-require "forwardable"
-require "uri"
-
 module RuboCop
   module Cop
     module Cask
       # This cop checks for version.before_comma and version.after_comma
-      class UrlLegacyCommaSeparators < Base
+      class UrlLegacyCommaSeparators < Url
         include OnUrlStanza
         extend AutoCorrector
 
