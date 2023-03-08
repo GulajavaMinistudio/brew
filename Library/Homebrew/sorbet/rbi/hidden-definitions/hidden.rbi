@@ -6647,13 +6647,18 @@ module RuboCop::AST::NodePattern::Sets
   SET_BASH_COMPLETION_ZSH_COMPLETION_FISH_COMPLETION = ::T.let(nil, ::T.untyped)
   SET_BUILD_RECOMMENDED_TEST_OPTIONAL = ::T.let(nil, ::T.untyped)
   SET_DEPENDS_ON_USES_FROM_MACOS = ::T.let(nil, ::T.untyped)
+  SET_FILE_FILETEST = ::T.let(nil, ::T.untyped)
   SET_FILE_TEMPFILE_STRINGIO = ::T.let(nil, ::T.untyped)
   SET_INCLUDE_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
   SET_MAC_LINUX = ::T.let(nil, ::T.untyped)
   SET_ON_INTEL_ON_ARM = ::T.let(nil, ::T.untyped)
   SET_OR_NEWER_OR_OLDER = ::T.let(nil, ::T.untyped)
+  SET_READ_BINREAD = ::T.let(nil, ::T.untyped)
+  SET_SKIP_PENDING = ::T.let(nil, ::T.untyped)
   SET_SYSTEM_SHELL_OUTPUT_PIPE_OUTPUT = ::T.let(nil, ::T.untyped)
   SET_WITH_WITHOUT = ::T.let(nil, ::T.untyped)
+  SET___10 = ::T.let(nil, ::T.untyped)
+  SET___9 = ::T.let(nil, ::T.untyped)
   SET____ETC_4 = ::T.let(nil, ::T.untyped)
 end
 
@@ -8490,46 +8495,6 @@ class TracePoint
   def instruction_sequence(); end
 
   def parameters(); end
-end
-
-module Tty
-  def self.blue(); end
-
-  def self.bold(); end
-
-  def self.cyan(); end
-
-  def self.default(); end
-
-  def self.down(); end
-
-  def self.erase_char(); end
-
-  def self.erase_line(); end
-
-  def self.green(); end
-
-  def self.italic(); end
-
-  def self.left(); end
-
-  def self.magenta(); end
-
-  def self.no_underline(); end
-
-  def self.red(); end
-
-  def self.reset(); end
-
-  def self.right(); end
-
-  def self.strikethrough(); end
-
-  def self.underline(); end
-
-  def self.up(); end
-
-  def self.yellow(); end
 end
 
 module URI
