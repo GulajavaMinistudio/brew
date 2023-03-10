@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "keg"
@@ -17,9 +17,9 @@ module Homebrew
   #
   # @api private
   module Diagnostic
-    def self.missing_deps(ff, hide = nil)
+    def self.missing_deps(formulae, hide = nil)
       missing = {}
-      ff.each do |f|
+      formulae.each do |f|
         missing_dependencies = f.missing_dependencies(hide: hide)
         next if missing_dependencies.empty?
 
@@ -31,7 +31,7 @@ module Homebrew
 
     def self.checks(type, fatal: true)
       @checks ||= Checks.new
-      failed = false
+      failed = T.let(false, T::Boolean)
       @checks.public_send(type).each do |check|
         out = @checks.public_send(check)
         next if out.nil?
@@ -64,6 +64,7 @@ module Homebrew
         end
       end
 
+      sig { params(list: T::Array[String], string: String).returns(String) }
       def inject_file_list(list, string)
         list.reduce(string.dup) { |acc, elem| acc << "  #{elem}\n" }
             .freeze
@@ -642,10 +643,11 @@ module Homebrew
         EOS
       end
 
+      sig { returns(T.nilable(String)) }
       def check_git_status
         return unless Utils::Git.available?
 
-        message = nil
+        message = T.let(nil, T.nilable(String))
 
         repos = {
           "Homebrew/brew"          => HOMEBREW_REPOSITORY,

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "utils/tty"
@@ -50,14 +50,14 @@ module Formatter
   # so we always wrap one word before an option.
   # @see https://github.com/Homebrew/brew/pull/12672
   # @see https://macromates.com/blog/2006/wrapping-text-with-regular-expressions/
-  def format_help_text(s, width: 172)
+  def format_help_text(string, width: 172)
     desc = OPTION_DESC_WIDTH
     indent = width - desc
-    s.gsub(/(?<=\S) *\n(?=\S)/, " ")
-     .gsub(/([`>)\]]:) /, "\\1\n    ")
-     .gsub(/^( +-.+  +(?=\S.{#{desc}}))(.{1,#{desc}})( +|$)(?!-)\n?/, "\\1\\2\n#{" " * indent}")
-     .gsub(/^( {#{indent}}(?=\S.{#{desc}}))(.{1,#{desc}})( +|$)(?!-)\n?/, "\\1\\2\n#{" " * indent}")
-     .gsub(/(.{1,#{width}})( +|$)(?!-)\n?/, "\\1\n")
+    string.gsub(/(?<=\S) *\n(?=\S)/, " ")
+          .gsub(/([`>)\]]:) /, "\\1\n    ")
+          .gsub(/^( +-.+  +(?=\S.{#{desc}}))(.{1,#{desc}})( +|$)(?!-)\n?/, "\\1\\2\n#{" " * indent}")
+          .gsub(/^( {#{indent}}(?=\S.{#{desc}}))(.{1,#{desc}})( +|$)(?!-)\n?/, "\\1\\2\n#{" " * indent}")
+          .gsub(/(.{1,#{width}})( +|$)(?!-)\n?/, "\\1\n")
   end
 
   def url(string)
@@ -91,11 +91,11 @@ module Formatter
     end
 
     fallback.call if objects.empty?
-    fallback.call if respond_to?(:tty?) ? !tty? : !$stdout.tty?
+    fallback.call if respond_to?(:tty?) ? !T.unsafe(self).tty? : !$stdout.tty?
 
     console_width = Tty.width
     object_lengths = objects.map { |obj| Tty.strip_ansi(obj).length }
-    cols = (console_width + gap_size) / (object_lengths.max + gap_size)
+    cols = (console_width + gap_size) / (T.must(object_lengths.max) + gap_size)
 
     fallback.call if cols < 2
 
@@ -109,14 +109,14 @@ module Formatter
     output = +""
 
     rows.times do |row_index|
-      item_indices_for_row = row_index.step(objects.size - 1, rows).to_a
+      item_indices_for_row = T.cast(row_index.step(objects.size - 1, rows).to_a, T::Array[Integer])
 
-      first_n = item_indices_for_row[0...-1].map do |index|
-        objects[index] + "".rjust(col_width - object_lengths[index])
+      first_n = T.must(item_indices_for_row[0...-1]).map do |index|
+        objects[index] + "".rjust(col_width - object_lengths.fetch(index))
       end
 
       # don't add trailing whitespace to last column
-      last = objects.values_at(item_indices_for_row.last)
+      last = objects.values_at(item_indices_for_row.fetch(-1))
 
       output.concat((first_n + last)
             .join(gap_string))

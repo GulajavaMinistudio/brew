@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "formula"
@@ -344,6 +344,28 @@ module Homebrew
 
         `resource` blocks may require updates.
       EOS
+    end
+
+    if new_url =~ %r{^https://github\.com/([\w-]+)/([\w-]+)/archive/refs/tags/(v?[.0-9]+)\.tar\.}
+      owner = Regexp.last_match(1)
+      repo = Regexp.last_match(2)
+      tag = Regexp.last_match(3)
+      github_release_data = begin
+        GitHub::API.open_rest("#{GitHub::API_URL}/repos/#{owner}/#{repo}/releases/tags/#{tag}")
+      rescue GitHub::API::HTTPNotFoundError
+        # If this is a 404: we can't do anything.
+        nil
+      end
+
+      if github_release_data.present?
+        pre = "pre" if github_release_data["prerelease"].present?
+        pr_message += <<~XML
+          <details>
+            <summary>#{pre}release notes</summary>
+            #{github_release_data["body"]}
+          </details>
+        XML
+      end
     end
 
     pr_info = {
