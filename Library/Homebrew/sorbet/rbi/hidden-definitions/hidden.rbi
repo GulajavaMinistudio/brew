@@ -4266,162 +4266,6 @@ class Homebrew::Completions::Variables
   def self.members(); end
 end
 
-module Homebrew::EnvConfig
-  def self.additional_google_analytics_id(); end
-
-  def self.all_proxy(); end
-
-  def self.api_domain(); end
-
-  def self.arch(); end
-
-  def self.artifact_domain(); end
-
-  def self.auto_update_secs(); end
-
-  def self.autoremove?(); end
-
-  def self.bat?(); end
-
-  def self.bat_config_path(); end
-
-  def self.bat_theme(); end
-
-  def self.bootsnap?(); end
-
-  def self.bottle_domain(); end
-
-  def self.brew_git_remote(); end
-
-  def self.browser(); end
-
-  def self.cache(); end
-
-  def self.cleanup_max_age_days(); end
-
-  def self.cleanup_periodic_full_days(); end
-
-  def self.color?(); end
-
-  def self.core_git_remote(); end
-
-  def self.curl_retries(); end
-
-  def self.curl_verbose?(); end
-
-  def self.curlrc?(); end
-
-  def self.debug?(); end
-
-  def self.developer?(); end
-
-  def self.disable_load_formula?(); end
-
-  def self.display(); end
-
-  def self.display_install_times?(); end
-
-  def self.docker_registry_basic_auth_token(); end
-
-  def self.docker_registry_token(); end
-
-  def self.editor(); end
-
-  def self.eval_all?(); end
-
-  def self.fail_log_lines(); end
-
-  def self.forbidden_licenses(); end
-
-  def self.force_brewed_ca_certificates?(); end
-
-  def self.force_brewed_curl?(); end
-
-  def self.force_brewed_git?(); end
-
-  def self.force_vendor_ruby?(); end
-
-  def self.ftp_proxy(); end
-
-  def self.git_email(); end
-
-  def self.git_name(); end
-
-  def self.git_path(); end
-
-  def self.github_api_token(); end
-
-  def self.github_packages_token(); end
-
-  def self.github_packages_user(); end
-
-  def self.http_proxy(); end
-
-  def self.https_proxy(); end
-
-  def self.install_badge(); end
-
-  def self.livecheck_watchlist(); end
-
-  def self.logs(); end
-
-  def self.no_analytics?(); end
-
-  def self.no_auto_update?(); end
-
-  def self.no_bootsnap?(); end
-
-  def self.no_cleanup_formulae(); end
-
-  def self.no_color?(); end
-
-  def self.no_compat?(); end
-
-  def self.no_emoji?(); end
-
-  def self.no_env_hints?(); end
-
-  def self.no_github_api?(); end
-
-  def self.no_google_analytics?(); end
-
-  def self.no_insecure_redirect?(); end
-
-  def self.no_install_cleanup?(); end
-
-  def self.no_install_from_api?(); end
-
-  def self.no_install_upgrade?(); end
-
-  def self.no_installed_dependents_check?(); end
-
-  def self.no_proxy(); end
-
-  def self.pip_index_url(); end
-
-  def self.pry?(); end
-
-  def self.simulate_macos_on_linux?(); end
-
-  def self.skip_or_later_bottles?(); end
-
-  def self.sorbet_runtime?(); end
-
-  def self.ssh_config_path(); end
-
-  def self.sudo_askpass(); end
-
-  def self.svn(); end
-
-  def self.temp(); end
-
-  def self.update_to_tag?(); end
-
-  def self.verbose?(); end
-
-  def self.verbose_using_dots?(); end
-end
-
 module Homebrew::Fetch
   extend ::T::Private::Methods::MethodHooks
   extend ::T::Private::Methods::SingletonMethodHooks
@@ -8334,79 +8178,17 @@ module Stdenv
 end
 
 class String
-  def acts_like_string?(); end
-
-  def at(position); end
-
-  def camelcase(first_letter=T.unsafe(nil)); end
-
-  def camelize(first_letter=T.unsafe(nil)); end
-
-  def classify(); end
-
-  def constantize(); end
-
-  def dasherize(); end
-
-  def deconstantize(); end
-
-  def demodulize(); end
-
   def exclude?(string); end
 
   def fast_xs(); end
-
-  def first(limit=T.unsafe(nil)); end
-
-  def foreign_key(separate_class_name_and_id_with_underscore=T.unsafe(nil)); end
-
-  def from(position); end
-
-  def html_safe(); end
-
-  def humanize(capitalize: T.unsafe(nil), keep_id_suffix: T.unsafe(nil)); end
 
   def indent(amount, indent_string=T.unsafe(nil), indent_empty_lines=T.unsafe(nil)); end
 
   def indent!(amount, indent_string=T.unsafe(nil), indent_empty_lines=T.unsafe(nil)); end
 
-  def is_utf8?(); end
-
-  def last(limit=T.unsafe(nil)); end
-
-  def mb_chars(); end
-
-  def parameterize(separator: T.unsafe(nil), preserve_case: T.unsafe(nil), locale: T.unsafe(nil)); end
-
-  def pluralize(count=T.unsafe(nil), locale=T.unsafe(nil)); end
-
-  def remove(*patterns); end
-
-  def remove!(*patterns); end
-
-  def safe_constantize(); end
-
   def shellescape(); end
 
   def shellsplit(); end
-
-  def singularize(locale=T.unsafe(nil)); end
-
-  def squish(); end
-
-  def squish!(); end
-
-  def tableize(); end
-
-  def titlecase(keep_id_suffix: T.unsafe(nil)); end
-
-  def titleize(keep_id_suffix: T.unsafe(nil)); end
-
-  def to(position); end
-
-  def to_date(); end
-
-  def to_datetime(); end
 
   def to_nfc(); end
 
@@ -8415,18 +8197,6 @@ class String
   def to_nfkc(); end
 
   def to_nfkd(); end
-
-  def to_time(form=T.unsafe(nil)); end
-
-  def truncate(truncate_at, options=T.unsafe(nil)); end
-
-  def truncate_bytes(truncate_at, omission: T.unsafe(nil)); end
-
-  def truncate_words(words_count, options=T.unsafe(nil)); end
-
-  def underscore(); end
-
-  def upcase_first(); end
 end
 
 class StringScanner
