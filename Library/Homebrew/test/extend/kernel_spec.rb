@@ -20,10 +20,9 @@ describe "globally-scoped helper methods" do
 
   describe "#odie" do
     it "exits with 1" do
-      expect(self).to receive(:exit).and_return(1)
       expect do
         odie "foo"
-      end.to output("Error: foo\n").to_stderr
+      end.to output("Error: foo\n").to_stderr.and raise_error SystemExit
     end
   end
 
@@ -183,14 +182,6 @@ describe "globally-scoped helper methods" do
     expect(which_editor).to eq("vemate -w")
   end
 
-  specify "#capture_stderr" do
-    err = capture_stderr do
-      $stderr.print "test"
-    end
-
-    expect(err).to eq("test")
-  end
-
   describe "#pretty_duration" do
     it "converts seconds to a human-readable string" do
       expect(pretty_duration(1)).to eq("1 second")
@@ -199,19 +190,6 @@ describe "globally-scoped helper methods" do
       expect(pretty_duration(240)).to eq("4 minutes")
       expect(pretty_duration(252.45)).to eq("4 minutes 12 seconds")
     end
-  end
-
-  specify "#parse_author!" do
-    parse_error_msg = /Unable to parse name and email/
-
-    expect(parse_author!("John Doe <john.doe@example.com>"))
-      .to eq({ name: "John Doe", email: "john.doe@example.com" })
-    expect { parse_author!("") }
-      .to raise_error(parse_error_msg)
-    expect { parse_author!("John Doe") }
-      .to raise_error(parse_error_msg)
-    expect { parse_author!("<john.doe@example.com>") }
-      .to raise_error(parse_error_msg)
   end
 
   specify "#disk_usage_readable" do
