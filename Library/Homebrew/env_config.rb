@@ -288,10 +288,6 @@ module Homebrew
         default_text: "`$NO_COLOR`.",
         boolean:      true,
       },
-      HOMEBREW_NO_COMPAT:                        {
-        description: "If set, disable all use of legacy compatibility code.",
-        boolean:     true,
-      },
       HOMEBREW_NO_EMOJI:                         {
         description: "If set, do not print `HOMEBREW_INSTALL_BADGE` on a successful build.",
         boolean:     true,
@@ -415,6 +411,7 @@ module Homebrew
       },
     }.freeze
 
+    sig { params(env: Symbol, hash: T::Hash[Symbol, T.untyped]).returns(String) }
     def env_method_name(env, hash)
       method_name = env.to_s
                        .sub(/^HOMEBREW_/, "")
