@@ -386,8 +386,8 @@ The following methods may be called to generate standard warning messages:
 | `reboot`                           | Users should reboot to complete installation.
 | `files_in_usr_local`               | The cask installs files to `/usr/local`, which may confuse Homebrew.
 | `discontinued`                     | All software development has been officially discontinued upstream.
-| `kext`                             | Users may need to enable their kexts in *System Preferences → Security & Privacy → General*.
-| `unsigned_accessibility`           | Users will need to re-enable the app on each update in *System Preferences → Security & Privacy → Privacy* as it is unsigned.
+| `kext`                             | Users may need to enable their kexts in *System Settings → Privacy & Security* (or *System Preferences → Security & Privacy → General* in earlier macOS versions).
+| `unsigned_accessibility`           | Users will need to re-enable the app on each update in *System Settings → Privacy & Security* (or *System Preferences → Security & Privacy → Privacy* in earlier macOS versions) as it is unsigned.
 | `license "web_page"`               | Users may find the software's usage license at `web_page`.
 | `free_license "web_page"`          | Users may obtain an official license to use the software at `web_page`.
 
@@ -647,7 +647,7 @@ installer script: "#{staged_path}/install.sh"
 
 ### Stanza: `language`
 
-The `language` stanza can match [ISO 639-1](https://en.wikipedia.org/wiki/ISO_639-1) language codes, regional identifiers ([ISO 3166-1 Alpha 2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)) and script codes ([ISO 15924](https://en.wikipedia.org/wiki/ISO_15924)), or a combination thereof.
+The `language` stanza can match [ISO 639-1](https://en.wikipedia.org/wiki/ISO_639-1) language codes, script codes ([ISO 15924](https://en.wikipedia.org/wiki/ISO_15924)) and regional identifiers ([ISO 3166-1 Alpha 2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)), or a combination thereof.
 
 US English should always be used as the default language:
 
