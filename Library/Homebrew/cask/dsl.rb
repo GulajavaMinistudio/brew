@@ -44,6 +44,7 @@ module Cask
       Artifact::Font,
       Artifact::InputMethod,
       Artifact::InternetPlugin,
+      Artifact::KeyboardLayout,
       Artifact::Manpage,
       Artifact::Pkg,
       Artifact::Prefpane,
@@ -68,6 +69,7 @@ module Cask
 
     DSL_METHODS = Set.new([
       :appcast,
+      :arch,
       :artifacts,
       :auto_updates,
       :caveats,
