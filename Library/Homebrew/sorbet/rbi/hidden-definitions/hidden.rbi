@@ -3913,6 +3913,8 @@ end
 module FormulaCellarChecks
   extend ::T::Private::Methods::MethodHooks
   extend ::T::Private::Methods::SingletonMethodHooks
+  extend ::T::Private::Abstract::Hooks
+  extend ::T::InterfaceWrapper::Helpers
 end
 
 class FormulaConflict
@@ -6565,6 +6567,26 @@ class RuboCop::Cask::AST::Stanza
   def name?(); end
 
   def on_arch_conditional?(); end
+
+  def on_arm?(); end
+
+  def on_big_sur?(); end
+
+  def on_catalina?(); end
+
+  def on_el_capitan?(); end
+
+  def on_high_sierra?(); end
+
+  def on_intel?(); end
+
+  def on_mojave?(); end
+
+  def on_monterey?(); end
+
+  def on_sierra?(); end
+
+  def on_ventura?(); end
 
   def pkg?(); end
 
