@@ -85,27 +85,14 @@ end
 ######################
 # These functions return lists of suggestions for arguments completion
 
-function __fish_brew_ruby_parse_json -a file parser -d 'Parses given JSON file with Ruby'
-    # parser is any chain of methods to call on the parsed JSON
-    ruby -e "require('json'); JSON.parse(File.read('$file'))$parser"
-end
-
 function __fish_brew_suggest_formulae_all -d 'Lists all available formulae with their descriptions'
-    # store the brew cache path in a var (because calling (brew --cache) is slow)
-    set -q __brew_cache_path
-    or set -gx __brew_cache_path (brew --cache)
-
-    if test -f "$__brew_cache_path/descriptions.json"
-        __fish_brew_ruby_parse_json "$__brew_cache_path/descriptions.json" \
-            '.each{ |k, v| puts([k, v].reject(&:nil?).join("\t")) }'
-    else
-        brew formulae
-    end
+    brew formulae
 end
 
 function __fish_brew_suggest_formulae_installed
-    brew list --formula
+    command ls -1 (brew --cellar)
 end
+
 
 function __fish_brew_suggest_formulae_outdated -d "List of outdated formulae with the information about potential upgrade"
     brew outdated --formula --verbose \
@@ -130,7 +117,7 @@ function __fish_brew_suggest_casks_all -d "Lists locally available casks"
 end
 
 function __fish_brew_suggest_casks_installed -d "Lists installed casks"
-    brew list --cask -1
+    command ls -1 (brew --caskroom)
 end
 
 function __fish_brew_suggest_casks_outdated -d "Lists outdated casks with the information about potential upgrade"
@@ -140,7 +127,9 @@ function __fish_brew_suggest_casks_outdated -d "Lists outdated casks with the in
 end
 
 function __fish_brew_suggest_taps_installed -d "List all available taps"
-    brew tap
+    command find (brew --repo)/Library/Taps -mindepth 2 -maxdepth 2 -type d \
+    | string replace homebrew- "" \
+    | string replace (brew --repo)/Library/Taps/ ""
 end
 
 function __fish_brew_suggest_commands -d "Lists all commands names, including aliases"
@@ -277,7 +266,7 @@ __fish_brew_complete_arg '--repository' -a '(__fish_brew_suggest_taps_installed)
 
 __fish_brew_complete_cmd '-S' 'Perform a substring search of cask tokens and formula names for text'
 __fish_brew_complete_arg '-S' -l archlinux -d 'Search for text in the given database'
-__fish_brew_complete_arg '-S' -l cask -d 'Search online and locally for casks'
+__fish_brew_complete_arg '-S' -l cask -d 'Search for casks'
 __fish_brew_complete_arg '-S' -l closed -d 'Search for only closed GitHub pull requests'
 __fish_brew_complete_arg '-S' -l debian -d 'Search for text in the given database'
 __fish_brew_complete_arg '-S' -l debug -d 'Display any debugging information'
@@ -285,7 +274,7 @@ __fish_brew_complete_arg '-S' -l desc -d 'Search for formulae with a description
 __fish_brew_complete_arg '-S' -l eval-all -d 'Evaluate all available formulae and casks, whether installed or not, to search their descriptions. Implied if `HOMEBREW_EVAL_ALL` is set'
 __fish_brew_complete_arg '-S' -l fedora -d 'Search for text in the given database'
 __fish_brew_complete_arg '-S' -l fink -d 'Search for text in the given database'
-__fish_brew_complete_arg '-S' -l formula -d 'Search online and locally for formulae'
+__fish_brew_complete_arg '-S' -l formula -d 'Search for formulae'
 __fish_brew_complete_arg '-S' -l help -d 'Show this message'
 __fish_brew_complete_arg '-S' -l macports -d 'Search for text in the given database'
 __fish_brew_complete_arg '-S' -l open -d 'Search for only open GitHub pull requests'
@@ -1336,7 +1325,7 @@ __fish_brew_complete_arg 'ruby' -l r -d 'Load a library using `require`'
 
 __fish_brew_complete_cmd 'search' 'Perform a substring search of cask tokens and formula names for text'
 __fish_brew_complete_arg 'search' -l archlinux -d 'Search for text in the given database'
-__fish_brew_complete_arg 'search' -l cask -d 'Search online and locally for casks'
+__fish_brew_complete_arg 'search' -l cask -d 'Search for casks'
 __fish_brew_complete_arg 'search' -l closed -d 'Search for only closed GitHub pull requests'
 __fish_brew_complete_arg 'search' -l debian -d 'Search for text in the given database'
 __fish_brew_complete_arg 'search' -l debug -d 'Display any debugging information'
@@ -1344,7 +1333,7 @@ __fish_brew_complete_arg 'search' -l desc -d 'Search for formulae with a descrip
 __fish_brew_complete_arg 'search' -l eval-all -d 'Evaluate all available formulae and casks, whether installed or not, to search their descriptions. Implied if `HOMEBREW_EVAL_ALL` is set'
 __fish_brew_complete_arg 'search' -l fedora -d 'Search for text in the given database'
 __fish_brew_complete_arg 'search' -l fink -d 'Search for text in the given database'
-__fish_brew_complete_arg 'search' -l formula -d 'Search online and locally for formulae'
+__fish_brew_complete_arg 'search' -l formula -d 'Search for formulae'
 __fish_brew_complete_arg 'search' -l help -d 'Show this message'
 __fish_brew_complete_arg 'search' -l macports -d 'Search for text in the given database'
 __fish_brew_complete_arg 'search' -l open -d 'Search for only open GitHub pull requests'
