@@ -17,8 +17,6 @@ module Utils
     INFLUX_ORG = "9a707721bb47fc02"
 
     class << self
-      extend T::Sig
-
       include Context
 
       sig { params(type: Symbol, metadata: T::Hash[Symbol, T.untyped]).void }
@@ -473,7 +471,7 @@ options: options)
                "#{formatted_count} | #{formatted_percent}%"
           next if index > 10
         end
-        return unless results.length > 1
+        return if results.length <= 1
 
         formatted_total_footer =
           format "%-#{index_width}s", total_index_footer

@@ -8,8 +8,6 @@ require "utils/popen"
 # @see Utils::Git
 # @api private
 class GitRepository
-  extend T::Sig
-
   sig { returns(Pathname) }
   attr_reader :pathname
 
@@ -107,6 +105,11 @@ class GitRepository
   sig { params(commit: String, safe: T::Boolean).returns(T.nilable(String)) }
   def commit_message(commit = "HEAD", safe: false)
     popen_git("log", "-1", "--pretty=%B", commit, "--", safe: safe, err: :out)&.strip
+  end
+
+  sig { returns(String) }
+  def to_s
+    pathname.to_s
   end
 
   private

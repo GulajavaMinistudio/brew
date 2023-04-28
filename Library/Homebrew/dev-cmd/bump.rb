@@ -5,8 +5,6 @@ require "cli/parser"
 require "livecheck/livecheck"
 
 module Homebrew
-  extend T::Sig
-
   module_function
 
   sig { returns(CLI::Parser) }
@@ -244,7 +242,10 @@ module Homebrew
 
     new_version = if livecheck_latest.is_a?(Version) && livecheck_latest > current_version
       livecheck_latest
-    elsif repology_latest.is_a?(Version) && repology_latest > current_version && !formula_or_cask.livecheckable?
+    elsif repology_latest.is_a?(Version) &&
+          repology_latest > current_version &&
+          !formula_or_cask.livecheckable? &&
+          current_version != "latest"
       repology_latest
     end.presence
 

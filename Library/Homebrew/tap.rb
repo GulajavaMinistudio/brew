@@ -14,8 +14,6 @@ require "settings"
 # {#user} represents the GitHub username and {#repo} represents the repository
 # name without the leading `homebrew-`.
 class Tap
-  extend T::Sig
-
   extend Cachable
 
   TAP_DIRECTORY = (HOMEBREW_LIBRARY/"Taps").freeze
@@ -849,8 +847,6 @@ end
 
 # A specialized {Tap} class for the core formulae.
 class CoreTap < Tap
-  extend T::Sig
-
   # @private
   sig { void }
   def initialize
@@ -937,9 +933,11 @@ class CoreTap < Tap
   # @private
   sig { returns(Hash) }
   def formula_renames
-    @formula_renames ||= begin
+    @formula_renames ||= if Homebrew::EnvConfig.no_install_from_api?
       self.class.ensure_installed!
       super
+    else
+      Homebrew::API::Formula.all_renames
     end
   end
 
@@ -1010,8 +1008,6 @@ end
 
 # Permanent configuration per {Tap} using `git-config(1)`.
 class TapConfig
-  extend T::Sig
-
   attr_reader :tap
 
   sig { params(tap: Tap).void }

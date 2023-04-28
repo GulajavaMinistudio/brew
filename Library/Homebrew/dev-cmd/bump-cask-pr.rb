@@ -7,8 +7,6 @@ require "cli/parser"
 require "utils/tar"
 
 module Homebrew
-  extend T::Sig
-
   module_function
 
   sig { returns(CLI::Parser) }
@@ -192,7 +190,7 @@ module Homebrew
 
       replacement_pairs << [
         /#{Regexp.escape(old_base_url)}/,
-        new_base_url,
+        new_base_url.to_s,
       ]
     end
 

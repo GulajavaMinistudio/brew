@@ -430,7 +430,7 @@ module Homebrew
     end
 
     def audit_postgresql
-      return unless formula.name == "postgresql"
+      return if formula.name != "postgresql"
       return unless @core_tap
 
       major_version = formula.version.major.to_i
@@ -823,28 +823,6 @@ module Homebrew
             problem %Q(fully scope test #{cmd} calls, e.g. #{cmd} "\#{bin}/#{name}")
           end
         end
-      end
-    end
-
-    def audit_github_issue_comment
-      return unless @online
-
-      matches = text.to_s.scan(%r{https://github.com/([-\w_]*)/([-\w_]*)/(pull|issues)/([0-9]*)})
-      return unless matches
-
-      matches.each do |match|
-        owner, repo, type, id = match
-
-        # Do not trigger for self references
-        next if "#{owner}/#{repo}" == formula.tap.remote_repo || owner == "Homebrew"
-
-        issue = GitHub::API.open_rest("https://api.github.com/repos/#{owner}/#{repo}/issues/#{id}")
-        next if issue.blank?
-        next if issue["state"] == "open"
-        next if issue.dig("pull_request", "merged_at").present?
-
-        issue_url = "https://github.com/#{owner}/#{repo}/#{type}/#{id}"
-        problem "Formula refers to a GitHub issue or pull request that is closed: #{issue_url}"
       end
     end
 

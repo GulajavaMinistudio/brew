@@ -9,8 +9,6 @@ require "extend/cachable"
 
 # Rather than calling `new` directly, use one of the class methods like {Tab.create}.
 class Tab
-  extend T::Sig
-
   extend Cachable
 
   FILENAME = "INSTALL_RECEIPT.json"
@@ -281,7 +279,7 @@ class Tab
   def runtime_dependencies
     # Homebrew versions prior to 1.1.6 generated incorrect runtime dependency
     # lists.
-    @runtime_dependencies unless parsed_homebrew_version < "1.1.6"
+    @runtime_dependencies if parsed_homebrew_version >= "1.1.6"
   end
 
   def cxxstdlib

@@ -2,8 +2,6 @@
 # frozen_string_literal: true
 
 module SharedEnvExtension
-  extend T::Sig
-
   def setup_build_environment(formula: nil, cc: nil, build_bottle: false, bottle_arch: nil, testing_formula: false,
                               debug_symbols: false)
     generic_shared_setup_build_environment(formula: formula, cc: cc, build_bottle: build_bottle,
@@ -16,7 +14,7 @@ module SharedEnvExtension
 
   sig { returns(T::Boolean) }
   def no_weak_imports_support?
-    return false unless compiler == :clang
+    return false if compiler != :clang
 
     return false if !MacOS::Xcode.version.null? && MacOS::Xcode.version < "8.0"
     return false if !MacOS::CLT.version.null? && MacOS::CLT.version < "8.0"

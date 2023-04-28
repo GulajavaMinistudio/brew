@@ -5,8 +5,6 @@ require "migrator"
 require "cli/parser"
 
 module Homebrew
-  extend T::Sig
-
   module_function
 
   sig { returns(CLI::Parser) }
@@ -31,14 +29,6 @@ module Homebrew
 
     args.named.to_kegs.each do |keg|
       f = Formulary.from_keg(keg)
-
-      if f.oldname
-        rack = HOMEBREW_CELLAR/f.oldname
-        raise NoSuchKegError, f.oldname if !rack.exist? || rack.subdirs.empty?
-
-        odie "#{rack} is a symlink" if rack.symlink?
-      end
-
       Migrator.migrate_if_needed(f, force: args.force?, dry_run: args.dry_run?)
     end
   end

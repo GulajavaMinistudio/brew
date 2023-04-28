@@ -12,17 +12,16 @@ require "set"
 
 # Only require "core_ext" here to ensure we're only requiring the minimum of
 # what we need.
-require "active_support/core_ext/object/blank"
-require "active_support/core_ext/string/filters"
-require "active_support/core_ext/object/try"
 require "active_support/core_ext/array/access"
-require "active_support/core_ext/hash/except"
-require "active_support/core_ext/kernel/reporting"
-require "active_support/core_ext/hash/keys"
-require "active_support/core_ext/hash/deep_merge"
-require "active_support/core_ext/file/atomic"
 require "active_support/core_ext/enumerable"
+require "active_support/core_ext/file/atomic"
+require "active_support/core_ext/hash/deep_merge"
+require "active_support/core_ext/hash/except"
+require "active_support/core_ext/hash/keys"
+require "active_support/core_ext/object/blank"
+require "active_support/core_ext/object/try"
 require "active_support/core_ext/string/exclude"
+require "active_support/core_ext/string/filters"
 require "active_support/core_ext/string/indent"
 
 HOMEBREW_API_DEFAULT_DOMAIN = ENV.fetch("HOMEBREW_API_DEFAULT_DOMAIN").freeze
@@ -72,6 +71,7 @@ HOMEBREW_PULL_OR_COMMIT_URL_REGEX =
   %r[https://github\.com/([\w-]+)/([\w-]+)?/(?:pull/(\d+)|commit/[0-9a-fA-F]{4,40})].freeze
 HOMEBREW_BOTTLES_EXTNAME_REGEX = /\.([a-z0-9_]+)\.bottle\.(?:(\d+)\.)?tar\.gz$/.freeze
 
+require "extend/module"
 require "env_config"
 require "macos_versions"
 require "os"
@@ -134,7 +134,6 @@ require "extend/array"
 require "git_repository"
 require "extend/pathname"
 require "extend/predicable"
-require "extend/module"
 require "cli/args"
 
 require "PATH"

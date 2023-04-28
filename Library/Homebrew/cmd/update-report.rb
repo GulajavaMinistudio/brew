@@ -11,8 +11,6 @@ require "settings"
 require "linuxbrew-core-migration"
 
 module Homebrew
-  extend T::Sig
-
   module_function
 
   def auto_update_header(args:)
@@ -379,7 +377,7 @@ class Reporter
       src = Pathname.new paths.first
       dst = Pathname.new paths.last
 
-      next unless dst.extname == ".rb"
+      next if dst.extname != ".rb"
 
       if paths.any? { |p| tap.cask_file?(p) }
         case status
@@ -507,7 +505,7 @@ class Reporter
       next unless (dir = HOMEBREW_CELLAR/name).exist? # skip if formula is not installed.
 
       tabs = dir.subdirs.map { |d| Tab.for_keg(Keg.new(d)) }
-      next unless tabs.first.tap == tap # skip if installed formula is not from this tap.
+      next if tabs.first.tap != tap # skip if installed formula is not from this tap.
 
       new_tap = Tap.fetch(new_tap_name)
       # For formulae migrated to cask: Auto-install cask or provide install instructions.
@@ -547,27 +545,20 @@ class Reporter
     Formula.installed.each do |formula|
       next unless Migrator.needs_migration?(formula)
 
-      oldname = formula.oldname
-      oldname_rack = HOMEBREW_CELLAR/oldname
+      oldnames_to_migrate = formula.oldnames.select do |oldname|
+        oldname_rack = HOMEBREW_CELLAR/oldname
+        next false unless oldname_rack.exist?
 
-      if oldname_rack.subdirs.empty?
-        oldname_rack.rmdir_if_possible
-        next
+        if oldname_rack.subdirs.empty?
+          oldname_rack.rmdir_if_possible
+          next false
+        end
+
+        true
       end
+      next if oldnames_to_migrate.empty?
 
-      new_name = tap.formula_renames[oldname]
-      next unless new_name
-
-      new_full_name = "#{tap}/#{new_name}"
-
-      begin
-        f = Formulary.factory(new_full_name)
-      rescue Exception => e # rubocop:disable Lint/RescueException
-        onoe "#{e.message}\n#{e.backtrace&.join("\n")}" if Homebrew::EnvConfig.developer?
-        next
-      end
-
-      Migrator.migrate_if_needed(f, force: force)
+      Migrator.migrate_if_needed(formula, force: force)
     end
   end
 
@@ -607,10 +598,6 @@ class Reporter
 end
 
 class ReporterHub
-  extend T::Sig
-
-  extend Forwardable
-
   attr_reader :reporters
 
   sig { void }
@@ -629,7 +616,9 @@ class ReporterHub
     @hash.update(report) { |_key, oldval, newval| oldval.concat(newval) }
   end
 
-  delegate empty?: :@hash
+  def empty?
+    @hash.empty?
+  end
 
   def dump(auto_update: false)
     report_all = ENV["HOMEBREW_UPDATE_REPORT_ALL_FORMULAE"].present?

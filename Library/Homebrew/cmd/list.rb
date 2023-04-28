@@ -7,8 +7,6 @@ require "cli/parser"
 require "cask/list"
 
 module Homebrew
-  extend T::Sig
-
   module_function
 
   sig { returns(CLI::Parser) }
@@ -211,8 +209,8 @@ class PrettyListing
       elsif block_given? && yield(pn)
         puts pn
         other = "other "
-      else
-        remaining_root_files << pn unless pn.basename.to_s == ".DS_Store"
+      elsif pn.basename.to_s != ".DS_Store"
+        remaining_root_files << pn
       end
     end
 

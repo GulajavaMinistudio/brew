@@ -8,8 +8,12 @@ require "lazy_object"
 require "cgi"
 require "lock_file"
 
-require "mechanize/version"
-require "mechanize/http/content_disposition_parser"
+# Need to define this before requiring Mechanize to avoid:
+#   uninitialized constant Mechanize
+# rubocop:disable Lint/EmptyClass
+class Mechanize; end
+require "vendor/gems/mechanize/lib/mechanize/http/content_disposition_parser"
+# rubocop:enable Lint/EmptyClass
 
 require "utils/curl"
 require "utils/github"
@@ -23,8 +27,6 @@ using TimeRemaining
 #
 # @api private
 class AbstractDownloadStrategy
-  extend T::Sig
-
   extend Forwardable
   include FileUtils
   include Context
@@ -402,20 +404,22 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
 
       ohai "Downloading #{url}"
 
-      resolved_url, _, url_time, _, is_redirection =
+      use_cached_location = cached_location.exist?
+      use_cached_location = false if version.respond_to?(:latest?) && version.latest?
+
+      resolved_url, _, last_modified, _, is_redirection = begin
         resolve_url_basename_time_file_size(url, timeout: end_time&.remaining!)
+      rescue ErrorDuringExecution
+        raise unless use_cached_location
+      end
+
       # Authorization is no longer valid after redirects
       meta[:headers]&.delete_if { |header| header.start_with?("Authorization") } if is_redirection
 
-      fresh = if cached_location.exist? && url_time
-        url_time <= cached_location.mtime
-      elsif version.respond_to?(:latest?)
-        !version.latest?
-      else
-        true
-      end
+      # The cached location is no longer fresh if Last-Modified is after the file's timestamp
+      use_cached_location = false if cached_location.exist? && last_modified && last_modified > cached_location.mtime
 
-      if cached_location.exist? && fresh
+      if use_cached_location
         puts "Already downloaded: #{cached_location}"
       else
         begin
@@ -705,8 +709,6 @@ end
 #
 # @api public
 class SubversionDownloadStrategy < VCSDownloadStrategy
-  extend T::Sig
-
   def initialize(url, name, version, **meta)
     super
     @url = @url.sub("svn+http://", "")
@@ -915,7 +917,8 @@ class GitDownloadStrategy < VCSDownloadStrategy
 
     args << "--no-checkout" << "--filter=blob:none" if partial_clone_sparse_checkout?
 
-    args << "-c" << "advice.detachedHead=false" # silences detached head warning
+    args << "--config" << "advice.detachedHead=false" # silences detached head warning
+    args << "--config" << "core.fsmonitor=false" # prevent fsmonitor from watching this repo
     args << @url << cached_location.to_s
   end
 
@@ -947,6 +950,9 @@ class GitDownloadStrategy < VCSDownloadStrategy
              chdir: cached_location
     command! "git",
              args:  ["config", "advice.detachedHead", "false"],
+             chdir: cached_location
+    command! "git",
+             args:  ["config", "core.fsmonitor", "false"],
              chdir: cached_location
 
     return unless partial_clone_sparse_checkout?
@@ -1127,8 +1133,6 @@ end
 #
 # @api public
 class CVSDownloadStrategy < VCSDownloadStrategy
-  extend T::Sig
-
   def initialize(url, name, version, **meta)
     super
     @url = @url.sub(%r{^cvs://}, "")
@@ -1209,8 +1213,6 @@ end
 #
 # @api public
 class MercurialDownloadStrategy < VCSDownloadStrategy
-  extend T::Sig
-
   def initialize(url, name, version, **meta)
     super
     @url = @url.sub(%r{^hg://}, "")
@@ -1273,8 +1275,6 @@ end
 #
 # @api public
 class BazaarDownloadStrategy < VCSDownloadStrategy
-  extend T::Sig
-
   def initialize(url, name, version, **meta)
     super
     @url.sub!(%r{^bzr://}, "")
@@ -1338,8 +1338,6 @@ end
 #
 # @api public
 class FossilDownloadStrategy < VCSDownloadStrategy
-  extend T::Sig
-
   def initialize(url, name, version, **meta)
     super
     @url = @url.sub(%r{^fossil://}, "")

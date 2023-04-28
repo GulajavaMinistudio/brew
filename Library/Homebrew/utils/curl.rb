@@ -10,8 +10,6 @@ module Utils
   #
   # @api private
   module Curl
-    extend T::Sig
-
     using TimeRemaining
 
     # This regex is used to extract the part of an ETag within quotation marks,
@@ -95,7 +93,7 @@ module Utils
 
       args << "--header" << "Accept-Language: en"
 
-      unless show_output == true
+      if show_output != true
         args << "--fail"
         args << "--progress-bar" unless Context.current.verbose?
         args << "--verbose" if Homebrew::EnvConfig.curl_verbose?
@@ -402,7 +400,7 @@ module Utils
         next [] if argument == false # No flag.
 
         args = ["--#{option.to_s.tr("_", "-")}"]
-        args << argument unless argument == true # It's a flag.
+        args << argument if argument != true # It's a flag.
         args
       end
 

@@ -11,8 +11,6 @@ module Homebrew
     #
     # @api private
     class NamedArgs < Array
-      extend T::Sig
-
       def initialize(*args, parent: Args.new, override_spec: nil, force_bottle: false, flags: [], cask_options: false)
         require "cask/cask"
         require "cask/cask_loader"
@@ -109,7 +107,7 @@ module Homebrew
               raise
             end
 
-            warn_if_cask_conflicts(name, "formula") unless only == :formula
+            warn_if_cask_conflicts(name, "formula") if only != :formula
             return formula
           rescue FormulaUnreadableError, FormulaClassUnavailableError,
                  TapFormulaUnreadableError, TapFormulaClassUnavailableError => e
