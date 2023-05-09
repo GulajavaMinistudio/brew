@@ -386,6 +386,14 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
     super
     @try_partial = true
     @mirrors = meta.fetch(:mirrors, [])
+
+    # Merge `:header` with `:headers`.
+    if (header = meta.delete(:header))
+      meta[:headers] ||= []
+      meta[:headers] << header
+    end
+
+    super
   end
 
   # Download and cache the file at {#cached_location}.
@@ -473,7 +481,7 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
       url = url.sub(%r{^https?://#{GitHubPackages::URL_DOMAIN}/}o, "#{domain.chomp("/")}/")
     end
 
-    parsed_output = curl_head(url.to_s, timeout: timeout)
+    parsed_output = curl_headers(url.to_s, wanted_headers: ["content-disposition"], timeout: timeout)
     parsed_headers = parsed_output.fetch(:responses).map { |r| r.fetch(:headers) }
 
     final_url = curl_response_follow_redirections(parsed_output.fetch(:responses), url)
@@ -553,7 +561,7 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
 
     args += ["--user", meta.fetch(:user)] if meta.key?(:user)
 
-    args += [meta[:header], meta[:headers]].flatten.compact.flat_map { |h| ["--header", h.strip] }
+    args += meta.fetch(:headers, []).flat_map { |h| ["--header", h.strip] }
 
     if meta[:insecure]
       unless @insecure_warning_shown
