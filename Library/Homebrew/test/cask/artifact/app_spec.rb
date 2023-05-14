@@ -2,7 +2,7 @@
 
 describe Cask::Artifact::App, :cask do
   let(:cask) { Cask::CaskLoader.load(cask_path("local-caffeine")) }
-  let(:command) { SystemCommand }
+  let(:command) { NeverSudoSystemCommand }
   let(:adopt) { false }
   let(:force) { false }
   let(:app) { cask.artifacts.find { |a| a.is_a?(described_class) } }
@@ -171,21 +171,12 @@ describe Cask::Artifact::App, :cask do
           end
 
           it "overwrites the existing app" do
-            expect(command).to receive(:run).with(
-              "/bin/chmod", args: [
-                "-R", "--", "u+rwx", target_path
-              ], must_succeed: false
-            ).and_call_original
-            expect(command).to receive(:run).with(
-              "/bin/chmod", args: [
-                "-R", "-N", target_path
-              ], must_succeed: false
-            ).and_call_original
-            expect(command).to receive(:run).with(
-              "/usr/bin/chflags", args: [
-                "-R", "--", "000", target_path
-              ], must_succeed: false
-            ).and_call_original
+            expect(command).to receive(:run).with("/usr/bin/chflags",
+                                                  args: ["-R", "--", "000", target_path]).and_call_original
+            expect(command).to receive(:run).with("/bin/chmod",
+                                                  args: ["-R", "--", "u+rwx", target_path]).and_call_original
+            expect(command).to receive(:run).with("/bin/chmod",
+                                                  args: ["-R", "-N", target_path]).and_call_original
 
             stdout = <<~EOS
               ==> Removing App '#{target_path}'
@@ -333,6 +324,30 @@ describe Cask::Artifact::App, :cask do
       expect(target_path.stat.ino).to eq(inode)
 
       expect(contents_path).to exist
+    end
+
+    it "properly handles non-writable directories" do
+      install_phase
+
+      source_contents_path = source_path.join("Contents")
+      target_contents_path = target_path.join("Contents")
+
+      allow(app.target).to receive(:writable?).and_return false
+      allow(command).to receive(:run!).with(any_args).and_call_original
+
+      expect(command).to receive(:run!)
+        .with("/bin/cp", args: ["-pR", source_contents_path, target_path],
+                         sudo: true)
+        .and_call_original
+      expect(FileUtils).not_to receive(:move).with(source_contents_path, an_instance_of(Pathname))
+
+      app.uninstall_phase(command: command, force: force, successor: cask)
+      expect(target_contents_path).not_to exist
+      expect(target_path).to exist
+      expect(source_contents_path).to exist
+
+      app.install_phase(command: command, adopt: adopt, force: force, predecessor: cask)
+      expect(target_contents_path).to exist
     end
   end
 end
