@@ -206,6 +206,10 @@ Mark any build, test, optional, or recommended dependencies as such in the outpu
 List dependencies for formulae that are currently installed\. If \fIformula\fR is specified, list only its dependencies that are currently installed\.
 .
 .TP
+\fB\-\-missing\fR
+Show only missing dependencies\.
+.
+.TP
 \fB\-\-eval\-all\fR
 Evaluate all available formulae and casks, whether installed or not, to list their dependencies\.
 .
@@ -1127,6 +1131,10 @@ Resolve more than one level of dependencies\.
 Only list formulae and casks that are currently installed\.
 .
 .TP
+\fB\-\-missing\fR
+Only list formulae and casks that are not currently installed\.
+.
+.TP
 \fB\-\-eval\-all\fR
 Evaluate all available formulae and casks, whether installed or not, to show their dependents\.
 .
@@ -1782,17 +1790,25 @@ Overwrite the destination formula if it already exists\.
 .SS "\fBformula\fR \fIformula\fR [\.\.\.]"
 Display the path where \fIformula\fR is located\.
 .
-.SS "\fBgenerate\-cask\-api\fR"
+.SS "\fBgenerate\-cask\-api\fR [\fB\-\-dry\-run\fR]"
 Generates Cask API data files for formulae\.brew\.sh\.
 .
 .P
 The generated files are written to the current directory\.
 .
-.SS "\fBgenerate\-formula\-api\fR"
+.TP
+\fB\-n\fR, \fB\-\-dry\-run\fR
+Generate API data without writing it to files\.
+.
+.SS "\fBgenerate\-formula\-api\fR [\fB\-\-dry\-run\fR]"
 Generates Formula API data files for formulae\.brew\.sh\.
 .
 .P
 The generated files are written to the current directory\.
+.
+.TP
+\fB\-n\fR, \fB\-\-dry\-run\fR
+Generate API data without writing it to files\.
 .
 .SS "\fBgenerate\-man\-completions\fR"
 Generate Homebrew\'s manpages and shell completions\.

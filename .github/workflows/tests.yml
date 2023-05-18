@@ -154,7 +154,7 @@ jobs:
         run: brew audit --skip-style --except=version --tap=homebrew/core
 
       - name: Generate formula API
-        run: brew generate-formula-api
+        run: brew generate-formula-api --dry-run
 
   cask-audit:
     name: cask audit
@@ -196,7 +196,7 @@ jobs:
           brew audit --skip-style --except=version --tap=homebrew/cask-versions
 
       - name: Generate cask API
-        run: brew generate-cask-api
+        run: brew generate-cask-api --dry-run
 
   vendored-gems:
     name: vendored gems
@@ -379,7 +379,7 @@ jobs:
           HOMEBREW_BUILDPULSE_ACCOUNT_ID: 1503512
           HOMEBREW_BUILDPULSE_REPOSITORY_ID: 53238813
 
-      - uses: codecov/codecov-action@894ff025c7b54547a9a2a1e9f228beae737ad3c2
+      - uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d
         with:
           root_dir: ${{ steps.set-up-homebrew.outputs.repository-path }}
           files: Library/Homebrew/test/coverage/coverage.xml

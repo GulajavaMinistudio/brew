@@ -747,6 +747,7 @@ _brew_deps() {
       --include-requirements
       --include-test
       --installed
+      --missing
       --quiet
       --skip-recommended
       --topological
@@ -1014,6 +1015,7 @@ _brew_generate_cask_api() {
     -*)
       __brewcomp "
       --debug
+      --dry-run
       --help
       --quiet
       --verbose
@@ -1030,6 +1032,7 @@ _brew_generate_formula_api() {
     -*)
       __brewcomp "
       --debug
+      --dry-run
       --help
       --quiet
       --verbose
@@ -2557,6 +2560,7 @@ _brew_uses() {
       --include-optional
       --include-test
       --installed
+      --missing
       --quiet
       --recursive
       --skip-recommended

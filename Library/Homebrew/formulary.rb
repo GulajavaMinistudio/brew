@@ -136,7 +136,7 @@ module Formulary
 
     mod.const_set(:BUILD_FLAGS, flags)
 
-    class_s = Formulary.class_s(name)
+    class_name = class_s(name)
     json_formula = Homebrew::API::Formula.all_formulae[name]
     json_formula = Homebrew::API.merge_variations(json_formula)
 
@@ -147,13 +147,15 @@ module Formulary
     end
 
     klass = Class.new(::Formula) do
+      @loaded_from_api = true
+
       desc json_formula["desc"]
       homepage json_formula["homepage"]
       license SPDX.string_to_license_expression(json_formula["license"])
       revision json_formula["revision"]
       version_scheme json_formula["version_scheme"]
 
-      if (urls_stable = json_formula["urls"]["stable"]).present?
+      if (urls_stable = json_formula["urls"]["stable"].presence)
         stable do
           url_spec = { tag: urls_stable["tag"], revision: urls_stable["revision"] }.compact
           url urls_stable["url"], **url_spec
@@ -162,11 +164,11 @@ module Formulary
         end
       end
 
-      if (urls_head = json_formula["urls"]["head"]).present?
+      if (urls_head = json_formula["urls"]["head"].presence)
         head urls_head["url"], branch: urls_head["branch"]
       end
 
-      if (bottles_stable = json_formula["bottle"]["stable"]).present?
+      if (bottles_stable = json_formula["bottle"]["stable"].presence)
         bottle do
           if Homebrew::EnvConfig.bottle_domain == HOMEBREW_BOTTLE_DEFAULT_DOMAIN
             root_url HOMEBREW_BOTTLE_DEFAULT_DOMAIN
@@ -181,17 +183,17 @@ module Formulary
         end
       end
 
-      if (keg_only_reason = json_formula["keg_only_reason"]).present?
+      if (keg_only_reason = json_formula["keg_only_reason"].presence)
         reason = Formulary.convert_to_string_or_symbol keg_only_reason["reason"]
         keg_only reason, keg_only_reason["explanation"]
       end
 
-      if (deprecation_date = json_formula["deprecation_date"]).present?
+      if (deprecation_date = json_formula["deprecation_date"].presence)
         reason = Formulary.convert_to_deprecate_disable_reason_string_or_symbol json_formula["deprecation_reason"]
         deprecate! date: deprecation_date, because: reason
       end
 
-      if (disable_date = json_formula["disable_date"]).present?
+      if (disable_date = json_formula["disable_date"].presence)
         reason = Formulary.convert_to_deprecate_disable_reason_string_or_symbol json_formula["disable_reason"]
         disable! date: disable_date, because: reason
       end
@@ -256,16 +258,24 @@ module Formulary
         raise "Cannot build from source from abstract formula."
       end
 
-      if (service_hash = json_formula["service"])
+      if (service_hash = json_formula["service"].presence)
         service_hash = Homebrew::Service.deserialize(service_hash)
-        run_params = service_hash.delete(:run)
         service do
           T.bind(self, Homebrew::Service)
-          if run_params.is_a?(Hash)
-            run(**run_params)
-          else
-            run run_params
+
+          if (run_params = service_hash.delete(:run).presence)
+            case run_params
+            when Hash
+              run(**run_params)
+            when Array, String
+              run run_params
+            end
           end
+
+          if (name_params = service_hash.delete(:name).presence)
+            name(**name_params)
+          end
+
           service_hash.each do |key, arg|
             public_send(key, arg)
           end
@@ -311,8 +321,7 @@ module Formulary
       end
     end
 
-    T.cast(klass, T.class_of(Formula)).loaded_from_api = true
-    mod.const_set(class_s, klass)
+    mod.const_set(class_name, klass)
 
     cache[:api] ||= {}
     cache[:api][name] = klass
@@ -514,7 +523,7 @@ module Formulary
       curl_download url, to: path
       super
     rescue MethodDeprecatedError => e
-      if (match_data = url.match(%r{github.com/(?<user>[\w-]+)/(?<repo>[\w-]+)/}))
+      if (match_data = url.match(%r{github.com/(?<user>[\w-]+)/(?<repo>[\w-]+)/}).presence)
         e.issues_url = "https://github.com/#{match_data[:user]}/#{match_data[:repo]}/issues/new"
       end
       raise
@@ -537,13 +546,13 @@ module Formulary
         if (possible_alias = tap.alias_dir/name).file?
           path = possible_alias.resolved_path
           name = path.basename(".rb").to_s
-        elsif (new_name = tap.formula_renames[name]) &&
+        elsif (new_name = tap.formula_renames[name].presence) &&
               (new_path = find_formula_from_name(new_name, tap)).file?
           old_name = name
           path = new_path
           name = new_name
           new_name = tap.core_tap? ? name : "#{tap}/#{name}"
-        elsif (new_tap_name = tap.tap_migrations[name])
+        elsif (new_tap_name = tap.tap_migrations[name].presence)
           new_tap_user, new_tap_repo, = new_tap_name.split("/")
           new_tap_name = "#{new_tap_user}/#{new_tap_repo}"
           new_tap = Tap.fetch new_tap_name

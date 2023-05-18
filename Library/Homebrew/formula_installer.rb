@@ -1040,7 +1040,7 @@ on_request: installed_on_request?, options: options)
       return
     end
 
-    if formula.service? && formula.service.command.present?
+    if formula.service? && formula.service.command?
       service_path = formula.systemd_service_path
       service_path.atomic_write(formula.service.to_systemd_unit)
       service_path.chmod 0644
@@ -1052,7 +1052,7 @@ on_request: installed_on_request?, options: options)
       end
     end
 
-    service = if formula.service? && formula.service.command.present?
+    service = if formula.service? && formula.service.command?
       formula.service.to_plist
     elsif formula.plist
       formula.plist
@@ -1191,7 +1191,7 @@ on_request: installed_on_request?, options: options)
     if pour_bottle?(output_warning: true)
       formula.fetch_bottle_tab
     else
-      @formula = Homebrew::API::Formula.source_download(formula) if formula.class.loaded_from_api
+      @formula = Homebrew::API::Formula.source_download(formula) if formula.loaded_from_api?
 
       formula.fetch_patches
       formula.resources.each(&:fetch)
@@ -1227,7 +1227,7 @@ on_request: installed_on_request?, options: options)
     tab.unused_options = []
     tab.built_as_bottle = true
     tab.poured_from_bottle = true
-    tab.loaded_from_api = formula.class.loaded_from_api
+    tab.loaded_from_api = formula.loaded_from_api?
     tab.installed_as_dependency = installed_as_dependency?
     tab.installed_on_request = installed_on_request?
     tab.time = Time.now.to_i

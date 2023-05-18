@@ -184,6 +184,8 @@ module Homebrew
         [:default, :browser].each do |user_agent|
           begin
             parsed_output = curl_headers(
+              "--max-redirs",
+              MAX_REDIRECTIONS.to_s,
               url,
               wanted_headers:    ["location", "content-disposition"],
               use_homebrew_curl: homebrew_curl,
@@ -268,6 +270,7 @@ require_relative "strategy/electron_builder"
 require_relative "strategy/extract_plist"
 require_relative "strategy/git"
 require_relative "strategy/github_latest"
+require_relative "strategy/github_releases"
 require_relative "strategy/gnome"
 require_relative "strategy/gnu"
 require_relative "strategy/hackage"
