@@ -551,6 +551,10 @@ This can be useful for debugging issues across all items when making
 significant changes to `formula.rb`, testing the performance of loading
 all items or checking if any current formulae/casks have Ruby issues.
 
+* `--os`:
+  Read using the given operating system. (Pass `all` to simulate all operating systems.)
+* `--arch`:
+  Read using the given CPU architecture. (Pass `all` to simulate all architectures.)
 * `--aliases`:
   Verify any alias symlinks in each tap.
 * `--syntax`:
@@ -1849,6 +1853,8 @@ This sanitized build environment ignores unrequested dependencies, which makes s
   `list` Mac App Store dependencies.
 * `--whalebrew`:
   `list` Whalebrew dependencies.
+* `--vscode`:
+  `list` VSCode extensions.
 * `--describe`:
   `dump` adds a description comment above each line, unless the dependency does not have a description.
 * `--no-restart`:
