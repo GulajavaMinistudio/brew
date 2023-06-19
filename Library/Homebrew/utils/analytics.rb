@@ -19,56 +19,6 @@ module Utils
     class << self
       include Context
 
-      sig { params(type: Symbol, metadata: T::Hash[Symbol, T.untyped]).void }
-      def report_google(type, metadata = {})
-        analytics_ids = ENV.fetch("HOMEBREW_ANALYTICS_IDS", "").split(",")
-        analytics_ids.each do |analytics_id|
-          args = []
-
-          # do not load .curlrc unless requested (must be the first argument)
-          args << "--disable" unless Homebrew::EnvConfig.curlrc?
-
-          args += %W[
-            --max-time 3
-            --user-agent #{HOMEBREW_USER_AGENT_CURL}
-            --data v=1
-            --data aip=1
-            --data t=#{type}
-            --data tid=#{analytics_id}
-            --data uid=n0thxg00gl3
-            --data an=#{HOMEBREW_PRODUCT}
-            --data av=#{HOMEBREW_VERSION}
-          ]
-          metadata.each do |key, value|
-            next unless value
-
-            key = ERB::Util.url_encode key
-            value = ERB::Util.url_encode value
-            args << "--data" << "#{key}=#{value}"
-          end
-
-          curl = Utils::Curl.curl_executable
-
-          # Send analytics. Don't send or store any personally identifiable information.
-          # https://docs.brew.sh/Analytics
-          # https://developers.google.com/analytics/devguides/collection/protocol/v1/devguide
-          # https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters
-          if ENV["HOMEBREW_ANALYTICS_DEBUG"]
-            url = "https://www.google-analytics.com/debug/collect"
-            puts "#{curl} #{args.join(" ")} #{url}"
-            puts Utils.popen_read(curl, *args, url)
-          else
-            pid = fork do
-              exec curl, *args,
-                   "--silent", "--output", "/dev/null",
-                   "https://www.google-analytics.com/collect"
-            end
-            Process.detach T.must(pid)
-          end
-        end
-        nil
-      end
-
       sig {
         params(measurement: Symbol, package_name: String, tap_name: String, on_request: T::Boolean,
                options: String).void
@@ -125,34 +75,6 @@ module Utils
       def report_event(measurement, package_name:, tap_name:, on_request:, options: "")
         report_influx_event(measurement, package_name: package_name, tap_name: tap_name, on_request: on_request,
 options: options)
-
-        package_and_options = package_name
-        if tap_name.present? && tap_name != "homebrew/core" && tap_name != "homebrew/cask"
-          package_and_options = "#{tap_name}/#{package_and_options}"
-        end
-        package_and_options = "#{package_and_options} #{options}" if options.present?
-        report_google_event(measurement, package_and_options, on_request: on_request)
-      end
-
-      sig { params(category: Symbol, action: String, on_request: T::Boolean).void }
-      def report_google_event(category, action, on_request: false)
-        return if not_this_run? || disabled? || Homebrew::EnvConfig.no_google_analytics?
-
-        category = "install" if category == :formula_install
-
-        report_google(:event,
-                      ec: category,
-                      ea: action,
-                      el: label_google,
-                      ev: nil)
-
-        return unless on_request
-
-        report_google(:event,
-                      ec: :install_on_request,
-                      ea: action,
-                      el: label_google,
-                      ev: nil)
       end
 
       sig {
@@ -168,24 +90,7 @@ options: options)
 
       sig { params(exception: BuildError).void }
       def report_build_error(exception)
-        report_google_build_error(exception)
         report_influx_error(exception)
-      end
-
-      sig { params(exception: BuildError).void }
-      def report_google_build_error(exception)
-        return if not_this_run? || disabled?
-
-        return unless exception.formula.tap
-        return unless exception.formula.tap.should_report_analytics?
-
-        formula_full_name = exception.formula.full_name
-        package_and_options = if (options = exception.options.to_a.map(&:to_s).join(" ").presence)
-          "#{formula_full_name} #{options}".strip
-        else
-          formula_full_name
-        end
-        report_google_event(:BuildError, package_and_options)
       end
 
       sig { params(exception: BuildError).void }
@@ -277,7 +182,7 @@ options: options)
         table_output(category, days, results, os_version: os_version, cask_install: cask_install)
       end
 
-      def get_analytics(json, args:)
+      def output_analytics(json, args:)
         full_analytics = args.analytics? || verbose?
 
         ohai "Analytics"
@@ -302,13 +207,58 @@ options: options)
         end
       end
 
+      # This method is undocumented because it is not intended for general use.
+      # It relies on screen scraping some GitHub HTML that's not available as an API.
+      # This seems very likely to break in the future.
+      # That said, it's the only way to get the data we want right now.
+      def output_github_packages_downloads(formula, args:)
+        return unless args.github_packages_downloads?
+        return unless formula.core_formula?
+
+        escaped_formula_name = GitHubPackages.image_formula_name(formula.name)
+        formula_url_suffix = "container/core%2F#{escaped_formula_name}/"
+        formula_url = "https://github.com/Homebrew/homebrew-core/pkgs/#{formula_url_suffix}"
+        output = Utils::Curl.curl_output("--fail", formula_url)
+        return unless output.success?
+
+        formula_version_urls = output.stdout
+                                     .scan(%r{/orgs/Homebrew/packages/#{formula_url_suffix}\d+\?tag=[^"]+})
+                                     .map do |url|
+          url.sub("/orgs/Homebrew/packages/", "/Homebrew/homebrew-core/pkgs/")
+        end
+        return if formula_version_urls.empty?
+
+        thirty_day_download_count = 0
+        formula_version_urls.each do |formula_version_url_suffix|
+          formula_version_url = "https://github.com#{formula_version_url_suffix}"
+          output = Utils::Curl.curl_output("--fail", formula_version_url)
+          next unless output.success?
+
+          last_thirty_days_match = output.stdout.match(
+            %r{<span class="[\s\-a-z]*">Last 30 days</span>\s*<span class="[\s\-a-z]*">([\d.M,]+)</span>}m,
+          )
+          next if last_thirty_days_match.blank?
+
+          last_thirty_days_downloads = last_thirty_days_match.captures.first.tr(",", "")
+          thirty_day_download_count += if (millions_match = last_thirty_days_downloads.match(/(\d+\.\d+)M/).presence)
+            millions_match.captures.first.to_i * 1_000_000
+          else
+            last_thirty_days_downloads.to_i
+          end
+        end
+
+        ohai "GitHub Packages Downloads"
+        puts "#{number_readable(thirty_day_download_count)} (30 days)"
+      end
+
       def formula_output(formula, args:)
         return if Homebrew::EnvConfig.no_analytics? || Homebrew::EnvConfig.no_github_api?
 
         json = Homebrew::API::Formula.fetch formula.name
         return if json.blank? || json["analytics"].blank?
 
-        get_analytics(json, args: args)
+        output_analytics(json, args: args)
+        output_github_packages_downloads(formula, args: args)
       rescue ArgumentError
         # Ignore failed API requests
         nil
@@ -320,43 +270,15 @@ options: options)
         json = Homebrew::API::Cask.fetch cask.token
         return if json.blank? || json["analytics"].blank?
 
-        get_analytics(json, args: args)
+        output_analytics(json, args: args)
       rescue ArgumentError
         # Ignore failed API requests
         nil
       end
 
-      sig { returns(String) }
-      def custom_prefix_label_google
-        "custom-prefix"
-      end
-      alias generic_custom_prefix_label_google custom_prefix_label_google
-
-      sig { returns(String) }
-      def arch_label_google
-        if Hardware::CPU.arm?
-          "ARM"
-        else
-          ""
-        end
-      end
-      alias generic_arch_label_google arch_label_google
-
       def clear_cache
-        remove_instance_variable(:@label_google) if instance_variable_defined?(:@label_google)
         remove_instance_variable(:@default_tags_influx) if instance_variable_defined?(:@default_tags_influx)
         remove_instance_variable(:@default_fields_influx) if instance_variable_defined?(:@default_fields_influx)
-      end
-
-      sig { returns(String) }
-      def label_google
-        @label_google ||= begin
-          os = OS_VERSION
-          arch = ", #{arch_label_google}" if arch_label_google.present?
-          prefix = ", #{custom_prefix_label_google}" unless Homebrew.default_prefix?
-          ci = ", CI" if ENV["CI"]
-          "#{os}#{arch}#{prefix}#{ci}"
-        end
       end
 
       sig { returns(T::Hash[Symbol, String]) }
@@ -499,5 +421,3 @@ options: options)
     end
   end
 end
-
-require "extend/os/utils/analytics"
