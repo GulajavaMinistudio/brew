@@ -173,9 +173,9 @@ module Utils
       destination = Pathname(to)
       destination.dirname.mkpath
 
-      args = ["--location", "--remote-time", "--output", destination, *args]
+      args = ["--location", *args]
 
-      if try_partial
+      if try_partial && destination.exist?
         headers = begin
           parsed_output = curl_headers(*args, **options, wanted_headers: ["accept-ranges"])
           parsed_output.fetch(:responses).last&.fetch(:headers) || {}
@@ -189,13 +189,15 @@ module Utils
         supports_partial = headers.fetch("accept-ranges", "none") != "none"
         content_length = headers["content-length"]&.to_i
 
-        if supports_partial && destination.exist?
+        if supports_partial
           # We've already downloaded all bytes.
           return if destination.size == content_length
 
           args = ["--continue-at", "-", *args]
         end
       end
+
+      args = ["--remote-time", "--output", destination, *args]
 
       curl(*args, **options)
     end
@@ -240,17 +242,7 @@ module Utils
       return false if response[:headers].blank?
       return false unless [403, 503].include?(response[:status_code].to_i)
 
-      set_cookie_header = Array(response[:headers]["set-cookie"])
-      has_cloudflare_cookie_header = set_cookie_header.compact.any? do |cookie|
-        cookie.match?(/^(__cfduid|__cf_bm)=/i)
-      end
-
-      server_header = Array(response[:headers]["server"])
-      has_cloudflare_server = server_header.compact.any? do |server|
-        server.match?(/^cloudflare/i)
-      end
-
-      has_cloudflare_cookie_header && has_cloudflare_server
+      [*response[:headers]["server"]].any? { |server| server.match?(/^cloudflare/i) }
     end
 
     # Check if a URL is protected by Incapsula (e.g. corsair.com).

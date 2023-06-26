@@ -276,25 +276,45 @@ auto-update() {
 
     if [[ -z "${HOMEBREW_AUTO_UPDATE_SECS}" ]]
     then
-      if [[ -z "${HOMEBREW_NO_INSTALL_FROM_API}" ]]
+      if [[ -n "${HOMEBREW_NO_INSTALL_FROM_API}" ]]
       then
-        # 24 hours
-        HOMEBREW_AUTO_UPDATE_SECS="86400"
+        # 5 minutes
+        HOMEBREW_AUTO_UPDATE_SECS="300"
       elif [[ -n "${HOMEBREW_DEV_CMD_RUN}" ]]
       then
         # 1 hour
         HOMEBREW_AUTO_UPDATE_SECS="3600"
       else
-        # 5 minutes
-        HOMEBREW_AUTO_UPDATE_SECS="300"
+        # 24 hours
+        HOMEBREW_AUTO_UPDATE_SECS="86400"
       fi
     fi
 
-    # Skip auto-update if the Homebrew/brew repository has been checked in the
+    repo_fetch_heads=("${HOMEBREW_REPOSITORY}/.git/FETCH_HEAD")
+    # We might have done an auto-update recently, but not a core/cask clone auto-update.
+    # So we check the core/cask clone FETCH_HEAD too.
+    if [[ -n "${HOMEBREW_UPDATE_CORE_TAP}" && -d "${HOMEBREW_CORE_REPOSITORY}/.git" ]]
+    then
+      repo_fetch_heads+=("${HOMEBREW_CORE_REPOSITORY}/.git/FETCH_HEAD")
+    fi
+    if [[ -n "${HOMEBREW_UPDATE_CASK_TAP}" && -d "${HOMEBREW_CASK_REPOSITORY}/.git" ]]
+    then
+      repo_fetch_heads+=("${HOMEBREW_CASK_REPOSITORY}/.git/FETCH_HEAD")
+    fi
+
+    # Skip auto-update if all of the selected repositories have been checked in the
     # last $HOMEBREW_AUTO_UPDATE_SECS.
-    repo_fetch_head="${HOMEBREW_REPOSITORY}/.git/FETCH_HEAD"
-    if [[ -f "${repo_fetch_head}" ]] &&
-       [[ -n "$(find "${repo_fetch_head}" -type f -mtime -"${HOMEBREW_AUTO_UPDATE_SECS}"s 2>/dev/null)" ]]
+    needs_auto_update=
+    for repo_fetch_head in "${repo_fetch_heads[@]}"
+    do
+      if [[ ! -f "${repo_fetch_head}" ]] ||
+         [[ -z "$(find "${repo_fetch_head}" -type f -mtime -"${HOMEBREW_AUTO_UPDATE_SECS}"s 2>/dev/null)" ]]
+      then
+        needs_auto_update=1
+        break
+      fi
+    done
+    if [[ -z "${needs_auto_update}" ]]
     then
       return
     fi
@@ -323,6 +343,10 @@ auto-update() {
   fi
 
   unset AUTO_UPDATE_COMMANDS
+  unset AUTO_UPDATE_CORE_TAP_COMMANDS
+  unset AUTO_UPDATE_CASK_TAP_COMMANDS
+  unset HOMEBREW_UPDATE_CORE_TAP
+  unset HOMEBREW_UPDATE_CASK_TAP
 }
 
 #####
@@ -807,13 +831,13 @@ then
   unset HOMEBREW_RUBY_WARNINGS
 fi
 
+unset HOMEBREW_AUTO_UPDATE_COMMAND
+
 # Check for commands that should call `brew update --auto-update` first.
 AUTO_UPDATE_COMMANDS=(
   install
   outdated
   upgrade
-  bump-formula-pr
-  bump-cask-pr
   bundle
   release
 )
@@ -821,6 +845,29 @@ if check-array-membership "${HOMEBREW_COMMAND}" "${AUTO_UPDATE_COMMANDS[@]}" ||
    [[ "${HOMEBREW_COMMAND}" == "tap" && "${HOMEBREW_ARG_COUNT}" -gt 1 ]]
 then
   export HOMEBREW_AUTO_UPDATE_COMMAND="1"
+fi
+
+# Check for commands that should auto-update the homebrew-core tap.
+AUTO_UPDATE_CORE_TAP_COMMANDS=(
+  bump
+  bump-formula-pr
+)
+if check-array-membership "${HOMEBREW_COMMAND}" "${AUTO_UPDATE_CORE_TAP_COMMANDS[@]}"
+then
+  export HOMEBREW_AUTO_UPDATE_COMMAND="1"
+  export HOMEBREW_UPDATE_CORE_TAP="1"
+fi
+
+# Check for commands that should auto-update the homebrew-cask tap.
+AUTO_UPDATE_CASK_TAP_COMMANDS=(
+  bump
+  bump-cask-pr
+  bump-unversioned-casks
+)
+if check-array-membership "${HOMEBREW_COMMAND}" "${AUTO_UPDATE_CASK_TAP_COMMANDS[@]}"
+then
+  export HOMEBREW_AUTO_UPDATE_COMMAND="1"
+  export HOMEBREW_UPDATE_CASK_TAP="1"
 fi
 
 # Disable Ruby options we don't need.
@@ -850,38 +897,6 @@ if [[ -f "${HOMEBREW_LIBRARY}/Homebrew/dev-cmd/${HOMEBREW_COMMAND}.sh" ]] ||
    [[ -f "${HOMEBREW_LIBRARY}/Homebrew/dev-cmd/${HOMEBREW_COMMAND}.rb" ]]
 then
   export HOMEBREW_DEVELOPER_COMMAND="1"
-
-  if [[ -z "${HOMEBREW_NO_INSTALL_FROM_API}" ]]
-  then
-    NO_INSTALL_FROM_API_COMMANDS=(
-      bottle
-      bump-cask-pr
-      bump-formula-pr
-      bump-revision
-      bump-unversioned-casks
-      bump
-      cat
-      create
-      edit
-      extract
-      formula
-      generate-cask-api
-      generate-formula-api
-      livecheck
-      pr-pull
-      pr-upload
-      test
-      update-python-resources
-    )
-
-    if check-array-membership "${HOMEBREW_COMMAND}" "${NO_INSTALL_FROM_API_COMMANDS[@]}"
-    then
-      export HOMEBREW_NO_INSTALL_FROM_API=1
-      export HOMEBREW_AUTOMATICALLY_SET_NO_INSTALL_FROM_API=1
-    fi
-
-    unset NO_INSTALL_FROM_API_COMMANDS
-  fi
 fi
 
 if [[ -n "${HOMEBREW_DEVELOPER_COMMAND}" && -z "${HOMEBREW_DEVELOPER}" ]]
