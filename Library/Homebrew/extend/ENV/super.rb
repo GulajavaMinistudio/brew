@@ -63,6 +63,7 @@ module Superenv
 
     self["HOMEBREW_ENV"] = "super"
     self["MAKEFLAGS"] ||= "-j#{determine_make_jobs}"
+    self["RUSTFLAGS"] = Hardware.rustflags_target_cpu
     self["PATH"] = determine_path
     self["PKG_CONFIG_PATH"] = determine_pkg_config_path
     self["PKG_CONFIG_LIBDIR"] = determine_pkg_config_libdir
@@ -86,6 +87,8 @@ module Superenv
     self["HOMEBREW_LIBRARY_PATHS"] = determine_library_paths
     self["HOMEBREW_DEPENDENCIES"] = determine_dependencies
     self["HOMEBREW_FORMULA_PREFIX"] = @formula.prefix unless @formula.nil?
+    # Prevent the OpenSSL rust crate from building a vendored OpenSSL.
+    # https://github.com/sfackler/rust-openssl/blob/994e5ff8c63557ab2aa85c85cc6956b0b0216ca7/openssl/src/lib.rs#L65
     self["OPENSSL_NO_VENDOR"] = "1"
 
     set_debug_symbols if debug_symbols
