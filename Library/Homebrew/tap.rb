@@ -508,11 +508,12 @@ class Tap
   sig { returns(T::Array[Pathname]) }
   def formula_files
     @formula_files ||= if formula_dir.directory?
-      # TODO: odeprecate the non-official/old logic with a new minor release somehow?
-      if official?
-        formula_dir.find
-      else
+      if formula_dir == path
+        # We only want the top level here so we don't treat commands & casks as formulae.
+        # Sharding is only supported in Formula/ and HomebrewFormula/.
         formula_dir.children
+      else
+        formula_dir.find
       end.select(&method(:formula_file?))
     else
       []
@@ -542,12 +543,7 @@ class Tap
   sig { returns(T::Array[Pathname]) }
   def cask_files
     @cask_files ||= if cask_dir.directory?
-      # TODO: odeprecate the non-official/old logic with a new minor release somehow?
-      if official?
-        cask_dir.find
-      else
-        cask_dir.children
-      end.select(&method(:ruby_file?))
+      cask_dir.find.select(&method(:ruby_file?))
     else
       []
     end
