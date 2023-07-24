@@ -1566,7 +1566,7 @@ class Formula
   sig {
     params(
       install_prefix: T.any(String, Pathname),
-      install_libdir: String,
+      install_libdir: T.any(String, Pathname),
       find_framework: String,
     ).returns(T::Array[String])
   }
@@ -1630,7 +1630,7 @@ class Formula
   def std_pip_args(prefix: self.prefix, build_isolation: false)
     args = ["--verbose", "--no-deps", "--no-binary=:all:", "--ignore-installed",
             "--use-feature=no-binary-enable-wheel-cache"]
-    args << "--prefix=#{prefix}" if prefix.present?
+    args << "--prefix=#{prefix}" if prefix
     args << "--no-build-isolation" unless build_isolation
     args
   end
@@ -2472,11 +2472,20 @@ class Formula
   #
   # @see Utils::Inreplace.inreplace
   # @api public
+  sig {
+    params(
+      paths:        T.any(T::Array[T.untyped], String, Pathname),
+      before:       T.nilable(T.any(Pathname, Regexp, String)),
+      after:        T.nilable(T.any(Pathname, String, Symbol)),
+      audit_result: T::Boolean,
+    ).void
+  }
   def inreplace(paths, before = nil, after = nil, audit_result = true) # rubocop:disable Style/OptionalBooleanParameter
     super(paths, before, after, audit_result)
   rescue Utils::Inreplace::Error => e
     onoe e.to_s
-    raise BuildError.new(self, "inreplace", paths, {})
+    args = paths.is_a?(Array) ? paths : [paths]
+    raise BuildError.new(self, "inreplace", args, {})
   end
 
   protected
