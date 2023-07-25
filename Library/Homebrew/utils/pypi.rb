@@ -76,7 +76,7 @@ module PyPI
       end
 
       sdist = json["urls"].find { |url| url["packagetype"] == "sdist" }
-      return json["info"]["name"] if sdist.nil?
+      return if sdist.nil?
 
       @pypi_info = [
         PyPI.normalize_python_package(json["info"]["name"]), sdist["url"],
@@ -228,7 +228,7 @@ module PyPI
     main_package = if package_name.present?
       Package.new(package_name)
     else
-      Package.new(formula.stable.url, is_url: true)
+      Package.new(T.must(formula.stable).url, is_url: true)
     end
 
     if version.present?

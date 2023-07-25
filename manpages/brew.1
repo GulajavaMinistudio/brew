@@ -1500,6 +1500,14 @@ Don\'t try to fork the repository\.
 Specify the new \fIversion\fR for the cask\.
 .
 .TP
+\fB\-\-version\-arm\fR
+Specify the new cask \fIversion\fR for the ARM architecture\.
+.
+.TP
+\fB\-\-version\-intel\fR
+Specify the new cask \fIversion\fR for the Intel architecture\.
+.
+.TP
 \fB\-\-message\fR
 Prepend \fImessage\fR to the default pull request message\.
 .
@@ -3369,7 +3377,7 @@ If set, do not install formulae and casks in homebrew/core and homebrew/cask tap
 \fBHOMEBREW_NO_INSTALL_UPGRADE\fR
 .
 .br
-If set, \fBbrew install\fR \fIformula\fR will not upgrade \fIformula\fR if it is installed but outdated\.
+If set, \fBbrew install\fR <formula/cask> will not upgrade <formula/cask> if it is installed but outdated\.
 .
 .TP
 \fBHOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK\fR
