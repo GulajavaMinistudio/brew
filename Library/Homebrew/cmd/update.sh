@@ -581,9 +581,10 @@ EOS
   for DIR in "${HOMEBREW_REPOSITORY}" "${HOMEBREW_LIBRARY}"/Taps/*/*
   do
     if [[ -z "${HOMEBREW_NO_INSTALL_FROM_API}" ]] &&
-       [[ -z "${HOMEBREW_DEVELOPER}" && -z "${HOMEBREW_DEV_CMD_RUN}" || -n "${HOMEBREW_UPDATE_AUTO}" ]] &&
-       [[ ("${DIR}" == "${HOMEBREW_CORE_REPOSITORY}" && -z "${HOMEBREW_UPDATE_CORE_TAP}") ||
-          ("${DIR}" == "${HOMEBREW_CASK_REPOSITORY}" && -z "${HOMEBREW_UPDATE_CASK_TAP}") ]]
+       [[ -n "${HOMEBREW_UPDATE_AUTO}" || (-z "${HOMEBREW_DEVELOPER}" && -z "${HOMEBREW_DEV_CMD_RUN}") ]] &&
+       [[ -n "${HOMEBREW_UPDATE_AUTO}" &&
+          (("${DIR}" == "${HOMEBREW_CORE_REPOSITORY}" && -z "${HOMEBREW_AUTO_UPDATE_CORE_TAP}") ||
+          ("${DIR}" == "${HOMEBREW_CASK_REPOSITORY}" && -z "${HOMEBREW_AUTO_UPDATE_CASK_TAP}")) ]]
     then
       continue
     fi
@@ -743,9 +744,10 @@ EOS
   for DIR in "${HOMEBREW_REPOSITORY}" "${HOMEBREW_LIBRARY}"/Taps/*/*
   do
     if [[ -z "${HOMEBREW_NO_INSTALL_FROM_API}" ]] &&
-       [[ -z "${HOMEBREW_DEVELOPER}" && -z "${HOMEBREW_DEV_CMD_RUN}" || -n "${HOMEBREW_UPDATE_AUTO}" ]] &&
-       [[ ("${DIR}" == "${HOMEBREW_CORE_REPOSITORY}" && -z "${HOMEBREW_UPDATE_CORE_TAP}") ||
-          ("${DIR}" == "${HOMEBREW_CASK_REPOSITORY}" && -z "${HOMEBREW_UPDATE_CASK_TAP}") ]]
+       [[ -n "${HOMEBREW_UPDATE_AUTO}" || (-z "${HOMEBREW_DEVELOPER}" && -z "${HOMEBREW_DEV_CMD_RUN}") ]] &&
+       [[ -n "${HOMEBREW_UPDATE_AUTO}" &&
+          (("${DIR}" == "${HOMEBREW_CORE_REPOSITORY}" && -z "${HOMEBREW_AUTO_UPDATE_CORE_TAP}") ||
+          ("${DIR}" == "${HOMEBREW_CASK_REPOSITORY}" && -z "${HOMEBREW_AUTO_UPDATE_CASK_TAP}")) ]]
     then
       continue
     fi
@@ -781,7 +783,6 @@ EOS
       export HOMEBREW_UPDATE_AFTER"${TAP_VAR}"="${CURRENT_REVISION}"
     else
       merge_or_rebase "${DIR}" "${TAP_VAR}" "${UPSTREAM_BRANCH}"
-      [[ -n "${HOMEBREW_VERBOSE}" ]] && echo
     fi
   done
 
@@ -797,6 +798,11 @@ EOS
       if [[ -f "${cache_path}" ]]
       then
         INITIAL_JSON_BYTESIZE="$(wc -c "${cache_path}")"
+      fi
+
+      if [[ -n "${HOMEBREW_VERBOSE}" ]]
+      then
+        echo "Checking if we need to fetch ${filename}..."
       fi
 
       JSON_URLS=()
@@ -846,6 +852,11 @@ EOS
             rm -f "${api_cache}/formula_aliases.txt"
           fi
           HOMEBREW_UPDATED="1"
+
+          if [[ -n "${HOMEBREW_VERBOSE}" ]]
+          then
+            echo "Updated ${filename}."
+          fi
         fi
       else
         echo "Failed to download ${json_url}!" >>"${update_failed_file}"
@@ -855,6 +866,11 @@ EOS
 
     # Not a typo, these are the files we used to download that no longer need so should cleanup.
     rm -f "${HOMEBREW_CACHE}/api/formula.json" "${HOMEBREW_CACHE}/api/cask.json"
+  else
+    if [[ -n "${HOMEBREW_VERBOSE}" ]]
+    then
+      echo "HOMEBREW_NO_INSTALL_FROM_API set: skipping API JSON downloads."
+    fi
   fi
 
   if [[ -f "${update_failed_file}" ]]

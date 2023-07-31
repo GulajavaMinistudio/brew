@@ -313,11 +313,11 @@ auto-update() {
     repo_fetch_heads=("${HOMEBREW_REPOSITORY}/.git/FETCH_HEAD")
     # We might have done an auto-update recently, but not a core/cask clone auto-update.
     # So we check the core/cask clone FETCH_HEAD too.
-    if [[ -n "${HOMEBREW_UPDATE_CORE_TAP}" && -d "${HOMEBREW_CORE_REPOSITORY}/.git" ]]
+    if [[ -n "${HOMEBREW_AUTO_UPDATE_CORE_TAP}" && -d "${HOMEBREW_CORE_REPOSITORY}/.git" ]]
     then
       repo_fetch_heads+=("${HOMEBREW_CORE_REPOSITORY}/.git/FETCH_HEAD")
     fi
-    if [[ -n "${HOMEBREW_UPDATE_CASK_TAP}" && -d "${HOMEBREW_CASK_REPOSITORY}/.git" ]]
+    if [[ -n "${HOMEBREW_AUTO_UPDATE_CASK_TAP}" && -d "${HOMEBREW_CASK_REPOSITORY}/.git" ]]
     then
       repo_fetch_heads+=("${HOMEBREW_CASK_REPOSITORY}/.git/FETCH_HEAD")
     fi
@@ -365,8 +365,8 @@ auto-update() {
   unset AUTO_UPDATE_COMMANDS
   unset AUTO_UPDATE_CORE_TAP_COMMANDS
   unset AUTO_UPDATE_CASK_TAP_COMMANDS
-  unset HOMEBREW_UPDATE_CORE_TAP
-  unset HOMEBREW_UPDATE_CASK_TAP
+  unset HOMEBREW_AUTO_UPDATE_CORE_TAP
+  unset HOMEBREW_AUTO_UPDATE_CASK_TAP
 }
 
 #####
@@ -597,6 +597,7 @@ then
   # Don't support API at this time for older macOS versions.
   if [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -lt "${HOMEBREW_MACOS_OLDEST_SUPPORTED_NUMERIC}" ]]
   then
+    export HOMEBREW_INSTALL_FROM_API_UNSUPPORTED=1
     export HOMEBREW_NO_INSTALL_FROM_API=1
   fi
 else
@@ -674,6 +675,7 @@ fi
 # Generic OS or non-default prefix: API not supported.
 if [[ (-z "${HOMEBREW_MACOS}" && -z "${HOMEBREW_LINUX}") || "${HOMEBREW_PREFIX}" != "${HOMEBREW_DEFAULT_PREFIX}" ]]
 then
+  export HOMEBREW_INSTALL_FROM_API_UNSUPPORTED=1
   export HOMEBREW_NO_INSTALL_FROM_API=1
 fi
 
@@ -824,6 +826,7 @@ case "${HOMEBREW_COMMAND}" in
   ln) HOMEBREW_COMMAND="link" ;;
   instal) HOMEBREW_COMMAND="install" ;; # gem does the same
   uninstal) HOMEBREW_COMMAND="uninstall" ;;
+  post_install) HOMEBREW_COMMAND="postinstall" ;;
   rm) HOMEBREW_COMMAND="uninstall" ;;
   remove) HOMEBREW_COMMAND="uninstall" ;;
   abv) HOMEBREW_COMMAND="info" ;;
@@ -875,7 +878,9 @@ AUTO_UPDATE_CORE_TAP_COMMANDS=(
 if check-array-membership "${HOMEBREW_COMMAND}" "${AUTO_UPDATE_CORE_TAP_COMMANDS[@]}"
 then
   export HOMEBREW_AUTO_UPDATE_COMMAND="1"
-  export HOMEBREW_UPDATE_CORE_TAP="1"
+  export HOMEBREW_AUTO_UPDATE_CORE_TAP="1"
+else
+  unset HOMEBREW_AUTO_UPDATE_CORE_TAP
 fi
 
 # Check for commands that should auto-update the homebrew-cask tap.
@@ -887,7 +892,9 @@ AUTO_UPDATE_CASK_TAP_COMMANDS=(
 if check-array-membership "${HOMEBREW_COMMAND}" "${AUTO_UPDATE_CASK_TAP_COMMANDS[@]}"
 then
   export HOMEBREW_AUTO_UPDATE_COMMAND="1"
-  export HOMEBREW_UPDATE_CASK_TAP="1"
+  export HOMEBREW_AUTO_UPDATE_CASK_TAP="1"
+else
+  unset HOMEBREW_AUTO_UPDATE_CORE_TAP
 fi
 
 # Disable Ruby options we don't need.
