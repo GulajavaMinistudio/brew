@@ -458,7 +458,7 @@ Make sure you modify `s`! This block ignores the returned value.
 
 [`inreplace`](https://rubydoc.brew.sh/Utils/Inreplace) should be used instead of patches when patching something that will never be accepted upstream, e.g. making the software’s build system respect Homebrew’s installation hierarchy. If it's something that affects both Homebrew and MacPorts (i.e. macOS specific) it should be turned into an upstream submitted patch instead.
 
-If you need to modify variables in a `Makefile`, rather than using [`inreplace`](https://rubydoc.brew.sh/Utils/Inreplace), pass them as arguments to `make`:
+If you need to modify variables in a `Makefile`, rather than using [`change_make_var!`](https://rubydoc.brew.sh/StringInreplaceExtension.html#change_make_var!-instance_method) within an [`inreplace`](https://rubydoc.brew.sh/Utils/Inreplace), try passing them as arguments to `make`:
 
 ```ruby
 system "make", "target", "VAR2=value1", "VAR2=value2", "VAR3=values can have spaces"
@@ -612,24 +612,20 @@ For `url`/`regex` guidelines and additional `livecheck` block examples, refer to
 
 ### Unstable versions (`head`)
 
-Formulae can specify an alternate download for the upstream project’s development cutting-edge source (e.g. `master`/`main`/`trunk`) using [`head`](https://rubydoc.brew.sh/Formula#head-class_method), which can be activated by passing `--HEAD` when installing. Homebrew auto-detects most Git, SVN and Mercurial URLs. Specifying it is easy:
+Formulae can specify an alternate download for the upstream project’s development cutting-edge source (e.g. `master`/`main`/`trunk`) using [`head`](https://rubydoc.brew.sh/Formula#head-class_method), which can be activated by passing `--HEAD` when installing. Specifying it is done in the same manner as [`url`](https://rubydoc.brew.sh/Formula#url-class_method):
 
 ```ruby
 class Foo < Formula
-  head "https://github.com/mxcl/lastfm-cocoa.git"
+  head "https://github.com/some/package.git", branch: "main" # the default is "master"
 end
 ```
 
 You can also bundle the URL and any `head`-specific dependencies and resources in a `head do` block.
 
-To use a specific commit, tag, or branch from a repository, specify [`head`](https://rubydoc.brew.sh/Formula#head-class_method) with the `:tag` and `:revision`, `:revision`, or `:branch` option, like so:
-
 ```ruby
 class Foo < Formula
   head do
-    url "https://github.com/some/package.git", branch: "main" # the default is "master"
-                                         # or tag: "1_0_release", revision: "090930930295adslfknsdfsdaffnasd13"
-                                         # or revision: "090930930295adslfknsdfsdaffnasd13"
+    url "https://svn.code.sf.net/p/project/code/trunk"
     depends_on "pkg-config" => :build
   end
 end
@@ -637,14 +633,25 @@ end
 
 You can test whether the [`head`](https://rubydoc.brew.sh/Formula#head-class_method) is being built with `build.head?` in the `install` method.
 
-### Specifying the download strategy explicitly
+### URL download strategies
 
-To use one of Homebrew’s built-in download strategies, specify the `using:` flag on a [`url`](https://rubydoc.brew.sh/Formula#url-class_method) or [`head`](https://rubydoc.brew.sh/Formula#head-class_method). For example:
+When parsing a download URL, Homebrew auto-detects the resource type it points to, whether archive (e.g. tarball, zip) or version control repository (e.g. Git, SVN, Mercurial) and chooses an appropriate download strategy. Some strategies can be passed additional options to alter what's downloaded. For example, to use a specific commit, tag, or branch from a repository, specify [`url`](https://rubydoc.brew.sh/Formula#url-class_method) or [`head`](https://rubydoc.brew.sh/Formula#head-class_method) with the `:tag` and `:revision`, `:revision`, or `:branch` options, like so:
+
+```ruby
+class Foo < Formula
+  homepage "https://github.com/some/package"
+  url "https://github.com/some/package.git",
+      tag:      "v1.6.2",
+      revision: "344cd2ee3463abab4c16ac0f9529a846314932a2"
+end
+```
+
+If not inferable, specify which of Homebrew’s built-in download strategies to use with the `using:` option. For example:
 
 ```ruby
 class Nginx < Formula
   homepage "https://nginx.org/"
-  url "https://nginx.org/download/nginx-1.23.2.tar.gz"
+  url "https://nginx.org/download/nginx-1.23.2.tar.gz", using: :homebrew_curl
   sha256 "a80cc272d3d72aaee70aa8b517b4862a635c0256790434dbfc4d618a999b0b46"
   head "https://hg.nginx.org/nginx/", using: :hg
 ```
@@ -664,7 +671,7 @@ Homebrew offers anonymous download strategies.
 | `:post`          | `CurlPostDownloadStrategy`
 | `:svn`           | `SubversionDownloadStrategy`
 
-If you need more control over the way files are downloaded and staged, you can create a custom download strategy and specify it using the [`url`](https://rubydoc.brew.sh/Formula#url-class_method) method's `:using` option:
+If you need more control over the way files are downloaded and staged, you can create a custom download strategy and specify it with the `:using` option:
 
 ```ruby
 class MyDownloadStrategy < SomeHomebrewDownloadStrategy
@@ -1031,9 +1038,26 @@ Firstly, the overall [environment in which Homebrew runs is filtered](https://gi
 
 The second level of filtering [removes sensitive environment variables](https://github.com/Homebrew/brew/pull/2524) (such as credentials like keys, passwords or tokens) to prevent malicious subprocesses from obtaining them. This has the effect of preventing any such variables from reaching a formula's Ruby code since they are filtered before it is called. The specific implementation is found in the [`ENV.clear_sensitive_environment!` method](https://github.com/Homebrew/brew/blob/HEAD/Library/Homebrew/extend/ENV.rb).
 
-You can set environment variables in a formula's `install` method using `ENV["VARIABLE_NAME"] = "VALUE"`. An example can be seen in the [`csound`](https://github.com/Homebrew/homebrew-core/blob/60e775b0ede2445f9a0d277fa86bb7e594cd6778/Formula/csound.rb#L94) formula. Environment variables can also be set temporarily using the `with_env` method; any variables defined in the call to that method will be restored to their original values at the end of the block. An example can be seen in the [`gh`](https://github.com/Homebrew/homebrew-core/blob/5cd44bc2d74eba8cbada8bb85f505c0ac847057b/Formula/gh.rb#L28) formula.
-
 In summary, any environment variables intended for use by a formula need to conform to these filtering rules in order to be available.
+
+#### Setting environment variables during installation
+
+You can set environment variables in a formula's `install` or `test` blocks using `ENV["VARIABLE_NAME"] = "VALUE"`. An example can be seen in the [`csound`](https://github.com/Homebrew/homebrew-core/blob/60e775b0ede2445f9a0d277fa86bb7e594cd6778/Formula/csound.rb#L94) formula.
+
+Environment variables can also be set temporarily using the `with_env` method; any variables defined in the call to that method will be restored to their original values at the end of the block. An example can be seen in the [`gh`](https://github.com/Homebrew/homebrew-core/blob/5cd44bc2d74eba8cbada8bb85f505c0ac847057b/Formula/gh.rb#L28) formula.
+
+There are also `ENV` helper methods available for many common environment variable setting and retrieval operations, such as:
+
+* `ENV.cxx11` - compile with C++11 features enabled
+* `ENV.deparallelize` - compile with only one job at a time; pass a block to have it only influence specific install steps
+* `ENV.O0`, `ENV.O1`, `ENV.O3` - set a specific compiler optimization level (*default:* macOS: `-Os`, Linux: `-O2`)
+* `ENV.runtime_cpu_detection` - account for formulae that detect CPU features at runtime
+* `ENV.append_to_cflags` - add a value to `CFLAGS` `CXXFLAGS` `OBJCFLAGS` `OBJCXXFLAGS` all at once
+* `ENV.prepend_create_path` - create and prepend a path to an existing list of paths
+* `ENV.remove` - remove a string from an environment variable value
+* `ENV.delete` - unset an environment variable
+
+The full list can be found in the [SharedEnvExtension](https://rubydoc.brew.sh/SharedEnvExtension.html) and [Superenv](https://rubydoc.brew.sh/Superenv.html) module documentation.
 
 ### Deprecating and disabling a formula
 
