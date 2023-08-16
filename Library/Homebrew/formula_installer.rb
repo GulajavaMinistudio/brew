@@ -96,6 +96,9 @@ class FormulaInstaller
     @requirement_messages = []
     @poured_bottle = false
     @start_time = nil
+
+    # Take the original formula instance, which might have been swapped from an API instance to a source instance
+    @formula = previously_fetched_formula if previously_fetched_formula
   end
 
   def self.attempted
@@ -1182,9 +1185,21 @@ on_request: installed_on_request?, options: options)
     deps.each { |dep, _options| fetch_dependency(dep) }
   end
 
+  sig { returns(T.nilable(Formula)) }
+  def previously_fetched_formula
+    # We intentionally don't compare classes here:
+    # from-API-JSON and from-source formula classes are not equal but we
+    # want to equate them to be the same thing here given mixing bottle and
+    # from-source installs of the same formula within the same operation
+    # doesn't make sense.
+    self.class.fetched.find do |fetched_formula|
+      fetched_formula.full_name == formula.full_name && fetched_formula.active_spec_sym == formula.active_spec_sym
+    end
+  end
+
   sig { void }
   def fetch
-    return if self.class.fetched.include?(formula)
+    return if previously_fetched_formula
 
     fetch_dependencies
 

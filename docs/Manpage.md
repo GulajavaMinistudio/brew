@@ -14,25 +14,29 @@ Linux distribution without requiring `sudo`.
 
 ## TERMINOLOGY
 
-**formula**: Homebrew package definition built from upstream sources
+**formula**: Homebrew package definition that builds from upstream sources
 
 **cask**: Homebrew package definition that installs macOS native applications
 
-**keg**: installation destination directory of a given **formula** version e.g. `/usr/local/Cellar/foo/0.1`
+**prefix**: path in which Homebrew is installed, e.g. `/usr/local`
 
-**rack**: directory containing one or more versioned kegs e.g. `/usr/local/Cellar/foo`
+**keg**: installation destination directory of a given **formula** version, e.g. `/usr/local/Cellar/foo/0.1`
 
-**keg-only**: a **formula** is **keg-only** if it is not symlinked into Homebrew's prefix (e.g. `/usr/local`)
+**rack**: directory containing one or more versioned **kegs**, e.g. `/usr/local/Cellar/foo`
 
-**cellar**: directory containing one or more named **racks** e.g. `/usr/local/Cellar`
+**keg-only**: a **formula** is *keg-only* if it is not symlinked into Homebrew's prefix
 
-**Caskroom**: directory containing one or more named **casks** e.g. `/usr/local/Caskroom`
+**opt prefix**: a symlink to the active version of a **keg**, e.g. `/usr/local/opt/foo`
+
+**Cellar**: directory containing one or more named **racks**, e.g. `/usr/local/Cellar`
+
+**Caskroom**: directory containing one or more named **casks**, e.g. `/usr/local/Caskroom`
 
 **external command**: `brew` subcommand defined outside of the Homebrew/brew GitHub repository
 
 **tap**: directory (and usually Git repository) of **formulae**, **casks** and/or **external commands**
 
-**bottle**: pre-built **keg** poured into the **cellar**/**rack** instead of building from upstream sources
+**bottle**: pre-built **keg** poured into a **rack** of the **Cellar** instead of building from upstream sources
 
 ## ESSENTIAL COMMANDS
 
@@ -1579,6 +1583,8 @@ Run Homebrew's unit and integration tests.
   Enable debugging using byebug.
 * `--changed`:
   Only runs tests on files that were changed from the master branch.
+* `--fail-fast`:
+  Exit early on the first failing test.
 * `--only`:
   Run only *`test_script`*`_spec.rb`. Appending `:`*`line_number`* will start at a specific line.
 * `--seed`:
@@ -2170,7 +2176,7 @@ prefix-specific files take precedence over system-wide files (unless
   <br>If set, pass `--verbose` when invoking `curl`(1).
 
 - `HOMEBREW_CURLRC`
-  <br>If set, do not pass `--disable` when invoking `curl`(1), which disables the use of `curlrc`.
+  <br>If set to an absolute path (i.e. beginning with `/`), pass it with `--config` when invoking `curl`(1). If set but _not_ a valid path, do not pass `--disable`, which disables the use of `.curlrc`.
 
 - `HOMEBREW_DEBUG`
   <br>If set, always assume `--debug` when running commands.

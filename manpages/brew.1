@@ -17,31 +17,39 @@ Homebrew is the easiest and most flexible way to install the UNIX tools Apple di
 .
 .SH "TERMINOLOGY"
 \fBformula\fR
-    Homebrew package definition built from upstream sources
+    Homebrew package definition that builds from upstream sources
 .
 .P
 \fBcask\fR
     Homebrew package definition that installs macOS native applications
 .
 .P
+\fBprefix\fR
+    path in which Homebrew is installed, e\.g\. \fB/usr/local\fR
+.
+.P
 \fBkeg\fR
-    installation destination directory of a given \fBformula\fR version e\.g\. \fB/usr/local/Cellar/foo/0\.1\fR
+    installation destination directory of a given \fBformula\fR version, e\.g\. \fB/usr/local/Cellar/foo/0\.1\fR
 .
 .P
 \fBrack\fR
-    directory containing one or more versioned kegs e\.g\. \fB/usr/local/Cellar/foo\fR
+    directory containing one or more versioned \fBkegs\fR, e\.g\. \fB/usr/local/Cellar/foo\fR
 .
 .P
 \fBkeg\-only\fR
-    a \fBformula\fR is \fBkeg\-only\fR if it is not symlinked into Homebrew\'s prefix (e\.g\. \fB/usr/local\fR)
+    a \fBformula\fR is \fIkeg\-only\fR if it is not symlinked into Homebrew\'s prefix
 .
 .P
-\fBcellar\fR
-    directory containing one or more named \fBracks\fR e\.g\. \fB/usr/local/Cellar\fR
+\fBopt prefix\fR
+    a symlink to the active version of a \fBkeg\fR, e\.g\. \fB/usr/local/opt/foo\fR
+.
+.P
+\fBCellar\fR
+    directory containing one or more named \fBracks\fR, e\.g\. \fB/usr/local/Cellar\fR
 .
 .P
 \fBCaskroom\fR
-    directory containing one or more named \fBcasks\fR e\.g\. \fB/usr/local/Caskroom\fR
+    directory containing one or more named \fBcasks\fR, e\.g\. \fB/usr/local/Caskroom\fR
 .
 .P
 \fBexternal command\fR
@@ -53,7 +61,7 @@ Homebrew is the easiest and most flexible way to install the UNIX tools Apple di
 .
 .P
 \fBbottle\fR
-    pre\-built \fBkeg\fR poured into the \fBcellar\fR/\fBrack\fR instead of building from upstream sources
+    pre\-built \fBkeg\fR poured into a \fBrack\fR of the \fBCellar\fR instead of building from upstream sources
 .
 .SH "ESSENTIAL COMMANDS"
 For the full command list, see the \fICOMMANDS\fR section\.
@@ -2274,6 +2282,10 @@ Enable debugging using byebug\.
 Only runs tests on files that were changed from the master branch\.
 .
 .TP
+\fB\-\-fail\-fast\fR
+Exit early on the first failing test\.
+.
+.TP
 \fB\-\-only\fR
 Run only \fItest_script\fR\fB_spec\.rb\fR\. Appending \fB:\fR\fIline_number\fR will start at a specific line\.
 .
@@ -3137,7 +3149,7 @@ If set, pass \fB\-\-verbose\fR when invoking \fBcurl\fR(1)\.
 \fBHOMEBREW_CURLRC\fR
 .
 .br
-If set, do not pass \fB\-\-disable\fR when invoking \fBcurl\fR(1), which disables the use of \fBcurlrc\fR\.
+If set to an absolute path (i\.e\. beginning with \fB/\fR), pass it with \fB\-\-config\fR when invoking \fBcurl\fR(1)\. If set but \fInot\fR a valid path, do not pass \fB\-\-disable\fR, which disables the use of \fB\.curlrc\fR\.
 .
 .TP
 \fBHOMEBREW_DEBUG\fR
