@@ -31,6 +31,8 @@ require "utils/spdx"
 require "extend/on_system"
 require "api"
 require "extend/api_hashable"
+require "cli/parser"
+require "commands"
 
 # A formula provides instructions and metadata for Homebrew to install a piece
 # of software. Every Homebrew formula is a {Formula}.
@@ -1705,8 +1707,7 @@ class Formula
            build_isolation: T::Boolean).returns(T::Array[String])
   }
   def std_pip_args(prefix: self.prefix, build_isolation: false)
-    args = ["--verbose", "--no-deps", "--no-binary=:all:", "--ignore-installed",
-            "--use-feature=no-binary-enable-wheel-cache", "--no-compile"]
+    args = ["--verbose", "--no-deps", "--no-binary=:all:", "--ignore-installed", "--no-compile"]
     args << "--prefix=#{prefix}" if prefix
     args << "--no-build-isolation" unless build_isolation
     args
@@ -1946,11 +1947,8 @@ class Formula
   # an array of all {Formula}
   # this should only be used when users specify `--all` to a command
   # @private
-  def self.all
-    # TODO: ideally avoid using ARGV by moving to e.g. CLI::Parser
-    if ARGV.exclude?("--eval-all") && !Homebrew::EnvConfig.eval_all?
-      odisabled "Formula#all without --eval-all or HOMEBREW_EVAL_ALL"
-    end
+  def self.all(eval_all: false)
+    odisabled "Formula#all without --eval-all or HOMEBREW_EVAL_ALL" if !eval_all && !Homebrew::EnvConfig.eval_all?
 
     (core_names + tap_files).map do |name_or_file|
       Formulary.factory(name_or_file)

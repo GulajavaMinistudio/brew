@@ -137,9 +137,11 @@ a bug report, you will be required to provide this information.
 
 ### `deps` [*`options`*] [*`formula`*|*`cask`* ...]
 
-Show dependencies for *`formula`*. Additional options specific to *`formula`*
-may be appended to the command. When given multiple formula arguments,
-show the intersection of dependencies for each formula.
+Show dependencies for *`formula`*. When given multiple formula arguments,
+show the intersection of dependencies for each formula. By default, `deps`
+shows all required and recommended dependencies.
+
+Note: `--missing` and `--skip-recommended` have precedence over `--include-*`.
 
 * `-n`, `--topological`:
   Sort dependencies in topological order.
@@ -819,6 +821,8 @@ of *`formula`*. When given multiple formula arguments, show the intersection
 of formulae that use *`formula`*. By default, `uses` shows all formulae and casks that
 specify *`formula`* as a required or recommended dependency for their stable builds.
 
+Note: `--missing` and `--skip-recommended` have precedence over `--include-*`.
+
 * `--recursive`:
   Resolve more than one level of dependencies.
 * `--installed`:
@@ -828,13 +832,13 @@ specify *`formula`* as a required or recommended dependency for their stable bui
 * `--eval-all`:
   Evaluate all available formulae and casks, whether installed or not, to show their dependents.
 * `--include-build`:
-  Include all formulae that specify *`formula`* as `:build` type dependency.
+  Include formulae that specify *`formula`* as a `:build` dependency.
 * `--include-test`:
-  Include all formulae that specify *`formula`* as `:test` type dependency.
+  Include formulae that specify *`formula`* as a `:test` dependency.
 * `--include-optional`:
-  Include all formulae that specify *`formula`* as `:optional` type dependency.
+  Include formulae that specify *`formula`* as an `:optional` dependency.
 * `--skip-recommended`:
-  Skip all formulae that specify *`formula`* as `:recommended` type dependency.
+  Skip all formulae that specify *`formula`* as a `:recommended` dependency.
 * `--formula`:
   Include only formulae.
 * `--cask`:
@@ -1165,16 +1169,16 @@ Display the path to the file being used when invoking `brew` *`cmd`*.
 
 ### `contributions` [--user=*`email|username`*] [*`--repositories`*`=`] [*`--csv`*]
 
-Contributions to Homebrew repos.
+Contributions to Homebrew repositories.
 
 * `--repositories`:
-  Specify a comma-separated (no spaces) list of repositories to search. Supported repositories: `brew`, `core`, `cask`, `aliases`, `autoupdate`, `bundle`, `command-not-found`, `test-bot`, `services`, `cask-fonts` and `cask-versions`. Omitting this flag, or specifying `--repositories=all`, searches all repositories. Use `--repositories=primary` to search only the main repositories: brew,core,cask.
+  Specify a comma-separated list of repositories to search. Supported repositories: `brew`, `core`, `cask`, `aliases`, `autoupdate`, `bundle`, `command-not-found`, `test-bot`, `services`, `cask-fonts` and `cask-versions`. Omitting this flag, or specifying `--repositories=primary`, searches only the main repositories: brew,core,cask. Specifying `--repositories=all`, searches all repositories. 
 * `--from`:
-  Date (ISO-8601 format) to start searching contributions.
+  Date (ISO-8601 format) to start searching contributions. Omitting this flag searches the last year.
 * `--to`:
   Date (ISO-8601 format) to stop searching contributions.
 * `--user`:
-  A GitHub username or email address of a specific person to find contribution data for.
+  Specify a comma-separated list of GitHub usernames or email addresses to find contributions from. Omitting this flag searches maintainers.
 * `--csv`:
   Print a CSV of contributions across repositories over the time period.
 

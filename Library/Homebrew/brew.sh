@@ -594,7 +594,7 @@ then
 else
   HOMEBREW_PRODUCT="${HOMEBREW_SYSTEM}brew"
   # Don't try to follow /etc/os-release
-  # shellcheck disable=SC1091
+  # shellcheck disable=SC1091,SC2154
   [[ -n "${HOMEBREW_LINUX}" ]] && HOMEBREW_OS_VERSION="$(source /etc/os-release && echo "${PRETTY_NAME}")"
   : "${HOMEBREW_OS_VERSION:=$(uname -r)}"
   HOMEBREW_OS_USER_AGENT_VERSION="${HOMEBREW_OS_VERSION}"
@@ -912,27 +912,6 @@ then
   export HOMEBREW_DEVELOPER_COMMAND="1"
 fi
 
-if [[ -n "${HOMEBREW_DEVELOPER}" || -n "${HOMEBREW_DEVELOPER_COMMAND}" ]]
-then
-  # Always run with Sorbet for Homebrew developers or Homebrew developer commands.
-  export HOMEBREW_SORBET_RUNTIME="1"
-fi
-
-# NO_SORBET_RUNTIME_COMMANDS are currently failing with Sorbet for homebrew/core.
-# TODO: fix this and remove this if block.
-if [[ -n "${HOMEBREW_SORBET_RUNTIME}" ]]
-then
-  NO_SORBET_RUNTIME_COMMANDS=(
-  )
-
-  if check-array-membership "${HOMEBREW_COMMAND}" "${NO_SORBET_RUNTIME_COMMANDS[@]}"
-  then
-    unset HOMEBREW_SORBET_RUNTIME
-  fi
-
-  unset NO_SORBET_RUNTIME_COMMANDS
-fi
-
 # Provide a (temporary, undocumented) way to disable Sorbet globally if needed
 # to avoid reverting the above.
 if [[ -n "${HOMEBREW_NO_SORBET_RUNTIME}" ]]
@@ -955,6 +934,12 @@ EOS
 
   git config --file="${HOMEBREW_GIT_CONFIG_FILE}" --replace-all homebrew.devcmdrun true 2>/dev/null
   export HOMEBREW_DEV_CMD_RUN="1"
+fi
+
+if [[ -n "${HOMEBREW_DEVELOPER}" || -n "${HOMEBREW_DEV_CMD_RUN}" ]]
+then
+  # Always run with Sorbet for Homebrew developers or when a Homebrew developer command has been run.
+  export HOMEBREW_SORBET_RUNTIME="1"
 fi
 
 if [[ -f "${HOMEBREW_LIBRARY}/Homebrew/cmd/${HOMEBREW_COMMAND}.sh" ]]

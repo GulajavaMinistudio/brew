@@ -155,7 +155,10 @@ Control whether Homebrew automatically links external tap shell completion files
 Show Homebrew and system configuration info useful for debugging\. If you file a bug report, you will be required to provide this information\.
 .
 .SS "\fBdeps\fR [\fIoptions\fR] [\fIformula\fR|\fIcask\fR \.\.\.]"
-Show dependencies for \fIformula\fR\. Additional options specific to \fIformula\fR may be appended to the command\. When given multiple formula arguments, show the intersection of dependencies for each formula\.
+Show dependencies for \fIformula\fR\. When given multiple formula arguments, show the intersection of dependencies for each formula\. By default, \fBdeps\fR shows all required and recommended dependencies\.
+.
+.P
+Note: \fB\-\-missing\fR and \fB\-\-skip\-recommended\fR have precedence over \fB\-\-include\-*\fR\.
 .
 .TP
 \fB\-n\fR, \fB\-\-topological\fR
@@ -1149,6 +1152,9 @@ Disable/enable quarantining of downloads (default: enabled)\.
 .SS "\fBuses\fR [\fIoptions\fR] \fIformula\fR [\.\.\.]"
 Show formulae and casks that specify \fIformula\fR as a dependency; that is, show dependents of \fIformula\fR\. When given multiple formula arguments, show the intersection of formulae that use \fIformula\fR\. By default, \fBuses\fR shows all formulae and casks that specify \fIformula\fR as a required or recommended dependency for their stable builds\.
 .
+.P
+Note: \fB\-\-missing\fR and \fB\-\-skip\-recommended\fR have precedence over \fB\-\-include\-*\fR\.
+.
 .TP
 \fB\-\-recursive\fR
 Resolve more than one level of dependencies\.
@@ -1167,19 +1173,19 @@ Evaluate all available formulae and casks, whether installed or not, to show the
 .
 .TP
 \fB\-\-include\-build\fR
-Include all formulae that specify \fIformula\fR as \fB:build\fR type dependency\.
+Include formulae that specify \fIformula\fR as a \fB:build\fR dependency\.
 .
 .TP
 \fB\-\-include\-test\fR
-Include all formulae that specify \fIformula\fR as \fB:test\fR type dependency\.
+Include formulae that specify \fIformula\fR as a \fB:test\fR dependency\.
 .
 .TP
 \fB\-\-include\-optional\fR
-Include all formulae that specify \fIformula\fR as \fB:optional\fR type dependency\.
+Include formulae that specify \fIformula\fR as an \fB:optional\fR dependency\.
 .
 .TP
 \fB\-\-skip\-recommended\fR
-Skip all formulae that specify \fIformula\fR as \fB:recommended\fR type dependency\.
+Skip all formulae that specify \fIformula\fR as a \fB:recommended\fR dependency\.
 .
 .TP
 \fB\-\-formula\fR
@@ -1680,15 +1686,15 @@ Treat all named arguments as casks\.
 Display the path to the file being used when invoking \fBbrew\fR \fIcmd\fR\.
 .
 .SS "\fBcontributions\fR [\-\-user=\fIemail|username\fR] [\fI\-\-repositories\fR\fB=\fR] [\fI\-\-csv\fR]"
-Contributions to Homebrew repos\.
+Contributions to Homebrew repositories\.
 .
 .TP
 \fB\-\-repositories\fR
-Specify a comma\-separated (no spaces) list of repositories to search\. Supported repositories: \fBbrew\fR, \fBcore\fR, \fBcask\fR, \fBaliases\fR, \fBautoupdate\fR, \fBbundle\fR, \fBcommand\-not\-found\fR, \fBtest\-bot\fR, \fBservices\fR, \fBcask\-fonts\fR and \fBcask\-versions\fR\. Omitting this flag, or specifying \fB\-\-repositories=all\fR, searches all repositories\. Use \fB\-\-repositories=primary\fR to search only the main repositories: brew,core,cask\.
+Specify a comma\-separated list of repositories to search\. Supported repositories: \fBbrew\fR, \fBcore\fR, \fBcask\fR, \fBaliases\fR, \fBautoupdate\fR, \fBbundle\fR, \fBcommand\-not\-found\fR, \fBtest\-bot\fR, \fBservices\fR, \fBcask\-fonts\fR and \fBcask\-versions\fR\. Omitting this flag, or specifying \fB\-\-repositories=primary\fR, searches only the main repositories: brew,core,cask\. Specifying \fB\-\-repositories=all\fR, searches all repositories\.
 .
 .TP
 \fB\-\-from\fR
-Date (ISO\-8601 format) to start searching contributions\.
+Date (ISO\-8601 format) to start searching contributions\. Omitting this flag searches the last year\.
 .
 .TP
 \fB\-\-to\fR
@@ -1696,7 +1702,7 @@ Date (ISO\-8601 format) to stop searching contributions\.
 .
 .TP
 \fB\-\-user\fR
-A GitHub username or email address of a specific person to find contribution data for\.
+Specify a comma\-separated list of GitHub usernames or email addresses to find contributions from\. Omitting this flag searches maintainers\.
 .
 .TP
 \fB\-\-csv\fR
