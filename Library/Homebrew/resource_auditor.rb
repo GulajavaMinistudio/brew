@@ -6,6 +6,8 @@ module Homebrew
   #
   # @api private
   class ResourceAuditor
+    include Utils::Curl
+
     attr_reader :name, :version, :checksum, :url, :mirrors, :using, :specs, :owner, :spec_name, :problems
 
     def initialize(resource, spec_name, options = {})
@@ -44,6 +46,8 @@ module Homebrew
     def audit_version
       if version.nil?
         problem "missing version"
+      elsif owner.is_a?(Formula) && !version.to_s.match?(GitHubPackages::VALID_OCI_TAG_REGEX)
+        problem "version #{version} does not match #{GitHubPackages::VALID_OCI_TAG_REGEX.source}"
       elsif !version.detected_from_url?
         version_text = version
         version_url = Version.detect(url, **specs)
@@ -123,10 +127,12 @@ module Homebrew
           raise HomebrewCurlDownloadStrategyError, url if
             strategy <= HomebrewCurlDownloadStrategy && !Formula["curl"].any_version_installed?
 
-          if (http_content_problem = curl_check_http_content(url,
-                                                             "source URL",
-                                                             specs:             specs,
-                                                             use_homebrew_curl: @use_homebrew_curl))
+          if (http_content_problem = curl_check_http_content(
+            url,
+            "source URL",
+            specs:             specs,
+            use_homebrew_curl: @use_homebrew_curl,
+          ))
             problem http_content_problem
           end
         elsif strategy <= GitDownloadStrategy

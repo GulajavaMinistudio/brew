@@ -31,6 +31,7 @@ class FormulaInstaller
   extend Predicable
 
   attr_reader :formula
+  attr_reader :bottle_tab_runtime_dependencies
 
   attr_accessor :options, :link_keg
 
@@ -96,7 +97,7 @@ class FormulaInstaller
     @requirement_messages = []
     @poured_bottle = false
     @start_time = nil
-    @bottle_tab_runtime_dependencies = {}
+    @bottle_tab_runtime_dependencies = {}.freeze
 
     # Take the original formula instance, which might have been swapped from an API instance to a source instance
     @formula = previously_fetched_formula if previously_fetched_formula
@@ -684,7 +685,8 @@ on_request: installed_on_request?, options: options)
       # When fetching we don't need to recurse the dependency tree as it's already
       # been done for us in `compute_dependencies` and there's no requirement to
       # fetch in a particular order.
-      ignore_deps:                true,
+      # Note, this tree can vary when pouring bottles so we need ot check it then.
+      ignore_deps:                !pour_bottle?,
       installed_as_dependency:    true,
       include_test_formulae:      @include_test_formulae,
       build_from_source_formulae: @build_from_source_formulae,

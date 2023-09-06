@@ -15,6 +15,7 @@ module Cask
   #
   # @api private
   class Audit
+    include ::Utils::Curl
     extend Predicable
 
     attr_reader :cask, :download
