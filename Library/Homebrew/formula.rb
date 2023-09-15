@@ -2579,7 +2579,8 @@ class Formula
   # Returns a list of Dependency objects that are declared in the formula.
   # @private
   def declared_runtime_dependencies
-    recursive_dependencies do |_, dependency|
+    cache_key = "Formula#declared_runtime_dependencies" unless build.any_args_or_options?
+    Dependency.expand(self, cache_key: cache_key) do |_, dependency|
       Dependency.prune if dependency.build?
       next if dependency.required?
 
@@ -2629,7 +2630,7 @@ class Formula
   #
   # # If there is a "make install" available, please use it!
   # system "make", "install"</pre>
-  sig { params(cmd: T.any(String, Pathname), args: T.any(String, Pathname, Integer)).void }
+  sig { params(cmd: T.any(String, Pathname), args: T.any(String, Integer, Pathname, Symbol)).void }
   def system(cmd, *args)
     verbose_using_dots = Homebrew::EnvConfig.verbose_using_dots?
 
@@ -2794,7 +2795,7 @@ class Formula
   end
 
   # Runs `xcodebuild` without Homebrew's compiler environment variables set.
-  sig { params(args: T.any(String, Pathname)).void }
+  sig { params(args: T.any(String, Integer, Pathname, Symbol)).void }
   def xcodebuild(*args)
     removed = ENV.remove_cc_etc
 
