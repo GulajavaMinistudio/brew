@@ -537,8 +537,7 @@ class Formula
   sig { returns(T::Array[String]) }
   def oldnames
     @oldnames ||= if tap
-      T.must(tap).formula_renames
-       .flat_map { |old_name, new_name| (new_name == name) ? old_name : [] }
+      T.must(tap).formula_oldnames.fetch(name, [])
     else
       []
     end
@@ -2237,7 +2236,7 @@ class Formula
       "versions"                 => {
         "stable" => stable&.version&.to_s,
         "head"   => head&.version&.to_s,
-        "bottle" => !bottle_specification.checksums.empty?,
+        "bottle" => bottle_defined?,
       },
       "urls"                     => {},
       "revision"                 => revision,
@@ -2398,7 +2397,7 @@ class Formula
 
     variations = {}
 
-    if path.exist? && (self.class.on_system_blocks_exist? || @on_system_blocks_exist)
+    if path.exist? && on_system_blocks_exist?
       formula_contents = path.read
       OnSystem::ALL_OS_ARCH_COMBINATIONS.each do |os, arch|
         bottle_tag = Utils::Bottles::Tag.new(system: os, arch: arch)
@@ -2434,7 +2433,7 @@ class Formula
       "files"    => {},
     }
     bottle_spec.collector.each_tag do |tag|
-      tag_spec = bottle_spec.collector.specification_for(tag)
+      tag_spec = bottle_spec.collector.specification_for(tag, no_older_versions: true)
       os_cellar = tag_spec.cellar
       os_cellar = os_cellar.inspect if os_cellar.is_a?(Symbol)
 
@@ -2450,6 +2449,11 @@ class Formula
       }
     end
     hash
+  end
+
+  # @private
+  def on_system_blocks_exist?
+    self.class.on_system_blocks_exist? || @on_system_blocks_exist
   end
 
   # @private
