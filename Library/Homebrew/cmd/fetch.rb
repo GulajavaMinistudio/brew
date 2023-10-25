@@ -19,10 +19,10 @@ module Homebrew
         and binaries for <cask>s. For files, also print SHA-256 checksums.
       EOS
       flag   "--os=",
-             description: "Download for the given operating system." \
+             description: "Download for the given operating system. " \
                           "(Pass `all` to download for all operating systems.)"
       flag   "--arch=",
-             description: "Download for the given CPU architecture." \
+             description: "Download for the given CPU architecture. " \
                           "(Pass `all` to download for all architectures.)"
       flag   "--bottle-tag=",
              description: "Download a bottle for given tag."
@@ -129,7 +129,12 @@ module Homebrew
                   next
                 end
 
-                formula.fetch_bottle_tab
+                begin
+                  bottle.fetch_tab
+                rescue DownloadError
+                  retry if retry_fetch?(bottle, args: args)
+                  raise
+                end
                 fetch_formula(bottle, args: args)
               rescue Interrupt
                 raise

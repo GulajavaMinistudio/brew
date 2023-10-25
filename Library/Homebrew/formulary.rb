@@ -149,6 +149,8 @@ module Formulary
 
     class_name = class_s(name)
     json_formula = Homebrew::API::Formula.all_formulae[name]
+    raise FormulaUnavailableError, name if json_formula.nil?
+
     json_formula = Homebrew::API.merge_variations(json_formula)
 
     uses_from_macos_names = json_formula["uses_from_macos"].map do |dep|
@@ -241,7 +243,11 @@ module Formulary
 
       if (urls_stable = json_formula["urls"]["stable"].presence)
         stable do
-          url_spec = { tag: urls_stable["tag"], revision: urls_stable["revision"] }.compact
+          url_spec = {
+            tag:      urls_stable["tag"],
+            revision: urls_stable["revision"],
+            using:    urls_stable["using"]&.to_sym,
+          }.compact
           url urls_stable["url"], **url_spec
           version json_formula["versions"]["stable"]
           sha256 urls_stable["checksum"] if urls_stable["checksum"].present?
@@ -256,7 +262,10 @@ module Formulary
 
       if (urls_head = json_formula["urls"]["head"].presence)
         head do
-          url_spec = { branch: urls_head["branch"] }.compact
+          url_spec = {
+            branch: urls_head["branch"],
+            using:  urls_head["using"]&.to_sym,
+          }.compact
           url urls_head["url"], **url_spec
 
           instance_exec(:head, &add_deps)
@@ -963,6 +972,10 @@ module Formulary
     end
 
     if CoreTap.instance.formula_renames.key?(ref)
+      unless Homebrew::EnvConfig.no_install_from_api?
+        return FormulaAPILoader.new(CoreTap.instance.formula_renames[ref])
+      end
+
       return TapLoader.new("#{CoreTap.instance}/#{ref}", from: from, warn: warn)
     end
 

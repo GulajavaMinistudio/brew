@@ -173,7 +173,7 @@ dependencies if the installed versions are outdated.
 * `--dot`:
   Show text-based graph description in DOT format.
 * `--annotate`:
-  Mark any build, test, optional, or recommended dependencies as such in the output.
+  Mark any build, test, implicit, optional, or recommended dependencies as such in the output.
 * `--installed`:
   List dependencies for formulae that are currently installed. If *`formula`* is specified, list only its dependencies that are currently installed.
 * `--missing`:
@@ -181,7 +181,9 @@ dependencies if the installed versions are outdated.
 * `--eval-all`:
   Evaluate all available formulae and casks, whether installed or not, to list their dependencies.
 * `--for-each`:
-  Switch into the mode used by the `--all` option, but only list dependencies for each provided *`formula`*, one formula per line. This is used for debugging the `--installed`/`--all` display mode.
+  Switch into the mode used by the `--eval-all` option, but only list dependencies for each provided *`formula`*, one formula per line. This is used for debugging the `--installed`/`--eval-all` display mode.
+* `--HEAD`:
+  Show dependencies for HEAD version instead of stable version.
 * `--formula`:
   Treat all named arguments as formulae.
 * `--cask`:
@@ -241,9 +243,9 @@ Download a bottle (if available) or source packages for *`formula`*e
 and binaries for *`cask`*s. For files, also print SHA-256 checksums.
 
 * `--os`:
-  Download for the given operating system.(Pass `all` to download for all operating systems.)
+  Download for the given operating system. (Pass `all` to download for all operating systems.)
 * `--arch`:
-  Download for the given CPU architecture.(Pass `all` to download for all architectures.)
+  Download for the given CPU architecture. (Pass `all` to download for all architectures.)
 * `--bottle-tag`:
   Download a bottle for given tag.
 * `--HEAD`:
@@ -853,9 +855,9 @@ Display Homebrew's download cache. See also `HOMEBREW_CACHE`.
 If *`formula`* is provided, display the file or directory used to cache *`formula`*.
 
 * `--os`:
-  Show cache file for the given operating system.(Pass `all` to show cache files for all operating systems.)
+  Show cache file for the given operating system. (Pass `all` to show cache files for all operating systems.)
 * `--arch`:
-  Show cache file for the given CPU architecture.(Pass `all` to show cache files for all architectures.)
+  Show cache file for the given CPU architecture. (Pass `all` to show cache files for all architectures.)
 * `-s`, `--build-from-source`:
   Show the cache file used when building from source.
 * `--force-bottle`:
@@ -1566,7 +1568,7 @@ user if something is wrong with the installed formula.
 * `-f`, `--force`:
   Test formulae even if they are unlinked.
 * `--HEAD`:
-  Test the head version of a formula.
+  Test the HEAD version of a formula.
 * `--keep-tmp`:
   Retain the temporary files created for the test.
 * `--retry`:
@@ -1624,6 +1626,8 @@ Show the unbottled dependents of formulae.
   Skip getting analytics data and sort by number of dependents instead.
 * `--total`:
   Print the number of unbottled and total formulae.
+* `--lost`:
+  Print the `homebrew/core` commits where bottles were lost in the last week.
 * `--eval-all`:
   Evaluate all available formulae and casks, whether installed or not, to check them. Implied if `HOMEBREW_EVAL_ALL` is set.
 
@@ -2027,6 +2031,8 @@ Database update for `brew which-formula`
   Update database entries with outdated formula versions.
 * `--install-missing`:
   Install and update formulae that are missing from the database and don't have bottles.
+* `--eval-all`:
+  Evaluate all installed taps, rather than just the core tap.
 * `--max-downloads`:
   Specify a maximum number of formulae to download and update.
 
