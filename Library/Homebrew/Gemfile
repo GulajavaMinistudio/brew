@@ -4,7 +4,7 @@ source "https://rubygems.org"
 
 # The default case (no envs), should always be a restrictive bound on the lowest supported minor version.
 # This is the branch that Dependabot will use.
-if ENV.fetch("HOMEBREW_USE_RUBY_FROM_PATH", "").empty?
+if ENV.fetch("HOMEBREW_USE_RUBY_FROM_PATH", "").empty? && ENV.fetch("HOMEBREW_RUBY3", "").empty?
   ruby "~> 2.6.0"
 else
   ruby ">= 2.6.0"
@@ -66,6 +66,11 @@ group :typecheck, optional: true do
   gem "sorbet-static-and-runtime", require: false
   gem "spoom", require: false
   gem "tapioca", require: false
+end
+
+# shared gems (used by multiple groups)
+group :audit, :bump_unversioned_casks, :livecheck, optional: true do
+  gem "rexml", require: false
 end
 
 # vendored gems (no group)

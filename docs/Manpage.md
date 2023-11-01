@@ -663,6 +663,10 @@ is flanked by slashes, it is interpreted as a regular expression.
 * `--ubuntu`:
   Search for *`text`* in the given database.
 
+### `setup-ruby`
+
+Installs and configures Homebrew's Ruby.
+
 ### `shellenv [bash|csh|fish|pwsh|sh|tcsh|zsh]`
 
 Print export statements. When run in a shell, this installation of Homebrew will be added to your `PATH`, `MANPATH`, and `INFOPATH`.
@@ -1786,9 +1790,11 @@ until explicitly told to stop, utilising `launchd`.
 `brew autoupdate start` [*``interval``*] [*``options``*]
 <br>Start autoupdating either once every `interval` hours or once every 24 hours.
 Please note the interval has to be passed in seconds, so 12 hours would be
-`brew autoupdate start 43200`. Pass `--upgrade` or `--cleanup` to automatically
-run `brew upgrade` and/or `brew cleanup` respectively. Pass `--enable-notification`
-to send a notification when the autoupdate process has finished successfully.
+`brew autoupdate start 43200`. If you want to start the autoupdate immediately
+and on system boot, pass `--immediate`. Pass `--upgrade` or `--cleanup`
+to automatically run `brew upgrade` and/or `brew cleanup` respectively.
+Pass `--enable-notification` to send a notification when the autoupdate
+process has finished successfully.
 
 `brew autoupdate stop`
 <br>Stop autoupdating, but retain plist and logs.
@@ -1811,7 +1817,7 @@ to send a notification when the autoupdate process has finished successfully.
 * `--enable-notification`:
   Send a notification when the autoupdate process has finished successfully, if `terminal-notifier` is installed and found. Must be passed with `start`. Note: notifications are enabled by default on macOS Catalina and newer.
 * `--immediate`:
-  Starts the autoupdate command immediately, instead of waiting for one interval (24 hours by default) to pass first. Must be passed with `start`.
+  Starts the autoupdate command immediately and on system boot, instead of waiting for one interval (24 hours by default) to pass first. Must be passed with `start`.
 
 ### `bundle` [*`subcommand`*]
 

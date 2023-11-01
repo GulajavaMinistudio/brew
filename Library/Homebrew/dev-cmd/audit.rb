@@ -153,6 +153,10 @@ module Homebrew
       return
     end
 
+    gem_groups = ["audit"]
+    gem_groups << "style" unless skip_style
+    Homebrew.install_bundler_gems!(groups: gem_groups)
+
     style_files = args.named.to_paths unless skip_style
 
     only_cops = args.only_cops
@@ -341,9 +345,11 @@ module Homebrew
   end
 
   def self.format_problem_lines(problems)
-    problems.map do |message:, location:, corrected:|
-      status = " #{Formatter.success("[corrected]")}" if corrected
+    problems.map do |problem|
+      status = " #{Formatter.success("[corrected]")}" if problem.fetch(:corrected)
+      location = problem.fetch(:location)
       location = "#{location.line&.to_s&.prepend("line ")}#{location.column&.to_s&.prepend(", col ")}: " if location
+      message = problem.fetch(:message)
       "* #{location}#{message.chomp.gsub("\n", "\n    ")}#{status}"
     end
   end

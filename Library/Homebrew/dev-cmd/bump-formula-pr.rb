@@ -117,7 +117,7 @@ module Homebrew
 
     # This will be run by `brew audit` later so run it first to not start
     # spamming during normal output.
-    Homebrew.install_bundler_gems!(groups: ["style"]) unless args.no_audit?
+    Homebrew.install_bundler_gems!(groups: ["audit", "style"]) unless args.no_audit?
 
     tap_remote_repo = formula.tap.full_name || formula.tap.remote_repo
     remote = "origin"
@@ -410,7 +410,7 @@ module Homebrew
 
   def fetch_resource_and_forced_version(formula, new_version, url, **specs)
     resource = Resource.new
-    resource.url(url, specs)
+    resource.url(url, **specs)
     resource.owner = Resource.new(formula.name)
     forced_version = new_version && new_version != resource.version.to_s
     resource.version(new_version) if forced_version
