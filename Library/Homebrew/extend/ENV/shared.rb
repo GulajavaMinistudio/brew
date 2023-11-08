@@ -288,7 +288,7 @@ module SharedEnvExtension
     gcc_version_name = "gcc@#{version}"
 
     gcc = Formulary.factory("gcc")
-    if gcc.try(:version_suffix) == version
+    if gcc.respond_to?(:version_suffix) && T.unsafe(gcc).version_suffix == version
       gcc
     else
       Formulary.factory(gcc_version_name)
@@ -348,7 +348,7 @@ module SharedEnvExtension
     COMPILER_SYMBOL_MAP.fetch(value) do |other|
       case other
       when GNU_GCC_REGEXP
-        other
+        other.to_sym
       else
         raise "Invalid value for #{source}: #{other}"
       end
