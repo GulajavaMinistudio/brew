@@ -502,6 +502,11 @@ case "$*" in
     ;;
 esac
 
+if [[ -n "${HOMEBREW_DEVELOPER}" ]]
+then
+  export HOMEBREW_RUBY3="1"
+fi
+
 # TODO: bump version when new macOS is released or announced and update references in:
 # - docs/Installation.md
 # - https://github.com/Homebrew/install/blob/HEAD/install.sh
