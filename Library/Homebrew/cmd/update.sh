@@ -268,7 +268,7 @@ EOS
     else
       if [[ -n "${UPSTREAM_TAG}" && "${UPSTREAM_BRANCH}" != "master" ]]
       then
-        git checkout --force -B "master" "origin/master" "${QUIET_ARGS[@]}"
+        git branch --force "master" "origin/master" "${QUIET_ARGS[@]}"
       fi
 
       git checkout --force -B "${UPSTREAM_BRANCH}" "${REMOTE_REF}" "${QUIET_ARGS[@]}"
@@ -893,7 +893,10 @@ EOS
      [[ ! -f "${HOMEBREW_CACHE}/all_commands_list.txt" ]] ||
      [[ -n "${HOMEBREW_DEVELOPER}" && -z "${HOMEBREW_UPDATE_AUTO}" ]]
   then
-    brew update-report "$@"
+    (
+      unset HOMEBREW_RUBY3
+      brew update-report "$@"
+    )
     return $?
   elif [[ -z "${HOMEBREW_UPDATE_AUTO}" && -z "${HOMEBREW_QUIET}" ]]
   then
