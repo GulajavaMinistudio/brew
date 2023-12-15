@@ -758,6 +758,9 @@ Also include outdated casks including those with \fBauto_updates true\fR\.
 .SS "\fBpin\fR \fIinstalled_formula\fR [\.\.\.]"
 Pin the specified \fIformula\fR, preventing them from being upgraded when issuing the \fBbrew upgrade\fR \fIformula\fR command\. See also \fBunpin\fR\.
 .
+.P
+Note: Other packages which depend on newer versions of a pinned formula might not install or run correctly\.
+.
 .SS "\fBpostinstall\fR, \fBpost_install\fR \fIinstalled_formula\fR [\.\.\.]"
 Rerun the post\-install steps for \fIformula\fR\.
 .
@@ -1101,10 +1104,6 @@ Install from a bottle if it exists for the current or newest version of macOS, e
 .TP
 \fB\-\-fetch\-HEAD\fR
 Fetch the upstream repository to detect if the HEAD installation of the formula is outdated\. Otherwise, the repository\'s HEAD will only be checked for updates when a new stable or development version has been released\.
-.
-.TP
-\fB\-\-ignore\-pinned\fR
-Set a successful exit status even if pinned formulae are not upgraded\.
 .
 .TP
 \fB\-\-keep\-tmp\fR
@@ -1981,10 +1980,6 @@ Run \fBbrew pr\-publish\fR on matching pull requests\.
 Instruct \fBbrew pr\-publish\fR to automatically reformat and reword commits in the pull request to the preferred format\.
 .
 .TP
-\fB\-\-no\-autosquash\fR
-Instruct \fBbrew pr\-publish\fR to skip automatically reformatting and rewording commits in the pull request to the preferred format\.
-.
-.TP
 \fB\-\-ignore\-failures\fR
 Include pull requests that have failing status checks\.
 .
@@ -1994,10 +1989,6 @@ Publish bottles for a pull request with GitHub Actions\. Requires write access t
 .TP
 \fB\-\-autosquash\fR
 If supported on the target tap, automatically reformat and reword commits to our preferred format\.
-.
-.TP
-\fB\-\-no\-autosquash\fR
-Skip automatically reformatting and rewording commits in the pull request to the preferred format, even if supported on the target tap\.
 .
 .TP
 \fB\-\-large\-runner\fR
@@ -2049,10 +2040,6 @@ If the formula specifies a rebuild version, attempt to preserve its value in the
 .TP
 \fB\-\-autosquash\fR
 Automatically reformat and reword commits in the pull request to our preferred format\.
-.
-.TP
-\fB\-\-no\-autosquash\fR
-Skip automatically reformatting and rewording commits in the pull request to our preferred format\.
 .
 .TP
 \fB\-\-branch\-okay\fR

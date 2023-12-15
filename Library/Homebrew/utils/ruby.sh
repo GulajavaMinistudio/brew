@@ -1,6 +1,9 @@
 # When bumping, run `brew vendor-gems --update=--ruby`
 # When bumping to a new major/minor version, also update the bounds in the Gemfile
-export HOMEBREW_REQUIRED_RUBY_VERSION=2.6.10
+export HOMEBREW_REQUIRED_RUBY_VERSION=3.1
+
+# TODO: remove this after we want Dependabot to point to 3.1 minimum
+export HOMEBREW_RUBY3="1"
 
 # HOMEBREW_LIBRARY is from the user environment
 # shellcheck disable=SC2154
@@ -10,24 +13,13 @@ test_ruby() {
     return 1
   fi
 
-  supported_ruby_versions=()
-  if [[ -n "${HOMEBREW_RUBY3}" && -z "${HOMEBREW_USE_RUBY_FROM_PATH}" ]]
-  then
-    supported_ruby_versions+=("3.1.0")
-  fi
-  supported_ruby_versions+=("${HOMEBREW_REQUIRED_RUBY_VERSION}")
+  "$1" --enable-frozen-string-literal --disable=gems,did_you_mean,rubyopt \
+    "${HOMEBREW_LIBRARY}/Homebrew/utils/ruby_check_version_script.rb" \
+    "${HOMEBREW_REQUIRED_RUBY_VERSION}" 2>/dev/null
+}
 
-  for ruby_version in "${supported_ruby_versions[@]}"
-  do
-    if "$1" --enable-frozen-string-literal --disable=gems,did_you_mean,rubyopt \
-       "${HOMEBREW_LIBRARY}/Homebrew/utils/ruby_check_version_script.rb" \
-       "${ruby_version}" 2>/dev/null
-    then
-      return 0
-    fi
-  done
-
-  return 1
+system_ruby_supported() {
+  ([[ -z "${HOMEBREW_MACOS}" ]] || can_use_ruby_from_path)
 }
 
 can_use_ruby_from_path() {
@@ -51,47 +43,37 @@ find_first_valid_ruby() {
   done
 }
 
-# HOMEBREW_MACOS is set by brew.sh
 # HOMEBREW_PATH is set by global.rb
 # shellcheck disable=SC2154
 find_ruby() {
-  if [[ -n "${HOMEBREW_MACOS}" ]] && ! can_use_ruby_from_path
+  local valid_ruby
+
+  # Prioritise rubies from the filtered path (/usr/bin etc) unless explicitly overridden.
+  if ! can_use_ruby_from_path
   then
-    echo "/System/Library/Frameworks/Ruby.framework/Versions/Current/usr/bin/ruby"
-  else
-    local valid_ruby
-
-    # Prioritise rubies from the filtered path (/usr/bin etc) unless explicitly overridden.
-    if ! can_use_ruby_from_path
-    then
-      # function which() is set by brew.sh
-      # it is aliased to `type -P`
-      # shellcheck disable=SC2230
-      valid_ruby=$(find_first_valid_ruby < <(which -a ruby))
-    fi
-
-    if [[ -z "${valid_ruby}" ]]
-    then
-      # Same as above
-      # shellcheck disable=SC2230
-      valid_ruby=$(find_first_valid_ruby < <(PATH="${HOMEBREW_PATH}" which -a ruby))
-    fi
-
-    echo "${valid_ruby}"
+    # function which() is set by brew.sh
+    # it is aliased to `type -P`
+    # shellcheck disable=SC2230
+    valid_ruby=$(find_first_valid_ruby < <(which -a ruby))
   fi
+
+  if [[ -z "${valid_ruby}" ]]
+  then
+    # Same as above
+    # shellcheck disable=SC2230
+    valid_ruby=$(find_first_valid_ruby < <(PATH="${HOMEBREW_PATH}" which -a ruby))
+  fi
+
+  echo "${valid_ruby}"
 }
 
 # HOMEBREW_FORCE_VENDOR_RUBY is from the user environment
-# HOMEBREW_MACOS_SYSTEM_RUBY_NEW_ENOUGH are set by brew.sh
 # shellcheck disable=SC2154
 need_vendored_ruby() {
   if [[ -n "${HOMEBREW_FORCE_VENDOR_RUBY}" ]]
   then
     return 0
-  elif [[ -n "${HOMEBREW_MACOS_SYSTEM_RUBY_NEW_ENOUGH}" ]] && ! can_use_ruby_from_path
-  then
-    return 1
-  elif ([[ -z "${HOMEBREW_MACOS}" ]] || can_use_ruby_from_path) && test_ruby "${HOMEBREW_RUBY_PATH}"
+  elif system_ruby_supported && test_ruby "${HOMEBREW_RUBY_PATH}"
   then
     return 1
   else
@@ -108,8 +90,6 @@ setup-ruby-path() {
   local vendor_ruby_terminfo
   local vendor_ruby_latest_version
   local vendor_ruby_current_version
-  # When bumping check if HOMEBREW_MACOS_SYSTEM_RUBY_NEW_ENOUGH (in brew.sh)
-  # also needs to be changed.
   local ruby_exec
   local upgrade_fail
   local install_fail
@@ -152,7 +132,11 @@ If there's no Homebrew Portable Ruby available for your processor:
       brew vendor-install ruby || odie "${upgrade_fail}"
     fi
   else
-    HOMEBREW_RUBY_PATH="$(find_ruby)"
+    if system_ruby_supported
+    then
+      HOMEBREW_RUBY_PATH="$(find_ruby)"
+    fi
+
     if need_vendored_ruby
     then
       brew vendor-install ruby || odie "${install_fail}"

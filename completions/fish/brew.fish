@@ -1166,7 +1166,6 @@ __fish_brew_complete_arg 'pr-automerge' -l autosquash -d 'Instruct `brew pr-publ
 __fish_brew_complete_arg 'pr-automerge' -l debug -d 'Display any debugging information'
 __fish_brew_complete_arg 'pr-automerge' -l help -d 'Show this message'
 __fish_brew_complete_arg 'pr-automerge' -l ignore-failures -d 'Include pull requests that have failing status checks'
-__fish_brew_complete_arg 'pr-automerge' -l no-autosquash -d 'Instruct `brew pr-publish` to skip automatically reformatting and rewording commits in the pull request to the preferred format'
 __fish_brew_complete_arg 'pr-automerge' -l publish -d 'Run `brew pr-publish` on matching pull requests'
 __fish_brew_complete_arg 'pr-automerge' -l quiet -d 'Make some output more quiet'
 __fish_brew_complete_arg 'pr-automerge' -l tap -d 'Target tap repository (default: `homebrew/core`)'
@@ -1184,7 +1183,6 @@ __fish_brew_complete_arg 'pr-publish' -l debug -d 'Display any debugging informa
 __fish_brew_complete_arg 'pr-publish' -l help -d 'Show this message'
 __fish_brew_complete_arg 'pr-publish' -l large-runner -d 'Run the upload job on a large runner'
 __fish_brew_complete_arg 'pr-publish' -l message -d 'Message to include when autosquashing revision bumps, deletions, and rebuilds'
-__fish_brew_complete_arg 'pr-publish' -l no-autosquash -d 'Skip automatically reformatting and rewording commits in the pull request to the preferred format, even if supported on the target tap'
 __fish_brew_complete_arg 'pr-publish' -l quiet -d 'Make some output more quiet'
 __fish_brew_complete_arg 'pr-publish' -l tap -d 'Target tap repository (default: `homebrew/core`)'
 __fish_brew_complete_arg 'pr-publish' -l verbose -d 'Make some output more verbose'
@@ -1203,7 +1201,6 @@ __fish_brew_complete_arg 'pr-pull' -l help -d 'Show this message'
 __fish_brew_complete_arg 'pr-pull' -l ignore-missing-artifacts -d 'Comma-separated list of workflows which can be ignored if they have not been run'
 __fish_brew_complete_arg 'pr-pull' -l keep-old -d 'If the formula specifies a rebuild version, attempt to preserve its value in the generated DSL'
 __fish_brew_complete_arg 'pr-pull' -l message -d 'Message to include when autosquashing revision bumps, deletions, and rebuilds'
-__fish_brew_complete_arg 'pr-pull' -l no-autosquash -d 'Skip automatically reformatting and rewording commits in the pull request to our preferred format'
 __fish_brew_complete_arg 'pr-pull' -l no-cherry-pick -d 'Do not cherry-pick commits from the pull request branch'
 __fish_brew_complete_arg 'pr-pull' -l no-commit -d 'Do not generate a new commit before uploading'
 __fish_brew_complete_arg 'pr-pull' -l no-upload -d 'Download the bottles but don\'t upload them'
@@ -1672,7 +1669,6 @@ __fish_brew_complete_arg 'upgrade' -l greedy -d 'Also include casks with `auto_u
 __fish_brew_complete_arg 'upgrade' -l greedy-auto-updates -d 'Also include casks with `auto_updates true`'
 __fish_brew_complete_arg 'upgrade' -l greedy-latest -d 'Also include casks with `version :latest`'
 __fish_brew_complete_arg 'upgrade' -l help -d 'Show this message'
-__fish_brew_complete_arg 'upgrade' -l ignore-pinned -d 'Set a successful exit status even if pinned formulae are not upgraded'
 __fish_brew_complete_arg 'upgrade' -l input-methoddir -d 'Target location for Input Methods (default: `~/Library/Input Methods`)'
 __fish_brew_complete_arg 'upgrade' -l interactive -d 'Download and patch formula, then open a shell. This allows the user to run `./configure --help` and otherwise determine how to turn the software package into a Homebrew package'
 __fish_brew_complete_arg 'upgrade' -l internet-plugindir -d 'Target location for Internet Plugins (default: `~/Library/Internet Plug-Ins`)'
@@ -1746,10 +1742,12 @@ __fish_brew_complete_arg 'bundle;
         and not __fish_brew_opt --file --global
     ' -l global  -d "Use \$HOME/.Brewfile"
 
+__fish_brew_complete_sub_cmd 'bundle' 'install' "Install and upgrade (by default) all dependencies from the Brewfile."
 __fish_brew_complete_sub_cmd 'bundle' 'dump'    "Write all installed casks/formulae/taps into a Brewfile"
 __fish_brew_complete_sub_cmd 'bundle' 'cleanup' "Uninstall all dependencies not listed in a Brewfile"
 __fish_brew_complete_sub_cmd 'bundle' 'check'   "Check if all dependencies are installed in a Brewfile"
 __fish_brew_complete_sub_cmd 'bundle' 'exec'    "Run an external command in an isolated build environment"
+__fish_brew_complete_sub_cmd 'bundle' 'list'    "List all dependencies present in the Brewfile."
 
 # --force is available only for the dump/cleanup subcommands
 __fish_brew_complete_sub_arg 'bundle' 'dump cleanup' -l force -d "Uninstall dependencies or overwrite an existing Brewfile"

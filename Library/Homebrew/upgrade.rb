@@ -337,7 +337,7 @@ module Homebrew
 
       if pinned_dependents.present?
         plural = Utils.pluralize("dependent", pinned_dependents.count)
-        ohai "Not upgrading #{pinned_dependents.count} pinned #{plural}:"
+        opoo "Not upgrading #{pinned_dependents.count} pinned #{plural}:"
         puts(pinned_dependents.map do |f|
           "#{f.full_specified_name} #{f.pkg_version}"
         end.join(", "))
@@ -462,8 +462,8 @@ module Homebrew
 
     def depends_on(one, two)
       if one.any_installed_keg
-         &.runtime_dependencies
-         &.any? { |dependency| dependency["full_name"] == two.full_name }
+            &.runtime_dependencies
+            &.any? { |dependency| dependency["full_name"] == two.full_name }
         1
       else
         one <=> two

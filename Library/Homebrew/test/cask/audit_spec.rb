@@ -307,7 +307,7 @@ describe Cask::Audit, :cask do
         let(:cask_token) { "token-beta" }
 
         it "fails if the cask is from an official tap" do
-          allow(cask).to receive(:tap).and_return(Tap.fetch("homebrew/cask"))
+          allow(cask).to receive(:tap).and_return(CoreCaskTap.instance)
 
           expect(run).to error_with(/token contains version designation/)
         end
@@ -369,7 +369,7 @@ describe Cask::Audit, :cask do
 
       context "when cask token is in tap_migrations.json and" do
         let(:cask_token) { "token-migrated" }
-        let(:tap) { Tap.fetch("homebrew/cask") }
+        let(:tap) { CoreCaskTap.instance }
 
         before do
           allow(tap).to receive(:tap_migrations).and_return({ cask_token => "homebrew/core" })
@@ -471,8 +471,7 @@ describe Cask::Audit, :cask do
       let(:unpack_double) { instance_double(UnpackStrategy::Zip) }
 
       before do
-        allow(audit).to receive(:download).and_return(download_double)
-        allow(audit).to receive(:signing?).and_return(true)
+        allow(audit).to receive_messages(download: download_double, signing?: true)
         allow(audit).to receive(:check_https_availability)
       end
 
