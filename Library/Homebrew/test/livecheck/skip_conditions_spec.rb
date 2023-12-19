@@ -104,6 +104,28 @@ describe Homebrew::Livecheck::SkipConditions do
           discontinued
         end
       end,
+      deprecated:        Cask::Cask.new("test_deprecated") do
+        version "0.0.1"
+        sha256 :no_check
+
+        url "https://brew.sh/test-0.0.1.tgz"
+        name "Test Deprecate"
+        desc "Deprecated test cask"
+        homepage "https://brew.sh"
+
+        deprecate! date: "2020-06-25", because: :discontinued
+      end,
+      disabled:          Cask::Cask.new("test_disabled") do
+        version "0.0.1"
+        sha256 :no_check
+
+        url "https://brew.sh/test-0.0.1.tgz"
+        name "Test Disable"
+        desc "Disabled test cask"
+        homepage "https://brew.sh"
+
+        disable! date: "2020-06-25", because: :discontinued
+      end,
       latest:            Cask::Cask.new("test_latest") do
         version :latest
         sha256 :no_check
@@ -230,6 +252,20 @@ describe Homebrew::Livecheck::SkipConditions do
             livecheckable: false,
           },
         },
+        deprecated:        {
+          cask:   "test_deprecated",
+          status: "deprecated",
+          meta:   {
+            livecheckable: false,
+          },
+        },
+        disabled:          {
+          cask:   "test_disabled",
+          status: "disabled",
+          meta:   {
+            livecheckable: false,
+          },
+        },
         latest:            {
           cask:   "test_latest",
           status: "latest",
@@ -327,6 +363,20 @@ describe Homebrew::Livecheck::SkipConditions do
       it "skips" do
         expect(skip_conditions.skip_information(casks[:discontinued]))
           .to eq(status_hashes[:cask][:discontinued])
+      end
+    end
+
+    context "when a cask without a livecheckable is deprecated" do
+      it "skips" do
+        expect(skip_conditions.skip_information(casks[:deprecated]))
+          .to eq(status_hashes[:cask][:deprecated])
+      end
+    end
+
+    context "when a cask without a livecheckable is disabled" do
+      it "skips" do
+        expect(skip_conditions.skip_information(casks[:disabled]))
+          .to eq(status_hashes[:cask][:disabled])
       end
     end
 
@@ -429,6 +479,20 @@ describe Homebrew::Livecheck::SkipConditions do
       it "errors" do
         expect { skip_conditions.referenced_skip_information(casks[:discontinued], original_name) }
           .to raise_error(RuntimeError, "Referenced cask (test_discontinued) is skipped as discontinued")
+      end
+    end
+
+    context "when a cask without a livecheckable is deprecated" do
+      it "errors" do
+        expect { skip_conditions.referenced_skip_information(casks[:deprecated], original_name) }
+          .to raise_error(RuntimeError, "Referenced cask (test_deprecated) is skipped as deprecated")
+      end
+    end
+
+    context "when a cask without a livecheckable is disabled" do
+      it "errors" do
+        expect { skip_conditions.referenced_skip_information(casks[:disabled], original_name) }
+          .to raise_error(RuntimeError, "Referenced cask (test_disabled) is skipped as disabled")
       end
     end
 
@@ -538,6 +602,22 @@ describe Homebrew::Livecheck::SkipConditions do
       it "prints skip information" do
         expect { skip_conditions.print_skip_information(status_hashes[:cask][:discontinued]) }
           .to output("test_discontinued: discontinued\n").to_stdout
+          .and not_to_output.to_stderr
+      end
+    end
+
+    context "when the cask is deprecated without a livecheckable" do
+      it "prints skip information" do
+        expect { skip_conditions.print_skip_information(status_hashes[:cask][:deprecated]) }
+          .to output("test_deprecated: deprecated\n").to_stdout
+          .and not_to_output.to_stderr
+      end
+    end
+
+    context "when the cask is disabled without a livecheckable" do
+      it "prints skip information" do
+        expect { skip_conditions.print_skip_information(status_hashes[:cask][:disabled]) }
+          .to output("test_disabled: disabled\n").to_stdout
           .and not_to_output.to_stderr
       end
     end

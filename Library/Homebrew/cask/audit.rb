@@ -289,7 +289,7 @@ module Cask
 
     sig { params(livecheck_result: T.any(NilClass, T::Boolean, Symbol)).void }
     def audit_hosting_with_livecheck(livecheck_result: audit_livecheck_version)
-      return if cask.discontinued?
+      return if cask.discontinued? || cask.deprecated? || cask.disabled?
       return if cask.version&.latest?
       return unless cask.url
       return if block_url_offline?
@@ -544,7 +544,7 @@ module Cask
         )
       end
 
-      # Respect cask skip conditions (e.g. discontinued, latest, unversioned)
+      # Respect cask skip conditions (e.g. deprecated, disabled, latest, unversioned)
       skip_info ||= Homebrew::Livecheck::SkipConditions.skip_information(cask)
       return :skip if skip_info.present?
 
@@ -682,8 +682,8 @@ module Cask
 
     sig { void }
     def audit_github_repository_archived
-      # Discontinued casks may have an archived repo.
-      return if cask.discontinued?
+      # Deprecated/disabled casks may have an archived repo.
+      return if cask.discontinued? || cask.deprecated? || cask.disabled?
 
       user, repo = get_repo_data(%r{https?://github\.com/([^/]+)/([^/]+)/?.*}) if online?
       return if user.nil?
@@ -696,8 +696,8 @@ module Cask
 
     sig { void }
     def audit_gitlab_repository_archived
-      # Discontinued casks may have an archived repo.
-      return if cask.discontinued?
+      # Deprecated/disabled casks may have an archived repo.
+      return if cask.discontinued? || cask.deprecated? || cask.disabled?
 
       user, repo = get_repo_data(%r{https?://gitlab\.com/([^/]+)/([^/]+)/?.*}) if online?
       return if user.nil?
@@ -785,8 +785,14 @@ module Cask
 
       return unless cask.homepage
 
+      user_agents = if cask.tap&.audit_exception(:simple_user_agent_for_homepage, cask.token)
+        ["curl"]
+      else
+        [:browser, :default]
+      end
+
       validate_url_for_https_availability(cask.homepage, SharedAudits::URL_TYPE_HOMEPAGE, cask.token, cask.tap,
-                                          user_agents:   [:browser, :default],
+                                          user_agents:   user_agents,
                                           check_content: true,
                                           strict:        strict?)
     end

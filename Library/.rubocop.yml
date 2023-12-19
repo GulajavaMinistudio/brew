@@ -12,7 +12,7 @@ inherit_mode:
     - Exclude
 
 AllCops:
-  TargetRubyVersion: 2.6
+  TargetRubyVersion: 3.1
   ActiveSupportExtensionsEnabled: true
   NewCops: enable
   Include:
@@ -253,8 +253,8 @@ RSpec/DescribeClass:
   Enabled: false
 RSpec/FilePath:
   Enabled: false
-# RSpec/SpecFilePathFormat:
-#   Enabled: false
+RSpec/SpecFilePathFormat:
+  Enabled: false
 RSpec/StubbedMock:
   Enabled: false
 RSpec/SubjectStub:
@@ -384,10 +384,10 @@ Style/InvertibleUnlessCondition:
     # Unset this (prefer `unless a.zero?` over `if a.nonzero?`)
     :zero?:
     # Don't require non-standard `exclude?` (for now at least) - it's not available in every file
-    # :include?:
+    :include?:
 
-# would rather freeze too much than too little
 Style/MutableConstant:
+  # would rather freeze too much than too little
   EnforcedStyle: strict
 
 # Zero-prefixed octal literals are widely used and understood.
@@ -441,8 +441,8 @@ Style/StringMethods:
   Enabled: true
 
 # Treating this the same as Style/MethodCallWithArgsParentheses
-# Style/SuperWithArgsParentheses:
-#   Enabled: false
+Style/SuperWithArgsParentheses:
+  Enabled: false
 
 # An array of symbols is more readable than a symbol array
 # and also allows for easier grepping.
@@ -469,3 +469,21 @@ Style/UnlessLogicalOperators:
 # a bit confusing to non-Rubyists but useful for longer arrays
 Style/WordArray:
   MinSize: 4
+
+# TODO: Enable these cops once https://github.com/Homebrew/brew/pull/16337#issuecomment-1855668516 is done.
+Lint/RedundantDirGlobSort:
+  Enabled: false
+Naming/BlockForwarding:
+  Enabled: false
+Performance/BindCall:
+  Enabled: false
+Performance/MapCompact:
+  Enabled: false
+Style/ArgumentsForwarding:
+  Enabled: false
+Style/ArrayIntersect:
+  Enabled: false
+Style/HashSyntax:
+  EnforcedShorthandSyntax: either
+Style/RedundantFreeze:
+  Enabled: false
