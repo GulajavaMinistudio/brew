@@ -843,7 +843,7 @@ module Cask
     def bad_url_format?(regex, valid_formats_array)
       return false unless cask.url.to_s.match?(regex)
 
-      valid_formats_array.none? { |format| cask.url.to_s =~ format }
+      valid_formats_array.none? { |format| cask.url.to_s.match?(format) }
     end
 
     sig { returns(T::Boolean) }
@@ -943,7 +943,7 @@ module Cask
       formula_path = Formulary.core_path(cask.token)
                               .to_s
                               .delete_prefix(core_tap.path.to_s)
-      "#{core_tap.default_remote}/blob/HEAD/Formula/#{formula_path}"
+      "#{core_tap.default_remote}/blob/HEAD#{formula_path}"
     end
   end
 end
