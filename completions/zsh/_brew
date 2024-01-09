@@ -102,7 +102,7 @@ __brew_installed_casks() {
 
   local -a list
   local expl
-  list=( $(brew list --cask) )
+  list=( $(brew list --cask 2>/dev/null) )
   _wanted list expl 'installed casks' compadd -a list
 }
 
@@ -110,7 +110,7 @@ __brew_outdated_casks() {
   [[ -prefix '-' ]] && return 0
 
   local -a casks
-  casks=($(brew outdated --cask))
+  casks=($(brew outdated --cask 2>/dev/null))
   _describe -t casks 'outdated casks' casks
 }
 
@@ -1820,6 +1820,7 @@ _brew_tests() {
     '--help[Show this message]' \
     '--online[Include tests that use the GitHub API and tests that use any of the taps for official external commands]' \
     '(--changed)--only[Run only test_script`_spec.rb`. Appending `:`line_number will start at a specific line]' \
+    '--profile[Run the test suite serially to find the n slowest tests]' \
     '--quiet[Make some output more quiet]' \
     '--seed[Randomise tests with the specified value instead of a random seed]' \
     '--verbose[Make some output more verbose]'

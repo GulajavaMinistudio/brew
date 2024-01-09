@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "attrable"
 require "resource"
 require "download_strategy"
 require "checksum"
@@ -294,12 +295,18 @@ class Bottle
   class Filename
     attr_reader :name, :version, :tag, :rebuild
 
+    sig { params(formula: Formula, tag: Utils::Bottles::Tag, rebuild: Integer).returns(T.attached_class) }
     def self.create(formula, tag, rebuild)
       new(formula.name, formula.pkg_version, tag, rebuild)
     end
 
+    sig { params(name: String, version: PkgVersion, tag: Utils::Bottles::Tag, rebuild: Integer).void }
     def initialize(name, version, tag, rebuild)
       @name = File.basename name
+
+      raise ArgumentError, "Invalid bottle name" unless Utils.safe_filename?(@name)
+      raise ArgumentError, "Invalid bottle version" unless Utils.safe_filename?(version.to_s)
+
       @version = version
       @tag = tag.to_s
       @rebuild = rebuild
@@ -506,6 +513,7 @@ class Bottle
 end
 
 class BottleSpecification
+  extend Attrable
   RELOCATABLE_CELLARS = [:any, :any_skip_relocation].freeze
 
   attr_rw :rebuild

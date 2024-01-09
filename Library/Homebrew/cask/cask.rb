@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "attrable"
 require "cask/cask_loader"
 require "cask/config"
 require "cask/dsl"
@@ -14,7 +15,7 @@ module Cask
   # @api private
   class Cask
     extend Forwardable
-    extend Predicable
+    extend Attrable
     extend APIHashable
     include Metadata
 
@@ -278,7 +279,7 @@ module Cask
     def populate_from_api!(json_cask)
       raise ArgumentError, "Expected cask to be loaded from the API" unless loaded_from_api?
 
-      @languages = json_cask[:languages]
+      @languages = json_cask.fetch(:languages, [])
       @tap_git_head = json_cask.fetch(:tap_git_head, "HEAD")
 
       @ruby_source_path = json_cask[:ruby_source_path]
