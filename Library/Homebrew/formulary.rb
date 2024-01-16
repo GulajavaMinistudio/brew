@@ -165,7 +165,7 @@ module Formulary
 
     json_formula = Homebrew::API.merge_variations(json_formula)
 
-    uses_from_macos_names = json_formula["uses_from_macos"]&.map do |dep|
+    uses_from_macos_names = json_formula.fetch("uses_from_macos", []).map do |dep|
       next dep unless dep.is_a? Hash
 
       dep.keys.first
@@ -232,7 +232,7 @@ module Formulary
       end
 
       dep_json["uses_from_macos"]&.each_with_index do |dep, index|
-        bounds = dep_json.fetch("uses_from_macos_bounds", [])[index] || {}
+        bounds = dep_json.fetch("uses_from_macos_bounds", [])[index].dup || {}
         bounds.deep_transform_keys!(&:to_sym)
         bounds.deep_transform_values! { |val| val.is_a?(String) ? val.to_sym : val }
 
@@ -382,12 +382,12 @@ module Formulary
         self.class.instance_variable_get(:@oldnames_array)
       end
 
-      @aliases_array = json_formula["aliases"]
+      @aliases_array = json_formula.fetch("aliases", [])
       def aliases
         self.class.instance_variable_get(:@aliases_array)
       end
 
-      @versioned_formulae_array = json_formula["versioned_formulae"]
+      @versioned_formulae_array = json_formula.fetch("versioned_formulae", [])
       def versioned_formulae_names
         self.class.instance_variable_get(:@versioned_formulae_array)
       end

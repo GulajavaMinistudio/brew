@@ -60,6 +60,8 @@ Run `brew create` with a URL to the source tarball:
 brew create https://example.com/foo-0.1.tar.gz
 ```
 
+Passing in `--ruby` or `--python` will populate various defaults commonly useful for projects written in those languages.
+
 This creates `$(brew --repository)/Library/Taps/homebrew/homebrew-core/Formula/f/foo.rb` and opens it in your `EDITOR`. If run without any options to customize the output for specific build systems (check `brew create --help` to see which are available) it'll look something like:
 
 ```ruby
@@ -136,8 +138,6 @@ There are plenty of others; check `/usr/lib` for them.
 We generally try not to duplicate system libraries and complicated tools in core Homebrew but we do duplicate some commonly used tools.
 
 Special exceptions are OpenSSL and LibreSSL. Things that use either *should* be built using Homebrew’s shipped equivalent and our Brew Test Bot's post-install `audit` will warn if it detects you haven't done this.
-
-Homebrew’s OpenSSL is [`keg_only`](https://rubydoc.brew.sh/Formula#keg_only-class_method) to avoid conflicting with the system so sometimes formulae need to have environment variables set or special configuration flags passed to locate our OpenSSL. You can see this mechanism in the [`bind`](https://github.com/Homebrew/homebrew-core/blob/fbcea827ca81a8b136f4e7d8761ea55d093f5d02/Formula/b/bind.rb#L50) formula. Usually this is unnecessary because Homebrew sets up our [build environment](https://github.com/Homebrew/brew/blob/HEAD/Library/Homebrew/extend/ENV/super.rb) to favour finding [`keg_only`](https://rubydoc.brew.sh/Formula#keg_only-class_method) formulae first.
 
 **Important:** `$(brew --prefix)/bin` is NOT in the `PATH` during formula installation. If you have dependencies at build time, you must specify them and `brew` will add them to the `PATH` or create a [`Requirement`](https://rubydoc.brew.sh/Requirement).
 
@@ -251,7 +251,36 @@ uses_from_macos "curl", since: :monterey
 
 Homebrew doesn’t package already-packaged language-specific libraries. These should be installed directly from `gem`/`cpan`/`pip` etc.
 
-If you're installing an application then use [`resource`](https://rubydoc.brew.sh/Formula#resource-class_method)s for all language-specific dependencies:
+### Ruby Gem Dependencies
+
+The preferred mechanism for installing gem dependencies is to use `bundler` with the upstream's `Gemfile.lock`. This requires the upstream checks in their `Gemfile.lock`, so if they don't, it's a good idea to file an issue and ask them to do so. Assuming they have one, this is as simple as:
+
+```ruby
+ENV["GEM_HOME"] = libexec
+system "bundle", "install", "--without", "development"
+```
+
+From there, you can build and install the project itself:
+
+```ruby
+system "gem", "build", "<project>.gemspec"
+system "gem", "install", "--ignore-dependencies", "<project>-#{version}.gem"
+```
+
+And install any bins, and munge their shebang lines, with:
+
+```ruby
+bin.install libexec/"bin/<bin>"
+bin.env_script_all_files(libexec/"bin", GEM_HOME: ENV["GEM_HOME"])
+```
+
+### Python dependencies
+
+For python we [`resource`](https://rubydoc.brew.sh/Formula#resource-class_method)s for dependencies and there's automation to generate these for you. Running `brew update-python-resources <formula>` will automatically add the necessary [`resource`](https://rubydoc.brew.sh/Formula#resource-class_method) stanzas for the dependencies of your Python application to the formula. Note that `brew update-python-resources` is run automatically by `brew create` if you pass the `--python` switch. If `brew update-python-resources` is unable to determine the correct `resource` stanzas, [homebrew-pypi-poet](https://github.com/tdsmith/homebrew-pypi-poet) is a good third-party alternative that may help.
+
+### All other cases
+
+If all else fails, you'll want to use [`resource`](https://rubydoc.brew.sh/Formula#resource-class_method)s for all other language-specific dependencies. This requires you to specify both a specific URL for a version and the sha256 checksum for security. Here's an example:
 
 ```ruby
 class Foo < Formula
@@ -267,8 +296,6 @@ end
 ```
 
 [`jrnl`](https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/j/jrnl.rb) is an example of a formula that does this well. The end result means the user doesn't have to use `pip` or Python and can just run `jrnl`.
-
-For Python formulae, running `brew update-python-resources <formula>` will automatically add the necessary [`resource`](https://rubydoc.brew.sh/Formula#resource-class_method) stanzas for the dependencies of your Python application to the formula. Note that `brew update-python-resources` is run automatically by `brew create` if you pass the `--python` switch. If `brew update-python-resources` is unable to determine the correct `resource` stanzas, [homebrew-pypi-poet](https://github.com/tdsmith/homebrew-pypi-poet) is a good third-party alternative that may help.
 
 ### Install the formula
 

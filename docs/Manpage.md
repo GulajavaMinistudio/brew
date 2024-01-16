@@ -143,7 +143,7 @@ shows all required and recommended dependencies.
 
 If any version of each formula argument is installed and no other options
 are passed, this command displays their actual runtime dependencies (similar
-to `brew linkage`), which may differ from the current versons' stated
+to `brew linkage`), which may differ from the current versions' stated
 dependencies if the installed versions are outdated.
 
 *Note:* `--missing` and `--skip-recommended` have precedence over `--include-*`.
@@ -1990,6 +1990,8 @@ Only supports GitHub Actions as a CI provider. This is because Homebrew uses Git
   Only test the direct dependents.
 * `--skip-stable-version-audit`:
   Don't audit the stable version.
+* `--skip-revision-audit`:
+  Don't audit the revision.
 * `--only-cleanup-before`:
   Only run the pre-cleanup step. Needs `--cleanup`.
 * `--only-setup`:
