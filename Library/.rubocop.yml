@@ -112,6 +112,7 @@ Layout/LineLength:
       '"/Library/PreferencePanes/',
       ' "~/Library/Application Support/',
       '"~/Library/Caches/',
+      '"~/Library/Containers',
       '"~/Application Support',
       " was verified as official when first introduced to the cask",
     ]
@@ -459,9 +460,5 @@ Performance/MapCompact:
   Enabled: false
 Style/ArgumentsForwarding:
   Enabled: false
-Style/ArrayIntersect:
-  Enabled: false
 Style/HashSyntax:
   EnforcedShorthandSyntax: either
-Style/RedundantFreeze:
-  Enabled: false
