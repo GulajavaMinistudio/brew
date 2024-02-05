@@ -11,7 +11,7 @@ require "system_command"
 #
 # @api private
 module GitHub
-  include SystemCommand::Mixin
+  extend SystemCommand::Mixin
 
   def self.check_runs(repo: nil, commit: nil, pull_request: nil)
     if pull_request
@@ -572,7 +572,7 @@ module GitHub
       These #{state} pull requests may be duplicates:
       #{pull_requests.map { |pr| "#{pr["title"]} #{pr["html_url"]}" }.join("\n")}
     EOS
-    error_message = "Duplicate PRs should not be opened. Use --force to override this error."
+    error_message = "Duplicate PRs should not be opened. Use `--force` to override this error."
     if args.force? && !args.quiet?
       opoo duplicates_message
     elsif !args.force? && args.quiet?
