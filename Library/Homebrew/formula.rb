@@ -540,23 +540,13 @@ class Formula
   # Old names for the formula.
   sig { returns(T::Array[String]) }
   def oldnames
-    @oldnames ||= if tap
-      T.must(tap).formula_oldnames.fetch(name, [])
-    else
-      []
-    end
+    @oldnames ||= tap&.formula_oldnames&.dig(name) || []
   end
 
   # All aliases for the formula.
   sig { returns(T::Array[String]) }
   def aliases
-    @aliases ||= if tap
-      T.must(tap).alias_reverse_table[full_name].to_a.map do |a|
-        a.split("/").last
-      end
-    else
-      []
-    end
+    @aliases ||= tap&.alias_reverse_table&.dig(full_name)&.map { _1.split("/").last } || []
   end
 
   # The {Resource}s for the currently active {SoftwareSpec}.
@@ -2010,18 +2000,6 @@ class Formula
   # @private
   def self.alias_full_names
     @alias_full_names ||= core_aliases + tap_aliases
-  end
-
-  # a table mapping core alias to formula name
-  # @private
-  def self.core_alias_table
-    CoreTap.instance.alias_table
-  end
-
-  # a table mapping core formula name to aliases
-  # @private
-  def self.core_alias_reverse_table
-    CoreTap.instance.alias_reverse_table
   end
 
   # Returns a list of approximately matching formula names, but not the complete match
