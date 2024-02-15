@@ -128,14 +128,14 @@ GEM
     simplecov_json_formatter (0.1.4)
     simpleidn (0.2.1)
       unf (~> 0.1.4)
-    sorbet (0.5.11247)
-      sorbet-static (= 0.5.11247)
-    sorbet-runtime (0.5.11247)
-    sorbet-static (0.5.11247-universal-darwin)
-    sorbet-static (0.5.11247-x86_64-linux)
-    sorbet-static-and-runtime (0.5.11247)
-      sorbet (= 0.5.11247)
-      sorbet-runtime (= 0.5.11247)
+    sorbet (0.5.11255)
+      sorbet-static (= 0.5.11255)
+    sorbet-runtime (0.5.11255)
+    sorbet-static (0.5.11255-universal-darwin)
+    sorbet-static (0.5.11255-x86_64-linux)
+    sorbet-static-and-runtime (0.5.11255)
+      sorbet (= 0.5.11255)
+      sorbet-runtime (= 0.5.11255)
     spoom (1.2.4)
       erubi (>= 1.10.0)
       sorbet-static-and-runtime (>= 0.5.10187)
@@ -176,6 +176,7 @@ DEPENDENCIES
   bootsnap
   byebug
   json_schemer
+  method_source
   minitest
   parallel_tests
   parlour

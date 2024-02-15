@@ -234,7 +234,7 @@ module Formulary
       dep_json["uses_from_macos"]&.each_with_index do |dep, index|
         bounds = dep_json.fetch("uses_from_macos_bounds", [])[index].dup || {}
         bounds.deep_transform_keys!(&:to_sym)
-        bounds.deep_transform_values! { |val| val.is_a?(String) ? val.to_sym : val }
+        bounds.deep_transform_values!(&:to_sym)
 
         if dep.is_a?(Hash)
           uses_from_macos dep.deep_transform_values(&:to_sym).merge(bounds)
@@ -904,7 +904,7 @@ module Formulary
 
   def self.tap_formula_name_type(tapped_name, warn:)
     user, repo, name = tapped_name.split("/", 3).map(&:downcase)
-    tap = Tap.fetch user, repo
+    tap = Tap.fetch(user, repo)
     type = nil
     alias_name = tap.core_tap? ? name : "#{tap}/#{name}"
 
@@ -912,23 +912,23 @@ module Formulary
       name = possible_alias.split("/").last
       type = :alias
     elsif (new_name = tap.formula_renames[name].presence)
-      old_name = name
+      old_name = tap.core_tap? ? name : tapped_name
       name = new_name
       new_name = tap.core_tap? ? name : "#{tap}/#{name}"
       type = :rename
     elsif (new_tap_name = tap.tap_migrations[name].presence)
-      new_tap_user, new_tap_repo, = new_tap_name.split("/")
-      new_tap_name = "#{new_tap_user}/#{new_tap_repo}"
-      new_tap = Tap.fetch new_tap_name
+      new_tap_user, new_tap_repo, new_name = new_tap_name.split("/", 3)
+      new_name ||= name
+      new_tap = Tap.fetch(new_tap_user, new_tap_repo)
       new_tap.ensure_installed!
-      new_tapped_name = "#{new_tap_name}/#{name}"
+      new_tapped_name = "#{new_tap}/#{new_name}"
 
       if tapped_name == new_tapped_name
         opoo "Tap migration for #{tapped_name} points to itself, stopping recursion."
       else
+        old_name = tap.core_tap? ? name : tapped_name
         name, tap, = tap_formula_name_type(new_tapped_name, warn: false)
-        old_name = tapped_name
-        new_name = new_tap.core_tap? ? name : new_tapped_name
+        new_name = new_tap.core_tap? ? name : "#{tap}/#{name}"
         type = :migration
       end
     end

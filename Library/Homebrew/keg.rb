@@ -60,7 +60,7 @@ class Keg
           brew link --overwrite #{keg.name}
 
         To list all files that would be deleted:
-          brew link --overwrite --dry-run #{keg.name}
+          brew link --overwrite #{keg.name} --dry-run
       EOS
       s.join("\n")
     end
@@ -335,10 +335,10 @@ class Keg
   def completion_installed?(shell)
     dir = case shell
     when :bash then path/"etc/bash_completion.d"
+    when :fish then path/"share/fish/vendor_completions.d"
     when :zsh
       dir = path/"share/zsh/site-functions"
       dir if dir.directory? && dir.children.any? { |f| f.basename.to_s.start_with?("_") }
-    when :fish then path/"share/fish/vendor_completions.d"
     end
     dir&.directory? && !dir.children.empty?
   end
