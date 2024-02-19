@@ -680,11 +680,12 @@ class Tap
   # @private
   sig { returns(T::Array[String]) }
   def aliases
-    @aliases ||= alias_files.map { |f| alias_file_to_name(f) }
+    @aliases ||= alias_table.keys
   end
 
   # a table mapping alias to formula name
   # @private
+  sig { returns(T::Hash[String, String]) }
   def alias_table
     return @alias_table if @alias_table
 
@@ -1133,11 +1134,13 @@ class CoreTap < AbstractCoreTap
   end
 
   # @private
-  sig { returns(T::Array[String]) }
-  def aliases
-    return super if Homebrew::EnvConfig.no_install_from_api?
-
-    Homebrew::API::Formula.all_aliases.keys
+  sig { returns(T::Hash[String, String]) }
+  def alias_table
+    @alias_table ||= if Homebrew::EnvConfig.no_install_from_api?
+      super
+    else
+      Homebrew::API::Formula.all_aliases
+    end
   end
 
   # @private
@@ -1166,7 +1169,8 @@ class CoreTap < AbstractCoreTap
       name, formula_hash = item
       # If there's more than one item with the same path: use the longer one to prioritise more specific results.
       existing_path = hash[name]
-      new_path = File.join(tap_path, formula_hash["ruby_source_path"]) # Pathname equivalent is slow in a tight loop
+      # Pathname equivalent is slow in a tight loop
+      new_path = File.join(tap_path, formula_hash.fetch("ruby_source_path"))
       hash[name] = Pathname(new_path) if existing_path.nil? || existing_path.to_s.length < new_path.length
     end
   end

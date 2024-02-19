@@ -50,7 +50,7 @@
 - [Renaming a Formula](Rename-A-Formula.md)
 - [Building Against Non-Homebrew Dependencies](Building-Against-Non-Homebrew-Dependencies.md)
 - [How to Create and Maintain a Tap](How-to-Create-and-Maintain-a-Tap.md)
-- [Brew Test Bot](Brew-Test-Bot.md)
+- [BrewTestBot](BrewTestBot.md)
 - [Prose Style Guidelines](Prose-Style-Guidelines.md)
 - [Type Checking with Sorbet](Typechecking.md)
 - [Reproducible Builds](Reproducible-Builds.md)
@@ -67,7 +67,7 @@
 - [Homebrew/homebrew-core Maintainer Guide](Homebrew-homebrew-core-Maintainer-Guide.md)
 - [Homebrew/homebrew-cask Maintainer Guide](Homebrew-homebrew-cask-Maintainer-Guide.md)
 
-- [Brew Test Bot for Maintainers](Brew-Test-Bot-For-Core-Contributors.md)
+- [BrewTestBot for Maintainers](BrewTestBot-For-Maintainers.md)
 - [Common Issues for Maintainers](Common-Issues-for-Core-Contributors.md)
 - [Releases](Releases.md)
 

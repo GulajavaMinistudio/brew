@@ -158,8 +158,6 @@ describe Formulary do
 
     context "with installed Formula" do
       before do
-        allow(described_class).to receive(:loader_for).and_call_original
-
         # don't try to load/fetch gcc/glibc
         allow(DevelopmentTools).to receive_messages(needs_libc_formula?: false, needs_compiler_formula?: false)
       end
@@ -329,6 +327,7 @@ describe Formulary do
               "run_type"    => "immediate",
               "working_dir" => "/$HOME",
             },
+            "ruby_source_path"         => "Formula/#{formula_name}.rb",
           }.merge(extra_items),
         }
       end
@@ -378,7 +377,7 @@ describe Formulary do
       end
 
       before do
-        allow(described_class).to receive(:loader_for).and_return(described_class::FormulaAPILoader.new(formula_name))
+        ENV.delete("HOMEBREW_NO_INSTALL_FROM_API")
 
         # don't try to load/fetch gcc/glibc
         allow(DevelopmentTools).to receive_messages(needs_libc_formula?: false, needs_compiler_formula?: false)
@@ -536,7 +535,7 @@ describe Formulary do
       end
 
       context "when a formula is migrated to the default tap" do
-        let(:token) { "local-caffeine" }
+        let(:token) { "foo" }
         let(:tap_migrations) do
           {
             token => default_tap.name,
@@ -549,6 +548,7 @@ describe Formulary do
           old_tap.path.mkpath
           (old_tap.path/"tap_migrations.json").write tap_migrations.to_json
           old_tap.clear_cache
+          default_tap.clear_cache
         end
 
         it "does not warn when loading the short token" do
@@ -568,6 +568,22 @@ describe Formulary do
             described_class.loader_for("#{old_tap}/#{token}")
           end.to output(%r{Formula #{old_tap}/#{token} was renamed to #{token}\.}).to_stderr
         end
+
+        # FIXME
+        # context "when there is an infinite tap migration loop" do
+        #   before do
+        #     (default_tap.path/"tap_migrations.json").write({
+        #       token => old_tap.name,
+        #     }.to_json)
+        #     default_tap.clear_cache
+        #   end
+        #
+        #   it "stops recursing" do
+        #     expect do
+        #       described_class.loader_for("#{default_tap}/#{token}")
+        #     end.not_to output.to_stderr
+        #   end
+        # end
       end
     end
   end
