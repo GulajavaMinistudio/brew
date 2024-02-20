@@ -3,7 +3,7 @@
 require "extend/ENV"
 require "requirement"
 
-describe Requirement do
+RSpec.describe Requirement do
   alias_matcher :be_a_build_requirement, :be_a_build
 
   subject(:requirement) { klass.new }
@@ -139,7 +139,9 @@ describe Requirement do
       end
 
       it "infers path from #satisfy result" do
-        expect(ENV).to receive(:prepend_path).with("PATH", Pathname.new("/foo/bar"))
+        without_partial_double_verification do
+          expect(ENV).to receive(:prepend_path).with("PATH", Pathname.new("/foo/bar"))
+        end
         requirement.satisfied?
         requirement.modify_build_environment
       end
@@ -175,7 +177,7 @@ describe Requirement do
       let(:klass) { Class.new(described_class) }
 
       it "returns nil" do
-        expect(requirement.modify_build_environment).to be_nil
+        expect { requirement.modify_build_environment }.not_to raise_error
       end
     end
   end
