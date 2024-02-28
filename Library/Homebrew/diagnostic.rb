@@ -523,21 +523,21 @@ module Homebrew
       end
 
       def check_coretap_integrity
-        coretap = CoreTap.instance
-        unless coretap.installed?
+        core_tap = CoreTap.instance
+        unless core_tap.installed?
           return unless EnvConfig.no_install_from_api?
 
-          CoreTap.ensure_installed!
+          core_tap.ensure_installed!
         end
 
-        broken_tap(coretap) || examine_git_origin(coretap.git_repo, Homebrew::EnvConfig.core_git_remote)
+        broken_tap(core_tap) || examine_git_origin(core_tap.git_repo, Homebrew::EnvConfig.core_git_remote)
       end
 
       def check_casktap_integrity
-        default_cask_tap = CoreCaskTap.instance
-        return unless default_cask_tap.installed?
+        core_cask_tap = CoreCaskTap.instance
+        return unless core_cask_tap.installed?
 
-        broken_tap(default_cask_tap) || examine_git_origin(default_cask_tap.git_repo, default_cask_tap.remote)
+        broken_tap(core_cask_tap) || examine_git_origin(core_cask_tap.git_repo, core_cask_tap.remote)
       end
 
       sig { returns(T.nilable(String)) }
@@ -545,11 +545,11 @@ module Homebrew
         return if ENV["CI"]
         return unless Utils::Git.available?
 
-        commands = Tap.map do |tap|
+        commands = Tap.select(&:installed?).filter_map do |tap|
           next if tap.git_repo.default_origin_branch?
 
           "git -C $(brew --repo #{tap.name}) checkout #{tap.git_repo.origin_branch_name}"
-        end.compact
+        end
 
         return if commands.blank?
 
@@ -733,8 +733,7 @@ module Homebrew
         rescue FormulaUnreadableError, FormulaClassUnavailableError,
                TapFormulaUnreadableError, TapFormulaClassUnavailableError => e
           formula_unavailable_exceptions << e
-        rescue FormulaUnavailableError,
-               TapFormulaAmbiguityError, TapFormulaWithOldnameAmbiguityError
+        rescue FormulaUnavailableError, TapFormulaAmbiguityError
           nil
         end
         return if formula_unavailable_exceptions.empty?
@@ -752,7 +751,7 @@ module Homebrew
           else
             begin
               Formulary.from_rack(rack).keg_only?
-            rescue FormulaUnavailableError, TapFormulaAmbiguityError, TapFormulaWithOldnameAmbiguityError
+            rescue FormulaUnavailableError, TapFormulaAmbiguityError
               false
             end
           end
@@ -795,7 +794,7 @@ module Homebrew
 
       def check_for_tap_ruby_files_locations
         bad_tap_files = {}
-        Tap.each do |tap|
+        Tap.select(&:installed?).each do |tap|
           unused_formula_dirs = tap.potential_formula_dirs - [tap.formula_dir]
           unused_formula_dirs.each do |dir|
             next unless dir.exist?
@@ -834,18 +833,32 @@ module Homebrew
       def check_deleted_formula
         kegs = Keg.all
 
-        deleted_formulae = kegs.map do |keg|
-          next if Formulary.tap_paths(keg.name).any?
+        deleted_formulae = kegs.filter_map do |keg|
+          tap = Tab.for_keg(keg).tap
 
-          unless EnvConfig.no_install_from_api?
-            # Formulae installed from the API should not count as deleted formulae
-            # but may not have a tap listed in their tab
-            tap = Tab.for_keg(keg).tap
-            next if (tap.blank? || tap.core_tap?) && Homebrew::API::Formula.all_formulae.key?(keg.name)
+          loadable = [
+            Formulary::FromAPILoader,
+            Formulary::FromDefaultNameLoader,
+            Formulary::FromNameLoader,
+          ].any? do |loader_class|
+            loader = begin
+              loader_class.try_new(keg.name, warn: false)
+            rescue TapFormulaAmbiguityError => e
+              e.loaders.first
+            end
+
+            if loader
+              # If we know the tap, ignore all other taps.
+              next false if tap && loader.tap != tap
+
+              next true
+            end
+
+            false
           end
 
-          keg.name
-        end.compact.uniq
+          keg.name unless loadable
+        end.uniq
 
         return if deleted_formulae.blank?
 
@@ -936,25 +949,19 @@ module Homebrew
       end
 
       def check_cask_taps
-        default_cask_tap = CoreCaskTap.instance
-        taps = Tap.select { |t| t.cask_dir.exist? && t != default_cask_tap }
-        taps.prepend(default_cask_tap) if EnvConfig.no_install_from_api?
-
         error_tap_paths = []
 
-        add_info "Homebrew Cask Taps:", (taps.map do |tap|
-          if tap.path.blank?
-            none_string
-          else
-            cask_count = begin
-              tap.cask_files.count
-            rescue
-              error_tap_paths << tap.path
-              0
-            end
+        taps = (Tap.to_a + [CoreCaskTap.instance]).uniq
 
-            "#{tap.path} (#{Utils.pluralize("cask", cask_count, include_count: true)})"
+        add_info "Homebrew Cask Taps:", (taps.map do |tap|
+          cask_count = begin
+            tap.cask_files.count
+          rescue
+            error_tap_paths << tap.path
+            0
           end
+
+          "#{tap.path} (#{Utils.pluralize("cask", cask_count, include_count: true)})"
         end)
 
         taps_string = Utils.pluralize("tap", error_tap_paths.count)

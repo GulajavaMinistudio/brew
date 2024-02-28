@@ -126,6 +126,18 @@ RSpec.describe Tap do
     it "returns the Tap when given its exact path" do
       expect(described_class.from_path(path)).to eq tap
     end
+
+    context "when path contains a dot" do
+      let(:tap) { described_class.fetch("str4d.xyz", "rage") }
+
+      after do
+        tap.uninstall
+      end
+
+      it "returns the Tap when given its exact path" do
+        expect(described_class.from_path(path)).to eq tap
+      end
+    end
   end
 
   specify "::names" do
@@ -574,6 +586,17 @@ RSpec.describe Tap do
       expect(core_tap.audit_exceptions).to eq({ formula_list: formula_list_file_contents })
       expect(core_tap.style_exceptions).to eq({ formula_hash: formula_list_file_contents })
       expect(core_tap.pypi_formula_mappings).to eq formula_list_file_contents
+    end
+  end
+
+  describe "#repo_var_suffix" do
+    it "converts the repo directory to an environment variable suffix" do
+      expect(CoreTap.instance.repo_var_suffix).to eq "_HOMEBREW_HOMEBREW_CORE"
+    end
+
+    it "converts non-alphanumeric characters to underscores" do
+      expect(described_class.fetch("my", "tap-with-dashes").repo_var_suffix).to eq "_MY_HOMEBREW_TAP_WITH_DASHES"
+      expect(described_class.fetch("my", "tap-with-@-symbol").repo_var_suffix).to eq "_MY_HOMEBREW_TAP_WITH___SYMBOL"
     end
   end
 end

@@ -36,12 +36,11 @@ module UnpackStrategy
 
           volumes = result.stderr.chomp
                           .split("\n")
-                          .map { |l| l[/\A   skipping: (.+)  volume label\Z/, 1] }
-                          .compact
+                          .filter_map { |l| l[/\A   skipping: (.+)  volume label\Z/, 1] }
 
           return if volumes.empty?
 
-          Dir.mktmpdir do |tmp_unpack_dir|
+          Dir.mktmpdir("homebrew-zip", HOMEBREW_TEMP) do |tmp_unpack_dir|
             tmp_unpack_dir = Pathname(tmp_unpack_dir)
 
             # `ditto` keeps Finder attributes intact and does not skip volume labels

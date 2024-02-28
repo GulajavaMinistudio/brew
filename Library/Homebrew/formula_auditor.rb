@@ -33,7 +33,7 @@ module Homebrew
       @problems = []
       @new_formula_problems = []
       @text = FormulaTextAuditor.new(formula.path)
-      @specs = %w[stable head].map { |s| formula.send(s) }.compact
+      @specs = %w[stable head].filter_map { |s| formula.send(s) }
       @spdx_license_data = options[:spdx_license_data]
       @spdx_exception_data = options[:spdx_exception_data]
       @tap_audit = options[:tap_audit]
@@ -64,8 +64,7 @@ module Homebrew
 
         unversioned_formula = begin
           Formulary.factory(full_name).path
-        rescue FormulaUnavailableError, TapFormulaAmbiguityError,
-               TapFormulaWithOldnameAmbiguityError
+        rescue FormulaUnavailableError, TapFormulaAmbiguityError
           Pathname.new formula.path.to_s.gsub(/@.*\.rb$/, ".rb")
         end
         unless unversioned_formula.exist?
@@ -256,7 +255,8 @@ module Homebrew
         user, repo = get_repo_data(%r{https?://github\.com/([^/]+)/([^/]+)/?.*})
         return if user.blank?
 
-        github_license = GitHub.get_repo_license(user, repo)
+        tag = SharedAudits.github_tag_from_url(formula.stable.url)
+        github_license = GitHub.get_repo_license(user, repo, ref: tag)
         return unless github_license
         return if (licenses + ["NOASSERTION"]).include?(github_license)
         return if PERMITTED_LICENSE_MISMATCHES[github_license]&.any? { |license| licenses.include? license }
@@ -284,9 +284,6 @@ module Homebrew
             next
           rescue TapFormulaAmbiguityError
             problem "Ambiguous dependency '#{dep.name}'."
-            next
-          rescue TapFormulaWithOldnameAmbiguityError
-            problem "Ambiguous oldname dependency '#{dep.name.inspect}'."
             next
           end
 
@@ -461,7 +458,7 @@ module Homebrew
         next
       rescue FormulaUnavailableError
         problem "Can't find conflicting formula #{conflict.name.inspect}."
-      rescue TapFormulaAmbiguityError, TapFormulaWithOldnameAmbiguityError
+      rescue TapFormulaAmbiguityError
         problem "Ambiguous conflicting formula #{conflict.name.inspect}."
       end
     end

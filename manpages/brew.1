@@ -1461,6 +1461,10 @@ Check only casks\.
 Check formulae and casks that are currently installed\.
 .
 .TP
+\fB\-\-no\-fork\fR
+Don\'t try to fork the repository\.
+.
+.TP
 \fB\-\-open\-pr\fR
 Open a pull request for the new version if none have been opened yet\.
 .
@@ -2909,14 +2913,14 @@ Use these skipped or failed formulae from formulae steps for a formulae dependen
 Remove aliases\.
 .
 .SS "\fBwhich\-formula\fR [\fB\-\-explain\fR] \fIcommand\fR [\.\.\.]"
-Prints the formula(e) which provides the given command\.
+Show which formula(e) provides the given command\.
 .
 .TP
 \fB\-\-explain\fR
-Output explanation of how to get \'cmd\' by installing one of the providing formulae\.
+Output explanation of how to get \fIcommand\fR by installing one of the providing formulae\.
 .
 .SS "\fBwhich\-update\fR [\fIoptions\fR] [\fIdatabase\fR]"
-Database update for \fBbrew which\-formula\fR
+Database update for \fBbrew which\-formula\fR\.
 .
 .TP
 \fB\-\-stats\fR

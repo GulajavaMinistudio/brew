@@ -67,14 +67,14 @@ class Tap
 
   sig { returns(CoreCaskTap) }
   def self.default_cask_tap
-    odisabled "Tap.default_cask_tap", "CoreCaskTap.instance"
+    odisabled "`Tap.default_cask_tap`", "`CoreCaskTap.instance`"
 
     CoreCaskTap.instance
   end
 
   sig { params(force: T::Boolean).returns(T::Boolean) }
   def self.install_default_cask_tap_if_necessary(force: false)
-    odisabled "Tap.install_default_cask_tap_if_necessary", "CoreCaskTap.ensure_installed!"
+    odisabled "`Tap.install_default_cask_tap_if_necessary`", "`CoreCaskTap.instance.ensure_installed!`"
 
     false
   end
@@ -122,7 +122,7 @@ class Tap
   # Clear internal cache.
   def clear_cache
     @remote = nil
-    @repo_var = nil
+    @repo_var_suffix = nil
     @formula_dir = nil
     @cask_dir = nil
     @command_dir = nil
@@ -175,11 +175,13 @@ class Tap
     "https://github.com/#{full_name}"
   end
 
-  def repo_var
-    @repo_var ||= path.to_s
-                      .delete_prefix(TAP_DIRECTORY.to_s)
-                      .tr("^A-Za-z0-9", "_")
-                      .upcase
+  # @private
+  sig { returns(String) }
+  def repo_var_suffix
+    @repo_var_suffix ||= path.to_s
+                             .delete_prefix(TAP_DIRECTORY.to_s)
+                             .tr("^A-Za-z0-9", "_")
+                             .upcase
   end
 
   # True if this {Tap} is a Git repository.
@@ -842,15 +844,25 @@ class Tap
   end
 
   def self.each(&block)
-    return unless TAP_DIRECTORY.directory?
-
     return to_enum unless block
 
-    TAP_DIRECTORY.subdirs.each do |user|
-      user.subdirs.each do |repo|
-        yield fetch(user.basename.to_s, repo.basename.to_s)
-      end
+    installed_taps = if TAP_DIRECTORY.directory?
+      TAP_DIRECTORY.subdirs
+                   .flat_map(&:subdirs)
+                   .map(&method(:from_path))
+    else
+      []
     end
+
+    available_taps = if Homebrew::EnvConfig.no_install_from_api?
+      installed_taps
+    else
+      default_taps = T.let([CoreTap.instance], T::Array[Tap])
+      default_taps << CoreCaskTap.instance if OS.mac? # rubocop:disable Homebrew/MoveToExtendOS
+      installed_taps + default_taps
+    end.sort_by(&:name).uniq
+
+    available_taps.each(&block)
   end
 
   # An array of all installed {Tap} names.
@@ -968,6 +980,8 @@ class AbstractCoreTap < Tap
 
   sig { void }
   def self.ensure_installed!
+    # odeprecated "`#{self}.ensure_installed!`", "`#{self}.instance.ensure_installed!`"
+
     instance.ensure_installed!
   end
 
@@ -1043,7 +1057,7 @@ class CoreTap < AbstractCoreTap
   sig { returns(Pathname) }
   def formula_dir
     @formula_dir ||= begin
-      self.class.ensure_installed!
+      ensure_installed!
       super
     end
   end
@@ -1065,7 +1079,7 @@ class CoreTap < AbstractCoreTap
   sig { returns(Pathname) }
   def alias_dir
     @alias_dir ||= begin
-      self.class.ensure_installed!
+      ensure_installed!
       super
     end
   end
@@ -1074,7 +1088,7 @@ class CoreTap < AbstractCoreTap
   sig { returns(T::Hash[String, String]) }
   def formula_renames
     @formula_renames ||= if Homebrew::EnvConfig.no_install_from_api?
-      self.class.ensure_installed!
+      ensure_installed!
       super
     else
       Homebrew::API::Formula.all_renames
@@ -1085,7 +1099,7 @@ class CoreTap < AbstractCoreTap
   sig { returns(Hash) }
   def tap_migrations
     @tap_migrations ||= if Homebrew::EnvConfig.no_install_from_api?
-      self.class.ensure_installed!
+      ensure_installed!
       super
     else
       migrations, = Homebrew::API.fetch_json_api_file "formula_tap_migrations.jws.json",
@@ -1098,7 +1112,7 @@ class CoreTap < AbstractCoreTap
   sig { returns(Hash) }
   def audit_exceptions
     @audit_exceptions ||= begin
-      self.class.ensure_installed!
+      ensure_installed!
       super
     end
   end
@@ -1107,7 +1121,7 @@ class CoreTap < AbstractCoreTap
   sig { returns(Hash) }
   def style_exceptions
     @style_exceptions ||= begin
-      self.class.ensure_installed!
+      ensure_installed!
       super
     end
   end
@@ -1116,7 +1130,7 @@ class CoreTap < AbstractCoreTap
   sig { returns(Hash) }
   def pypi_formula_mappings
     @pypi_formula_mappings ||= begin
-      self.class.ensure_installed!
+      ensure_installed!
       super
     end
   end
@@ -1146,9 +1160,9 @@ class CoreTap < AbstractCoreTap
   # @private
   sig { returns(T::Array[Pathname]) }
   def formula_files
-    return super if Homebrew::EnvConfig.no_install_from_api? || installed?
+    return super if Homebrew::EnvConfig.no_install_from_api?
 
-    raise TapUnavailableError, name
+    formula_files_by_name.values
   end
 
   # @private
@@ -1198,9 +1212,9 @@ class CoreCaskTap < AbstractCoreTap
 
   sig { override.returns(T::Array[Pathname]) }
   def cask_files
-    return super if Homebrew::EnvConfig.no_install_from_api? || installed?
+    return super if Homebrew::EnvConfig.no_install_from_api?
 
-    raise TapUnavailableError, name
+    cask_files_by_name.values
   end
 
   sig { override.returns(T::Array[String]) }

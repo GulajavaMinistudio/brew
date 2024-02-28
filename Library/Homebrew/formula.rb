@@ -77,7 +77,7 @@ class Formula
 
   # The path to the alias that was used to identify this {Formula}.
   # e.g. `/usr/local/Library/Taps/homebrew/homebrew-core/Aliases/another-name-for-this-formula`
-  sig { returns(T.any(NilClass, Pathname, String)) }
+  sig { returns(T.nilable(Pathname)) }
   attr_reader :alias_path
 
   # The name of the alias that was used to identify this {Formula}.
@@ -199,7 +199,7 @@ class Formula
 
   # @private
   sig {
-    params(name: String, path: Pathname, spec: Symbol, alias_path: T.any(NilClass, Pathname, String),
+    params(name: String, path: Pathname, spec: Symbol, alias_path: T.nilable(Pathname),
            tap: T.nilable(Tap), force_bottle: T::Boolean).void
   }
   def initialize(name, path, spec, alias_path: nil, tap: nil, force_bottle: false)
@@ -326,18 +326,22 @@ class Formula
   # The alias path that was used to install this formula, if it exists.
   # Can differ from {#alias_path}, which is the alias used to find the formula,
   # and is specified to this instance.
+  sig { returns(T.nilable(Pathname)) }
   def installed_alias_path
     build_tab = build
     path = build_tab.source["path"] if build_tab.is_a?(Tab)
+
     return unless path&.match?(%r{#{HOMEBREW_TAP_DIR_REGEX}/Aliases}o)
-    return unless File.symlink?(path)
+
+    path = Pathname(path)
+    return unless path.symlink?
 
     path
   end
 
   sig { returns(T.nilable(String)) }
   def installed_alias_name
-    File.basename(installed_alias_path) if installed_alias_path
+    installed_alias_path&.basename&.to_s
   end
 
   def full_installed_alias_name
@@ -346,14 +350,13 @@ class Formula
 
   # The path that was specified to find this formula.
   def specified_path
-    alias_pathname = Pathname(T.must(alias_path)) if alias_path.present?
-    return alias_pathname if alias_pathname&.exist?
+    return alias_path if alias_path&.exist?
 
     return @unresolved_path if @unresolved_path.exist?
 
     return local_bottle_path if local_bottle_path.presence&.exist?
 
-    alias_pathname || @unresolved_path
+    alias_path || @unresolved_path
   end
 
   # The name specified to find this formula.
@@ -515,11 +518,11 @@ class Formula
   # Returns any `@`-versioned Formula objects for any Formula (including versioned formulae).
   sig { returns(T::Array[Formula]) }
   def versioned_formulae
-    versioned_formulae_names.map do |name|
+    versioned_formulae_names.filter_map do |name|
       Formula[name]
     rescue FormulaUnavailableError
       nil
-    end.compact.sort_by(&:version).reverse
+    end.sort_by(&:version).reverse
   end
 
   # A named {Resource} for the currently active {SoftwareSpec}.
@@ -628,10 +631,10 @@ class Formula
   end
 
   def latest_head_version
-    head_versions = installed_prefixes.map do |pn|
+    head_versions = installed_prefixes.filter_map do |pn|
       pn_pkgversion = PkgVersion.parse(pn.basename.to_s)
       pn_pkgversion if pn_pkgversion.head?
-    end.compact
+    end
 
     head_versions.max_by do |pn_pkgversion|
       [Tab.for_keg(prefix(pn_pkgversion)).source_modified_time, pn_pkgversion.revision]
@@ -1315,7 +1318,7 @@ class Formula
         f = Formulary.factory(keg.name)
       rescue FormulaUnavailableError
         # formula for this keg is deleted, so defer to allowlist
-      rescue TapFormulaAmbiguityError, TapFormulaWithOldnameAmbiguityError
+      rescue TapFormulaAmbiguityError
         return false # this keg belongs to another formula
       else
         # this keg belongs to another unrelated formula
@@ -1931,7 +1934,7 @@ class Formula
       raise ArgumentError, "Formula#all without `--eval-all` or HOMEBREW_EVAL_ALL"
     end
 
-    (core_names + tap_files).map do |name_or_file|
+    (core_names + tap_files).filter_map do |name_or_file|
       Formulary.factory(name_or_file)
     rescue FormulaUnavailableError, FormulaUnreadableError => e
       # Don't let one broken formula break commands. But do complain.
@@ -1939,7 +1942,7 @@ class Formula
       $stderr.puts e
 
       nil
-    end.compact
+    end
   end
 
   # An array of all racks currently installed.
@@ -2105,12 +2108,12 @@ class Formula
   def runtime_dependencies(read_from_tab: true, undeclared: true)
     deps = if read_from_tab && undeclared &&
               (tab_deps = any_installed_keg&.runtime_dependencies)
-      tab_deps.map do |d|
+      tab_deps.filter_map do |d|
         full_name = d["full_name"]
         next unless full_name
 
         Dependency.new full_name
-      end.compact
+      end
     end
     begin
       deps ||= declared_runtime_dependencies unless undeclared
@@ -2131,11 +2134,11 @@ class Formula
     Formula.cache[:runtime_formula_dependencies][cache_key] ||= runtime_dependencies(
       read_from_tab: read_from_tab,
       undeclared:    undeclared,
-    ).map do |d|
+    ).filter_map do |d|
       d.to_formula
     rescue FormulaUnavailableError
       nil
-    end.compact
+    end
   end
 
   def runtime_installed_formula_dependents
@@ -2189,7 +2192,7 @@ class Formula
       {
         dependable: dependable,
         # Now find the list of specs each dependency was a part of.
-        specs:      dependables.map { |spec, spec_deps| spec if spec_deps&.include?(dependable) }.compact,
+        specs:      dependables.filter_map { |spec, spec_deps| spec if spec_deps&.include?(dependable) },
       }
     end
   end
@@ -2362,7 +2365,7 @@ class Formula
 
     # Take from API, merging in local install status.
     if loaded_from_api? && !Homebrew::EnvConfig.no_install_from_api?
-      json_formula = Homebrew::API::Formula.all_formulae[name].dup
+      json_formula = Homebrew::API::Formula.all_formulae.fetch(name).dup
       return json_formula.merge(
         hash.slice("name", "installed", "linked_keg", "pinned", "outdated"),
       )
