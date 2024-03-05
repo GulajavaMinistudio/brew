@@ -1129,6 +1129,8 @@ nor vice versa. It must use whichever style specification the formula already us
   Specify the new commit *`revision`* corresponding to the specified git *`tag`* or specified *`version`*.
 * `-f`, `--force`:
   Remove all mirrors if `--mirror` was not specified.
+* `--install-dependencies`:
+  Install missing dependencies required to update resources.
 * `--python-package-name`:
   Use the specified *`package-name`* when finding Python resources for *`formula`*. If no package name is specified, it will be inferred from the formula's stable URL.
 * `--python-extra-packages`:
@@ -1666,6 +1668,8 @@ Update versions for PyPI resource blocks in *`formula`*.
   Suppress any output.
 * `--ignore-non-pypi-packages`:
   Don't fail if *`formula`* is not a PyPI package.
+* `--install-dependencies`:
+  Install missing dependencies required to update resources.
 * `--version`:
   Use the specified *`version`* when finding resources for *`formula`*. If no version is specified, the current version for *`formula`* will be used.
 * `--package-name`:
@@ -2449,7 +2453,7 @@ Homebrew's Project Leadership Committee is Colin Dean, Issy Long, Mike McQuaid, 
 
 Homebrew's Technical Steering Committee is Bo Anderson, FX Coudert, Michka Popoff, Mike McQuaid and Rylan Polster.
 
-Homebrew's maintainers are Alexander Bayandin, Bevan Kay, Bo Anderson, Branch Vincent, Caleb Xu, Carlo Cabrera, David Baumgold, Dustin Rodrigues, Eric Knibbe, FX Coudert, George Adams, Issy Long, Justin Krehel, Markus Reiter, Miccal Matthews, Michael Cho, Michka Popoff, Mike McQuaid, Nanda H Krishna, Patrick Linnane, Razvan Azamfirei, Rui Chen, Ruoyu Zhong, Rylan Polster, Sam Ford, Sean Molenaar and Thierry Moisan.
+Homebrew's maintainers are Alexander Bayandin, Bevan Kay, Bo Anderson, Branch Vincent, Caleb Xu, Carlo Cabrera, David Baumgold, Douglas Eichelberger, Dustin Rodrigues, Eric Knibbe, FX Coudert, Issy Long, Justin Krehel, Markus Reiter, Miccal Matthews, Michael Cho, Michka Popoff, Mike McQuaid, Nanda H Krishna, Patrick Linnane, Razvan Azamfirei, Rui Chen, Ruoyu Zhong, Rylan Polster, Sam Ford, Sean Molenaar and Thierry Moisan.
 
 Former maintainers with significant contributions include Misty De Méo, Shaun Jackman, Vítor Galvão, Claudia Pellegrino, Seeker, William Woodruff, Jan Viljanen, JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs, Chongyu Zhu and Homebrew's creator: Max Howell.
 

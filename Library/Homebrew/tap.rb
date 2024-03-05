@@ -21,9 +21,11 @@ class Tap
   HOMEBREW_TAP_CASK_RENAMES_FILE = "cask_renames.json"
   HOMEBREW_TAP_FORMULA_RENAMES_FILE = "formula_renames.json"
   HOMEBREW_TAP_MIGRATIONS_FILE = "tap_migrations.json"
+  HOMEBREW_TAP_AUTOBUMP_FILE = ".github/autobump.txt"
+  HOMEBREW_TAP_PYPI_FORMULA_MAPPINGS_FILE = "pypi_formula_mappings.json"
+  HOMEBREW_TAP_SYNCED_VERSIONS_FORMULAE_FILE = "synced_versions_formulae.json"
   HOMEBREW_TAP_AUDIT_EXCEPTIONS_DIR = "audit_exceptions"
   HOMEBREW_TAP_STYLE_EXCEPTIONS_DIR = "style_exceptions"
-  HOMEBREW_TAP_PYPI_FORMULA_MAPPINGS = "pypi_formula_mappings.json"
 
   TAP_MIGRATIONS_STALE_SECONDS = 86400 # 1 day
 
@@ -31,9 +33,10 @@ class Tap
     #{HOMEBREW_TAP_FORMULA_RENAMES_FILE}
     #{HOMEBREW_TAP_CASK_RENAMES_FILE}
     #{HOMEBREW_TAP_MIGRATIONS_FILE}
+    #{HOMEBREW_TAP_PYPI_FORMULA_MAPPINGS_FILE}
+    #{HOMEBREW_TAP_SYNCED_VERSIONS_FORMULAE_FILE}
     #{HOMEBREW_TAP_AUDIT_EXCEPTIONS_DIR}/*.json
     #{HOMEBREW_TAP_STYLE_EXCEPTIONS_DIR}/*.json
-    #{HOMEBREW_TAP_PYPI_FORMULA_MAPPINGS}
   ].freeze
 
   def self.fetch(*args)
@@ -63,6 +66,38 @@ class Tap
     return if match.blank? || match[:user].blank? || match[:repo].blank?
 
     fetch(match[:user], match[:repo])
+  end
+
+  # @private
+  sig { params(name: String).returns(T.nilable([T.attached_class, String])) }
+  def self.with_formula_name(name)
+    return unless (match = name.match(HOMEBREW_TAP_FORMULA_REGEX))
+
+    user = T.must(match[:user])
+    repo = T.must(match[:repo])
+    name = T.must(match[:name])
+
+    # Relative paths are not taps.
+    return if [user, repo].intersect?([".", ".."])
+
+    tap = fetch(user, repo)
+    [tap, name.downcase]
+  end
+
+  # @private
+  sig { params(token: String).returns(T.nilable([T.attached_class, String])) }
+  def self.with_cask_token(token)
+    return unless (match = token.match(HOMEBREW_TAP_CASK_REGEX))
+
+    user = T.must(match[:user])
+    repo = T.must(match[:repo])
+    token = T.must(match[:token])
+
+    # Relative paths are not taps.
+    return if [user, repo].intersect?([".", ".."])
+
+    tap = fetch(user, repo)
+    [tap, token.downcase]
   end
 
   sig { returns(CoreCaskTap) }
@@ -115,8 +150,6 @@ class Tap
     @full_name = "#{@user}/homebrew-#{@repo}"
     @path = TAP_DIRECTORY/@full_name.downcase
     @git_repo = GitRepository.new(@path)
-    @alias_table = nil
-    @alias_reverse_table = nil
   end
 
   # Clear internal cache.
@@ -128,7 +161,11 @@ class Tap
     @command_dir = nil
     @formula_names = nil
     @formula_files = nil
+    @formula_files_by_name = nil
+    @formula_reverse_renames = nil
     @cask_files = nil
+    @cask_files_by_name = nil
+    @cask_reverse_renames = nil
     @alias_dir = nil
     @alias_files = nil
     @aliases = nil
@@ -140,6 +177,7 @@ class Tap
     @audit_exceptions = nil
     @style_exceptions = nil
     @pypi_formula_mappings = nil
+    @synced_versions_formulae = nil
     @config = nil
     @spell_checker = nil
     remove_instance_variable(:@private) if instance_variable_defined?(:@private)
@@ -162,8 +200,9 @@ class Tap
 
   # The remote repository name of this {Tap}.
   # e.g. `user/homebrew-repo`
+  sig { returns(T.nilable(String)) }
   def remote_repo
-    return unless remote
+    return unless (remote = self.remote)
 
     @remote_repo ||= remote.delete_prefix("https://github.com/")
                            .delete_prefix("git@github.com:")
@@ -237,6 +276,7 @@ class Tap
   end
 
   # {TapConfig} of this {Tap}.
+  sig { returns(TapConfig) }
   def config
     @config ||= begin
       raise TapUnavailableError, name unless installed?
@@ -482,10 +522,11 @@ class Tap
   end
 
   # True if the {#remote} of {Tap} is customized.
+  sig { returns(T::Boolean) }
   def custom_remote?
-    return true unless remote
+    return true unless (remote = self.remote)
 
-    remote.casecmp(default_remote).nonzero?
+    !remote.casecmp(default_remote).zero?
   end
 
   # Path to the directory of all {Formula} files for this {Tap}.
@@ -560,19 +601,12 @@ class Tap
     end
   end
 
-  # A cached hash of {Formula} basenames to {Formula} file pathnames for a {Tap}
-  sig { params(tap: Tap).returns(T::Hash[String, Pathname]) }
-  def self.formula_files_by_name(tap)
-    cache_key = "formula_files_by_name_#{tap}"
-    cache.fetch(cache_key) do |key|
-      cache[key] = tap.formula_files_by_name
-    end
-  end
-
+  # A mapping of {Formula} names to {Formula} file paths.
+  #
   # @private
   sig { returns(T::Hash[String, Pathname]) }
   def formula_files_by_name
-    formula_files.each_with_object({}) do |file, hash|
+    @formula_files_by_name ||= formula_files.each_with_object({}) do |file, hash|
       # If there's more than one file with the same basename: use the longer one to prioritise more specific results.
       basename = file.basename(".rb").to_s
       existing_file = hash[basename]
@@ -590,19 +624,12 @@ class Tap
     end
   end
 
-  # A cached hash of {Cask} basenames to {Cask} file pathnames for a {Tap}
-  sig { params(tap: Tap).returns(T::Hash[String, Pathname]) }
-  def self.cask_files_by_name(tap)
-    cache_key = "cask_files_by_name_#{tap}"
-    cache.fetch(cache_key) do |key|
-      cache[key] = tap.cask_files_by_name
-    end
-  end
-
+  # A mapping of {Cask} tokens to {Cask} file paths.
+  #
   # @private
   sig { returns(T::Hash[String, Pathname]) }
   def cask_files_by_name
-    cask_files.each_with_object({}) do |file, hash|
+    @cask_files_by_name ||= cask_files.each_with_object({}) do |file, hash|
       # If there's more than one file with the same basename: use the longer one to prioritise more specific results.
       basename = file.basename(".rb").to_s
       existing_file = hash[basename]
@@ -686,30 +713,25 @@ class Tap
     @aliases ||= alias_table.keys
   end
 
-  # a table mapping alias to formula name
+  # Mapping from aliases to formula names.
+  #
   # @private
   sig { returns(T::Hash[String, String]) }
   def alias_table
-    return @alias_table if @alias_table
-
-    @alias_table = {}
-    alias_files.each do |alias_file|
-      @alias_table[alias_file_to_name(alias_file)] = formula_file_to_name(alias_file.resolved_path)
+    @alias_table ||= alias_files.each_with_object({}) do |alias_file, alias_table|
+      alias_table[alias_file_to_name(alias_file)] = formula_file_to_name(alias_file.resolved_path)
     end
-    @alias_table
   end
 
-  # a table mapping formula name to aliases
+  # Mapping from formula names to aliases.
+  #
   # @private
+  sig { returns(T::Hash[String, T::Array[String]]) }
   def alias_reverse_table
-    return @alias_reverse_table if @alias_reverse_table
-
-    @alias_reverse_table = {}
-    alias_table.each do |alias_name, formula_name|
-      @alias_reverse_table[formula_name] ||= []
-      @alias_reverse_table[formula_name] << alias_name
+    @alias_reverse_table ||= alias_table.each_with_object({}) do |(alias_name, formula_name), alias_reverse_table|
+      alias_reverse_table[formula_name] ||= []
+      alias_reverse_table[formula_name] << alias_name
     end
-    @alias_reverse_table
   end
 
   sig { returns(Pathname) }
@@ -762,10 +784,12 @@ class Tap
     end
   end
 
-  # Hash with tap formula old names. Reverse of {#formula_renames}.
+  # Mapping from new to old cask tokens. Reverse of {#cask_renames}.
+  #
+  # @private
   sig { returns(T::Hash[String, T::Array[String]]) }
-  def reverse_cask_renames
-    @reverse_cask_renames ||= cask_renames.each_with_object({}) do |(old_name, new_name), hash|
+  def cask_reverse_renames
+    @cask_reverse_renames ||= cask_renames.each_with_object({}) do |(old_name, new_name), hash|
       hash[new_name] ||= []
       hash[new_name] << old_name
     end
@@ -781,7 +805,9 @@ class Tap
     end
   end
 
-  # Hash with tap formula old names. Reverse of {#formula_renames}.
+  # Mapping from new to old formula names. Reverse of {#formula_renames}.
+  #
+  # @private
   sig { returns(T::Hash[String, T::Array[String]]) }
   def formula_reverse_renames
     @formula_reverse_renames ||= formula_renames.each_with_object({}) do |(old_name, new_name), hash|
@@ -818,18 +844,29 @@ class Tap
   # Hash with audit exceptions
   sig { returns(Hash) }
   def audit_exceptions
-    @audit_exceptions = read_formula_list_directory "#{HOMEBREW_TAP_AUDIT_EXCEPTIONS_DIR}/*"
+    @audit_exceptions ||= read_formula_list_directory("#{HOMEBREW_TAP_AUDIT_EXCEPTIONS_DIR}/*")
   end
 
   # Hash with style exceptions
   sig { returns(Hash) }
   def style_exceptions
-    @style_exceptions = read_formula_list_directory "#{HOMEBREW_TAP_STYLE_EXCEPTIONS_DIR}/*"
+    @style_exceptions ||= read_formula_list_directory("#{HOMEBREW_TAP_STYLE_EXCEPTIONS_DIR}/*")
   end
 
   # Hash with pypi formula mappings
+  sig { returns(Hash) }
   def pypi_formula_mappings
-    @pypi_formula_mappings = read_formula_list path/HOMEBREW_TAP_PYPI_FORMULA_MAPPINGS
+    @pypi_formula_mappings ||= read_formula_list(path/HOMEBREW_TAP_PYPI_FORMULA_MAPPINGS_FILE)
+  end
+
+  # Array with synced versions formulae
+  sig { returns(T::Array[T::Array[String]]) }
+  def synced_versions_formulae
+    @synced_versions_formulae ||= if (synced_file = path/HOMEBREW_TAP_SYNCED_VERSIONS_FORMULAE_FILE).file?
+      JSON.parse(synced_file.read)
+    else
+      []
+    end
   end
 
   # @private
@@ -1012,9 +1049,9 @@ class CoreTap < AbstractCoreTap
     super
   end
 
-  sig { returns(String) }
+  sig { returns(T.nilable(String)) }
   def remote
-    super if Homebrew::EnvConfig.no_install_from_api?
+    return super if Homebrew::EnvConfig.no_install_from_api?
 
     Homebrew::EnvConfig.core_git_remote
   end
@@ -1141,6 +1178,15 @@ class CoreTap < AbstractCoreTap
   end
 
   # @private
+  sig { returns(T::Array[T::Array[String]]) }
+  def synced_versions_formulae
+    @synced_versions_formulae ||= begin
+      ensure_installed!
+      super
+    end
+  end
+
+  # @private
   sig { params(file: Pathname).returns(String) }
   def formula_file_to_name(file)
     file.basename(".rb").to_s
@@ -1183,14 +1229,16 @@ class CoreTap < AbstractCoreTap
   def formula_files_by_name
     return super if Homebrew::EnvConfig.no_install_from_api?
 
-    tap_path = path.to_s
-    Homebrew::API::Formula.all_formulae.each_with_object({}) do |item, hash|
-      name, formula_hash = item
-      # If there's more than one item with the same path: use the longer one to prioritise more specific results.
-      existing_path = hash[name]
-      # Pathname equivalent is slow in a tight loop
-      new_path = File.join(tap_path, formula_hash.fetch("ruby_source_path"))
-      hash[name] = Pathname(new_path) if existing_path.nil? || existing_path.to_s.length < new_path.length
+    @formula_files_by_name ||= begin
+      tap_path = path.to_s
+      Homebrew::API::Formula.all_formulae.each_with_object({}) do |item, hash|
+        name, formula_hash = item
+        # If there's more than one item with the same path: use the longer one to prioritise more specific results.
+        existing_path = hash[name]
+        # Pathname equivalent is slow in a tight loop
+        new_path = File.join(tap_path, formula_hash.fetch("ruby_source_path"))
+        hash[name] = Pathname(new_path) if existing_path.nil? || existing_path.to_s.length < new_path.length
+      end
     end
   end
 
@@ -1251,7 +1299,7 @@ class CoreCaskTap < AbstractCoreTap
   def cask_files_by_name
     return super if Homebrew::EnvConfig.no_install_from_api?
 
-    Homebrew::API::Cask.all_casks.each_with_object({}) do |item, hash|
+    @cask_files_by_name ||= Homebrew::API::Cask.all_casks.each_with_object({}) do |item, hash|
       name, cask_hash = item
       # If there's more than one item with the same path: use the longer one to prioritise more specific results.
       existing_path = hash[name]
@@ -1283,6 +1331,7 @@ end
 
 # Permanent configuration per {Tap} using `git-config(1)`.
 class TapConfig
+  sig { returns(Tap) }
   attr_reader :tap
 
   sig { params(tap: Tap).void }
@@ -1290,6 +1339,7 @@ class TapConfig
     @tap = tap
   end
 
+  sig { params(key: T.any(Symbol, String)).returns(T.nilable(String)) }
   def [](key)
     return unless tap.git?
     return unless Utils::Git.available?
@@ -1297,6 +1347,7 @@ class TapConfig
     Homebrew::Settings.read key, repo: tap.path
   end
 
+  sig { params(key: T.any(Symbol, String), value: T.any(T::Boolean, String)).void }
   def []=(key, value)
     return unless tap.git?
     return unless Utils::Git.available?
@@ -1304,6 +1355,7 @@ class TapConfig
     Homebrew::Settings.write key, value.to_s, repo: tap.path
   end
 
+  sig { params(key: T.any(Symbol, String)).void }
   def delete(key)
     return unless tap.git?
     return unless Utils::Git.available?

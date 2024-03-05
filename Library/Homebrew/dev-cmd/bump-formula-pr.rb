@@ -72,6 +72,8 @@ module Homebrew
                           "or specified <version>."
       switch "-f", "--force",
              description: "Remove all mirrors if `--mirror` was not specified."
+      switch "--install-dependencies",
+             description: "Install missing dependencies required to update resources."
       flag   "--python-package-name=",
              description: "Use the specified <package-name> when finding Python resources for <formula>. " \
                           "If no package name is specified, it will be inferred from the formula's stable URL."
@@ -111,6 +113,20 @@ module Homebrew
     odie "This formula is deprecated and does not build!" if formula.deprecation_reason == :does_not_build
     odie "This formula is not in a tap!" if formula.tap.blank?
     odie "This formula's tap is not a Git repository!" unless formula.tap.git?
+
+    if ENV.fetch("HOMEBREW_TEST_BOT_AUTOBUMP", nil).blank? &&
+       (formula.tap.core_tap? &&
+       (autobump_file_path = formula.tap.path/Tap::HOMEBREW_TAP_AUTOBUMP_FILE) &&
+       autobump_file_path.exist? &&
+       autobump_file_path.readlines(chomp: true).include?(formula.name))
+      odie <<~EOS
+        Whoops, the #{formula.name} formula has its version update
+        pull requests automatically opened by BrewTestBot!
+        We'd still love your contributions, though, so try another one
+        that's not in the autobump list:
+          #{Formatter.url("#{formula.tap.remote}/blob/master/.github/autobump.txt")}
+      EOS
+    end
 
     formula_spec = formula.stable
     odie "#{formula}: no stable specification found!" if formula_spec.blank?
@@ -329,6 +345,7 @@ module Homebrew
                                                         package_name:             args.python_package_name,
                                                         extra_packages:           args.python_extra_packages,
                                                         exclude_packages:         args.python_exclude_packages,
+                                                        install_dependencies:     args.install_dependencies?,
                                                         silent:                   args.quiet?,
                                                         ignore_non_pypi_packages: true
     end
