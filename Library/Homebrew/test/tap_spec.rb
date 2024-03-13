@@ -354,31 +354,6 @@ RSpec.describe Tap do
       end.to raise_error(TapNoCustomRemoteError)
     end
 
-    describe "force_auto_update" do
-      before do
-        setup_git_repo
-      end
-
-      let(:already_tapped_tap) { described_class.fetch("Homebrew", "foo") }
-
-      it "defaults to nil" do
-        expect(already_tapped_tap).to be_installed
-        expect(already_tapped_tap.config["forceautoupdate"]).to be_nil
-      end
-
-      it "enables forced auto-updates when true" do
-        expect(already_tapped_tap).to be_installed
-        already_tapped_tap.install force_auto_update: true
-        expect(already_tapped_tap.config["forceautoupdate"]).to eq("true")
-      end
-
-      it "disables forced auto-updates when false" do
-        expect(already_tapped_tap).to be_installed
-        already_tapped_tap.install force_auto_update: false
-        expect(already_tapped_tap.config["forceautoupdate"]).to be_nil
-      end
-    end
-
     specify "Git error" do
       tap = described_class.fetch("user", "repo")
 
@@ -488,16 +463,58 @@ RSpec.describe Tap do
   specify "#config" do
     setup_git_repo
 
-    expect(homebrew_foo_tap.config["foo"]).to be_nil
-    homebrew_foo_tap.config["foo"] = "bar"
-    expect(homebrew_foo_tap.config["foo"]).to eq("bar")
-    homebrew_foo_tap.config.delete("foo")
-    expect(homebrew_foo_tap.config["foo"]).to be_nil
+    expect(homebrew_foo_tap.config[:foo]).to be_nil
+    homebrew_foo_tap.config[:foo] = true
+    expect(homebrew_foo_tap.config[:foo]).to be true
+    homebrew_foo_tap.config.delete(:foo)
+    expect(homebrew_foo_tap.config[:foo]).to be_nil
   end
 
-  describe "#each" do
+  describe ".each" do
     it "returns an enumerator if no block is passed" do
       expect(described_class.each).to be_an_instance_of(Enumerator)
+    end
+
+    context "when the core tap is not installed" do
+      around do |example|
+        FileUtils.rm_rf CoreTap.instance.path
+        example.run
+      ensure
+        (CoreTap.instance.path/"Formula").mkpath
+      end
+
+      it "includes the core tap with the api" do
+        ENV.delete("HOMEBREW_NO_INSTALL_FROM_API")
+        expect(described_class.to_a).to include(CoreTap.instance)
+      end
+
+      it "omits the core tap without the api" do
+        ENV["HOMEBREW_NO_INSTALL_FROM_API"] = "1"
+        expect(described_class.to_a).not_to include(CoreTap.instance)
+      end
+    end
+  end
+
+  describe ".installed" do
+    it "includes only installed taps" do
+      expect(described_class.installed)
+        .to contain_exactly(CoreTap.instance, described_class.fetch("homebrew/foo"))
+    end
+  end
+
+  describe ".all" do
+    it "includes the core and cask taps by default", :needs_macos do
+      expect(described_class.all).to contain_exactly(
+        CoreTap.instance,
+        CoreCaskTap.instance,
+        described_class.fetch("homebrew/foo"),
+        described_class.fetch("third-party/tap"),
+      )
+    end
+
+    it "includes the core tap and excludes the cask tap by default", :needs_linux do
+      expect(described_class.all)
+        .to contain_exactly(CoreTap.instance, described_class.fetch("homebrew/foo"))
     end
   end
 
@@ -517,6 +534,47 @@ RSpec.describe Tap do
 
         expected_result = { "removed-formula" => "homebrew/foo" }
         expect(homebrew_foo_tap.tap_migrations).to eq expected_result
+      end
+    end
+
+    describe "tap migration renames" do
+      before do
+        (path/"tap_migrations.json").write <<~JSON
+          {
+            "adobe-air-sdk": "homebrew/cask",
+            "app-engine-go-32": "homebrew/cask/google-cloud-sdk",
+            "app-engine-go-64": "homebrew/cask/google-cloud-sdk",
+            "gimp": "homebrew/cask",
+            "horndis": "homebrew/cask",
+            "inkscape": "homebrew/cask",
+            "schismtracker": "homebrew/cask/schism-tracker"
+          }
+        JSON
+      end
+
+      describe "#reverse_tap_migration_renames" do
+        it "returns the expected hash" do
+          expect(homebrew_foo_tap.reverse_tap_migrations_renames).to eq({
+            "homebrew/cask/google-cloud-sdk" => %w[app-engine-go-32 app-engine-go-64],
+            "homebrew/cask/schism-tracker"   => %w[schismtracker],
+          })
+        end
+      end
+
+      describe ".tap_migration_oldnames" do
+        let(:cask_tap) { CoreCaskTap.instance }
+        let(:core_tap) { CoreTap.instance }
+
+        it "returns expected renames" do
+          [
+            [cask_tap, "gimp", []],
+            [core_tap, "schism-tracker", []],
+            [cask_tap, "schism-tracker", %w[schismtracker]],
+            [cask_tap, "google-cloud-sdk", %w[app-engine-go-32 app-engine-go-64]],
+          ].each do |tap, name, result|
+            expect(described_class.tap_migration_oldnames(tap, name)).to eq(result)
+          end
+        end
       end
     end
 
