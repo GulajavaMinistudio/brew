@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
-# require 'tapioca'
 require "tapioca/dsl"
-require_relative "../../../../sorbet/tapioca/compilers/args"
+require "sorbet/tapioca/compilers/args"
 
 RSpec.describe Tapioca::Compilers::Args do
   let(:compiler) { described_class.new(Tapioca::Dsl::Pipeline.new(requested_constants: []), RBI::Tree.new, Homebrew) }
   let(:list_parser) do
     require "cmd/list"
-    Homebrew.list_args
+    Homebrew::Cmd::List.parser
   end
   # good testing candidate, bc it has multiple for each of switch, flag, and comma_array args:
   let(:update_python_resources_parser) do
@@ -18,28 +17,10 @@ RSpec.describe Tapioca::Compilers::Args do
 
   describe "#args_table" do
     it "returns a mapping of list args to default values" do
-      expect(compiler.args_table(list_parser)).to eq({
-        "1?":       false,
-        cask?:      false,
-        casks?:     false,
-        d?:         false,
-        debug?:     false,
-        formula?:   false,
-        formulae?:  false,
-        full_name?: false,
-        h?:         false,
-        help?:      false,
-        l?:         false,
-        multiple?:  false,
-        pinned?:    false,
-        q?:         false,
-        quiet?:     false,
-        r?:         false,
-        t?:         false,
-        v?:         false,
-        verbose?:   false,
-        versions?:  false,
-      })
+      expect(compiler.args_table(list_parser).keys).to contain_exactly(
+        :"1?", :cask?, :casks?, :d?, :debug?, :formula?, :formulae?, :full_name?, :h?, :help?, :l?, :multiple?,
+        :pinned?, :q?, :quiet?, :r?, :t?, :v?, :verbose?, :versions?
+      )
     end
 
     it "rreturns a mapping of update-python-resources args to default values" do

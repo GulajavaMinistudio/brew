@@ -46,13 +46,13 @@ RSpec.describe Cask::Cask, :cask do
       expect(c.token).to eq("caffeine")
     end
 
-    it "returns an instance of the Cask from a URL" do
+    it "returns an instance of the Cask from a URL", :needs_utils_curl, :no_api do
       c = Cask::CaskLoader.load("file://#{tap_path}/Casks/local-caffeine.rb")
       expect(c).to be_a(described_class)
       expect(c.token).to eq("local-caffeine")
     end
 
-    it "raises an error when failing to download a Cask from a URL" do
+    it "raises an error when failing to download a Cask from a URL", :needs_utils_curl, :no_api do
       expect do
         Cask::CaskLoader.load("file://#{tap_path}/Casks/notacask.rb")
       end.to raise_error(Cask::CaskUnavailableError)
@@ -219,7 +219,11 @@ RSpec.describe Cask::Cask, :cask do
       it "returns expected hash" do
         allow(MacOS).to receive(:version).and_return(MacOSVersion.new("13"))
 
-        hash = Cask::CaskLoader.load("everything").to_h
+        cask = Cask::CaskLoader.load("everything")
+
+        expect(cask.tap).to receive(:git_head).and_return("abcdef1234567890abcdef1234567890abcdef12")
+
+        hash = cask.to_h
 
         expect(hash).to be_a(Hash)
         expect(JSON.pretty_generate(hash)).to eq(expected_json)
