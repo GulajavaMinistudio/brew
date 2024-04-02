@@ -6,9 +6,6 @@
 
 class Homebrew::CLI::Args
   sig { returns(T::Boolean) }
-  def D?; end
-
-  sig { returns(T::Boolean) }
   def HEAD?; end
 
   sig { returns(T::Boolean) }
@@ -16,12 +13,6 @@ class Homebrew::CLI::Args
 
   sig { returns(T::Boolean) }
   def aliases?; end
-
-  sig { returns(T::Boolean) }
-  def analytics?; end
-
-  sig { returns(T::Boolean) }
-  def annotate?; end
 
   sig { returns(T.nilable(String)) }
   def appdir; end
@@ -36,22 +27,13 @@ class Homebrew::CLI::Args
   def audio_unit_plugindir; end
 
   sig { returns(T::Boolean) }
-  def audit_debug?; end
-
-  sig { returns(T::Boolean) }
   def auto_update?; end
 
   sig { returns(T::Boolean) }
   def binaries?; end
 
   sig { returns(T.nilable(String)) }
-  def bottle_arch; end
-
-  sig { returns(T.nilable(String)) }
   def bottle_tag; end
-
-  sig { returns(T::Boolean) }
-  def build_bottle?; end
 
   sig { returns(T::Boolean) }
   def build_from_source?; end
@@ -61,12 +43,6 @@ class Homebrew::CLI::Args
 
   sig { returns(T::Boolean) }
   def casks?; end
-
-  sig { returns(T.nilable(String)) }
-  def category; end
-
-  sig { returns(T.nilable(String)) }
-  def cc; end
 
   sig { returns(T::Boolean) }
   def closed?; end
@@ -83,9 +59,6 @@ class Homebrew::CLI::Args
   sig { returns(T::Boolean) }
   def custom_remote?; end
 
-  sig { returns(T.nilable(String)) }
-  def days; end
-
   sig { returns(T::Boolean) }
   def debian?; end
 
@@ -93,34 +66,16 @@ class Homebrew::CLI::Args
   def debug_symbols?; end
 
   sig { returns(T::Boolean) }
-  def declared?; end
-
-  sig { returns(T::Boolean) }
-  def deps?; end
-
-  sig { returns(T::Boolean) }
   def desc?; end
-
-  sig { returns(T::Boolean) }
-  def description?; end
 
   sig { returns(T.nilable(String)) }
   def dictionarydir; end
 
   sig { returns(T::Boolean) }
-  def direct?; end
-
-  sig { returns(T::Boolean) }
   def display_times?; end
 
   sig { returns(T::Boolean) }
-  def dot?; end
-
-  sig { returns(T::Boolean) }
   def dry_run?; end
-
-  sig { returns(T.nilable(String)) }
-  def env; end
 
   sig { returns(T::Boolean) }
   def eval_all?; end
@@ -141,9 +96,6 @@ class Homebrew::CLI::Args
   def fontdir; end
 
   sig { returns(T::Boolean) }
-  def for_each?; end
-
-  sig { returns(T::Boolean) }
   def force?; end
 
   sig { returns(T.nilable(String)) }
@@ -159,22 +111,10 @@ class Homebrew::CLI::Args
   def formulae?; end
 
   sig { returns(T::Boolean) }
-  def full_name?; end
-
-  sig { returns(T::Boolean) }
   def g?; end
 
   sig { returns(T::Boolean) }
   def git?; end
-
-  sig { returns(T::Boolean) }
-  def github?; end
-
-  sig { returns(T::Boolean) }
-  def github_packages_downloads?; end
-
-  sig { returns(T::Boolean) }
-  def graph?; end
 
   sig { returns(T::Boolean) }
   def greedy?; end
@@ -198,16 +138,10 @@ class Homebrew::CLI::Args
   def ignore_pinned?; end
 
   sig { returns(T::Boolean) }
-  def include_aliases?; end
-
-  sig { returns(T::Boolean) }
   def include_build?; end
 
   sig { returns(T::Boolean) }
   def include_optional?; end
-
-  sig { returns(T::Boolean) }
-  def include_requirements?; end
 
   sig { returns(T::Boolean) }
   def include_test?; end
@@ -217,12 +151,6 @@ class Homebrew::CLI::Args
 
   sig { returns(T::Boolean) }
   def installed?; end
-
-  sig { returns(T::Boolean) }
-  def installed_as_dependency?; end
-
-  sig { returns(T::Boolean) }
-  def installed_on_request?; end
 
   sig { returns(T::Boolean) }
   def interactive?; end
@@ -243,9 +171,6 @@ class Homebrew::CLI::Args
   def language; end
 
   sig { returns(T::Boolean) }
-  def list_checks?; end
-
-  sig { returns(T::Boolean) }
   def macports?; end
 
   sig { returns(T.nilable(String)) }
@@ -264,19 +189,10 @@ class Homebrew::CLI::Args
   def n?; end
 
   sig { returns(T::Boolean) }
-  def name?; end
-
-  sig { returns(T::Boolean) }
-  def new_issue?; end
-
-  sig { returns(T::Boolean) }
   def no_simulate?; end
 
   sig { returns(T::Boolean) }
   def oneline?; end
-
-  sig { returns(T::Boolean) }
-  def only_dependencies?; end
 
   sig { returns(T::Boolean) }
   def open?; end
@@ -306,15 +222,6 @@ class Homebrew::CLI::Args
   def preinstall?; end
 
   sig { returns(T::Boolean) }
-  def private?; end
-
-  sig { returns(T.nilable(String)) }
-  def prune; end
-
-  sig { returns(T::Boolean) }
-  def prune_prefix?; end
-
-  sig { returns(T::Boolean) }
   def pull_request?; end
 
   sig { returns(T.nilable(String)) }
@@ -322,9 +229,6 @@ class Homebrew::CLI::Args
 
   sig { returns(T::Boolean) }
   def quarantine?; end
-
-  sig { returns(T::Boolean) }
-  def r?; end
 
   sig { returns(T::Boolean) }
   def recursive?; end
@@ -339,16 +243,10 @@ class Homebrew::CLI::Args
   def require_sha?; end
 
   sig { returns(T::Boolean) }
-  def retry?; end
-
-  sig { returns(T::Boolean) }
   def s?; end
 
   sig { returns(T.nilable(String)) }
   def screen_saverdir; end
-
-  sig { returns(T::Boolean) }
-  def search?; end
 
   sig { returns(T.nilable(String)) }
   def servicedir; end
@@ -360,9 +258,6 @@ class Homebrew::CLI::Args
   def skip_cask_deps?; end
 
   sig { returns(T::Boolean) }
-  def skip_post_install?; end
-
-  sig { returns(T::Boolean) }
   def skip_recommended?; end
 
   sig { returns(T::Boolean) }
@@ -370,12 +265,6 @@ class Homebrew::CLI::Args
 
   sig { returns(T::Boolean) }
   def syntax?; end
-
-  sig { returns(T::Boolean) }
-  def topological?; end
-
-  sig { returns(T::Boolean) }
-  def tree?; end
 
   sig { returns(T::Boolean) }
   def u?; end
@@ -386,20 +275,11 @@ class Homebrew::CLI::Args
   sig { returns(T::Boolean) }
   def unbrewed?; end
 
-  sig { returns(T::Boolean) }
-  def union?; end
-
-  sig { returns(T::Boolean) }
-  def variations?; end
-
   sig { returns(T.nilable(String)) }
   def vst3_plugindir; end
 
   sig { returns(T.nilable(String)) }
   def vst_plugindir; end
-
-  sig { returns(T::Boolean) }
-  def with_hostname?; end
 
   sig { returns(T::Boolean) }
   def zap?; end

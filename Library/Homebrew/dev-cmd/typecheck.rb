@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "abstract_command"
-require "cli/parser"
 require "fileutils"
 
 module Homebrew
@@ -49,10 +48,6 @@ module Homebrew
             safe_system "bundle", "exec", "tapioca", "dsl"
             # Prefer adding args here: Library/Homebrew/sorbet/tapioca/config.yml
             tapioca_args = args.update_all? ? ["--all"] : []
-
-            ohai "Updating homegrown RBI files..."
-            safe_system "bundle", "exec", "ruby", "sorbet/custom_generators/tty.rb"
-            safe_system "bundle", "exec", "ruby", "sorbet/custom_generators/env_config.rb"
 
             ohai "Updating Tapioca RBI files..."
             safe_system "bundle", "exec", "tapioca", "gem", *tapioca_args

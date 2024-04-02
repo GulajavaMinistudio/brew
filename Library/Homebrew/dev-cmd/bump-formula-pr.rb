@@ -4,7 +4,6 @@
 require "abstract_command"
 require "fileutils"
 require "formula"
-require "cli/parser"
 require "utils/pypi"
 require "utils/tar"
 
@@ -119,6 +118,8 @@ module Homebrew
           that's not in the autobump list:
             #{Formatter.url("#{formula.tap.remote}/blob/master/.github/autobump.txt")}
         EOS
+
+        odie "You have too many PRs open: close or merge some first!" if GitHub.too_many_open_prs?(formula.tap)
 
         formula_spec = formula.stable
         odie "#{formula}: no stable specification found!" if formula_spec.blank?
@@ -473,7 +474,10 @@ module Homebrew
 
       def check_throttle(formula, new_version)
         throttled_rate = formula.livecheck.throttle
-        throttled_rate ||= formula.tap.audit_exceptions.dig(:throttled_formulae, formula.name)
+        throttled_rate ||= if (rate = formula.tap.audit_exceptions.dig(:throttled_formulae, formula.name))
+          odeprecated "throttled_formulae.json", "Livecheck#throttle"
+          rate
+        end
         return if throttled_rate.blank?
 
         formula_suffix = Version.new(new_version).patch.to_i

@@ -381,7 +381,7 @@ module Homebrew
           end
         end
 
-        stable_kegs.max_by(&:version)
+        stable_kegs.max_by(&:scheme_and_version)
       end
 
       def resolve_default_keg(name)

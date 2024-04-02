@@ -138,6 +138,7 @@ class SoftwareSpec
   end
 
   def go_resource(name, &block)
+    # odeprecated "SoftwareSpec#go_resource", "Go modules"
     resource name, Resource::Go, &block
   end
 
@@ -340,7 +341,7 @@ class Bottle
 
   extend Forwardable
 
-  attr_reader :name, :resource, :cellar, :rebuild
+  attr_reader :name, :resource, :tag, :cellar, :rebuild
 
   def_delegators :resource, :url, :verify_download_integrity
   def_delegators :resource, :cached_download

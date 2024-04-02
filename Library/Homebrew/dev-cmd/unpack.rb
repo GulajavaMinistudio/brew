@@ -5,7 +5,6 @@ require "abstract_command"
 require "fileutils"
 require "stringio"
 require "formula"
-require "cli/parser"
 
 module Homebrew
   module DevCmd
@@ -43,7 +42,7 @@ module Homebrew
           unpack_dir = Pathname.pwd
         end
 
-        odie "Cannot write to #{unpack_dir}" unless unpack_dir.writable_real?
+        odie "Cannot write to #{unpack_dir}" unless unpack_dir.writable?
 
         formulae.each do |f|
           stage_dir = unpack_dir/"#{f.name}-#{f.version}"

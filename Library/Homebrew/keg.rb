@@ -387,6 +387,16 @@ class Keg
     PkgVersion.parse(path.basename.to_s)
   end
 
+  def version_scheme
+    @version_scheme ||= tab.version_scheme
+  end
+
+  # For ordering kegs by version with `.sort_by`, `.max_by`, etc.
+  # @see Formula.version_scheme
+  def scheme_and_version
+    [version_scheme, version]
+  end
+
   def to_formula
     Formulary.from_keg(self)
   end
@@ -415,7 +425,14 @@ class Keg
     link_dir("etc", verbose:, dry_run:, overwrite:) { :mkpath }
     link_dir("bin", verbose:, dry_run:, overwrite:) { :skip_dir }
     link_dir("sbin", verbose:, dry_run:, overwrite:) { :skip_dir }
-    link_dir("include", verbose:, dry_run:, overwrite:) { :link }
+    link_dir("include", verbose:, dry_run:, overwrite:) do |relative_path|
+      case relative_path.to_s
+      when %r{^postgresql@\d+/}
+        :mkpath
+      else
+        :link
+      end
+    end
 
     link_dir("share", verbose:, dry_run:, overwrite:) do |relative_path|
       case relative_path.to_s
@@ -429,6 +446,7 @@ class Keg
            /^fish/,
            %r{^lua/}, #  Lua, Lua51, Lua53 all need the same handling.
            %r{^guile/},
+           %r{^postgresql@\d+/},
            *SHARE_PATHS
         :mkpath
       else
@@ -452,6 +470,7 @@ class Keg
            /^ocaml/,
            /^perl5/,
            "php",
+           %r{^postgresql@\d+/},
            /^python[23]\.\d+/,
            /^R/,
            /^ruby/

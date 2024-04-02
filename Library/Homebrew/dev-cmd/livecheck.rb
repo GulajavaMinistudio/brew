@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "abstract_command"
-require "cli/parser"
 require "formula"
 require "livecheck/livecheck"
 require "livecheck/strategy"
@@ -38,7 +37,7 @@ module Homebrew
         switch "--cask", "--casks",
                description: "Only check casks."
         switch "--extract-plist",
-               description: "Include casks using the ExtractPlist livecheck strategy."
+               description: "Enable checking multiple casks with ExtractPlist strategy."
 
         conflicts "--debug", "--json"
         conflicts "--tap=", "--eval-all", "--installed"

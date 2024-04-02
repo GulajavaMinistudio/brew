@@ -5,7 +5,6 @@ require "abstract_command"
 require "bump_version_parser"
 require "cask"
 require "cask/download"
-require "cli/parser"
 require "utils/tar"
 
 module Homebrew
@@ -92,6 +91,8 @@ module Homebrew
           that's not in the autobump list:
             #{Formatter.url("#{cask.tap.remote}/blob/master/.github/autobump.txt")}
         EOS
+
+        odie "You have too many PRs open: close or merge some first!" if GitHub.too_many_open_prs?(cask.tap)
 
         new_version = BumpVersionParser.new(
           general: args.version,
