@@ -442,6 +442,11 @@ message if no logs are found.
 : The Gist will be marked private and will not appear in listings but will be
   accessible with its link.
 
+### `help` \[*`command`* ...\]
+
+Outputs the usage instructions for `brew` *`command`*. Equivalent to `brew
+--help` *`command`*.
+
 ### `home`, `homepage` \[`--formula`\] \[`--cask`\] \[*`formula`*\|*`cask`* ...\]
 
 Open a *`formula`* or *`cask`*'s homepage in a browser, or open Homebrew's own
@@ -533,6 +538,10 @@ upgrade *`formula`* if it is already installed but outdated.
 : If brewing fails, open an interactive debugging session with access to IRB or
   a shell inside the temporary build directory.
 
+`--display-times`
+
+: Print install times for each package at the end of the run.
+
 `-f`, `--force`
 
 : Install formulae without checking for previously installed keg-only or
@@ -618,10 +627,6 @@ upgrade *`formula`* if it is already installed but outdated.
 
 : Optimise bottles for the specified architecture rather than the oldest
   architecture supported by the version of macOS the bottles are built on.
-
-`--display-times`
-
-: Print install times for each package at the end of the run.
 
 `-i`, `--interactive`
 
@@ -975,6 +980,10 @@ the reinstalled formulae or, every 30 days, for all formulae.
 : If brewing fails, open an interactive debugging session with access to IRB or
   a shell inside the temporary build directory.
 
+`--display-times`
+
+: Print install times for each package at the end of the run.
+
 `-f`, `--force`
 
 : Install without checking for previously installed keg-only or non-migrated
@@ -1010,10 +1019,6 @@ the reinstalled formulae or, every 30 days, for all formulae.
 `--debug-symbols`
 
 : Generate debug symbols on build. Source will be retained in a cache directory.
-
-`--display-times`
-
-: Print install times for each formula at the end of the run.
 
 `-g`, `--git`
 
@@ -1150,11 +1155,6 @@ simplifies but also limits. This two-argument command makes no assumptions, so
 taps can be cloned from places other than GitHub and using protocols other than
 HTTPS, e.g. SSH, git, HTTP, FTP(S), rsync.
 
-`--[no-]force-auto-update`
-
-: Auto-update tap even if it is not hosted on GitHub. By default, only taps
-  hosted on GitHub are auto-updated (for performance reasons).
-
 `--custom-remote`
 
 : Install or change a tap with a custom remote. Useful for mirrors.
@@ -1281,6 +1281,10 @@ the upgraded formulae or, every 30 days, for all formulae.
 : If brewing fails, open an interactive debugging session with access to IRB or
   a shell inside the temporary build directory.
 
+`--display-times`
+
+: Print install times for each package at the end of the run.
+
 `-f`, `--force`
 
 : Install formulae without checking for previously installed keg-only or
@@ -1328,10 +1332,6 @@ the upgraded formulae or, every 30 days, for all formulae.
 `--debug-symbols`
 
 : Generate debug symbols on build. Source will be retained in a cache directory.
-
-`--display-times`
-
-: Print install times for each package at the end of the run.
 
 `--overwrite`
 
@@ -2290,7 +2290,7 @@ from `HOMEBREW_LIVECHECK_WATCHLIST` or `~/.homebrew/livecheck_watchlist.txt`.
 
 `--extract-plist`
 
-: Include casks using the ExtractPlist livecheck strategy.
+: Enable checking multiple casks with ExtractPlist strategy.
 
 ### `pr-automerge` \[*`options`*\]
 
@@ -3267,6 +3267,10 @@ and Linux workers.
 
 : Only test the direct dependents.
 
+`--skip-repository-audit`
+
+: Don't audit the repository.
+
 `--skip-checksum-only-audit`
 
 : Don't audit checksum-only changes.
@@ -3290,6 +3294,10 @@ and Linux workers.
 `--only-tap-syntax`
 
 : Only run the tap syntax check step.
+
+`--stable`
+
+: Only run the tap syntax checks needed on stable brew.
 
 `--only-formulae`
 
@@ -3429,6 +3437,14 @@ prefix-specific files take precedence over system-wide files (unless
 Note that these files do not support shell variable expansion e.g. `$HOME` or
 command execution e.g. `$(cat file)`.
 
+`HOMEBREW_API_AUTO_UPDATE_SECS`
+
+: Check Homebrew's API for new formulae or cask data every
+  `HOMEBREW_API_AUTO_UPDATE_SECS` seconds. Alternatively, disable API
+  auto-update checks entirely with `HOMEBREW_NO_AUTO_UPDATE`.
+  
+  *Default:* `450`.
+
 `HOMEBREW_API_DOMAIN`
 
 : Use this URL as the download mirror for Homebrew JSON API. If metadata files
@@ -3455,13 +3471,11 @@ command execution e.g. `$(cat file)`.
   downloaded from
   `http://localhost:8080/v2/homebrew/core/gettext/manifests/0.21`
 
-`HOMEBREW_API_AUTO_UPDATE_SECS`
+`HOMEBREW_AUTOREMOVE`
 
-: Check Homebrew's API for new formulae or cask data every
-  `HOMEBREW_API_AUTO_UPDATE_SECS` seconds. Alternatively, disable API
-  auto-update checks entirely with `HOMEBREW_NO_AUTO_UPDATE`.
-  
-  *Default:* `450`.
+: If set, calls to `brew cleanup` and `brew uninstall` will automatically remove
+  unused formula dependents and if `HOMEBREW_NO_INSTALL_CLEANUP` is not set,
+  `brew cleanup` will start running `brew autoremove` periodically.
 
 `HOMEBREW_AUTO_UPDATE_SECS`
 
@@ -3471,12 +3485,6 @@ command execution e.g. `$(cat file)`.
   
   *Default:* `86400` (24 hours), `3600` (1 hour) if a developer command has been
   run or `300` (5 minutes) if `HOMEBREW_NO_INSTALL_FROM_API` is set.
-
-`HOMEBREW_AUTOREMOVE`
-
-: If set, calls to `brew cleanup` and `brew uninstall` will automatically remove
-  unused formula dependents and if `HOMEBREW_NO_INSTALL_CLEANUP` is not set,
-  `brew cleanup` will start running `brew autoremove` periodically.
 
 `HOMEBREW_BAT`
 
@@ -3561,6 +3569,12 @@ command execution e.g. `$(cat file)`.
   
   *Default:* `https://github.com/Homebrew/homebrew-core`.
 
+`HOMEBREW_CURLRC`
+
+: If set to an absolute path (i.e. beginning with `/`), pass it with `--config`
+  when invoking `curl`(1). If set but *not* a valid path, do not pass
+  `--disable`, which disables the use of `.curlrc`.
+
 `HOMEBREW_CURL_PATH`
 
 : Linux only: Set this value to a new enough `curl` executable for Homebrew to
@@ -3577,12 +3591,6 @@ command execution e.g. `$(cat file)`.
 `HOMEBREW_CURL_VERBOSE`
 
 : If set, pass `--verbose` when invoking `curl`(1).
-
-`HOMEBREW_CURLRC`
-
-: If set to an absolute path (i.e. beginning with `/`), pass it with `--config`
-  when invoking `curl`(1). If set but *not* a valid path, do not pass
-  `--disable`, which disables the use of `.curlrc`.
 
 `HOMEBREW_DEBUG`
 
@@ -3643,10 +3651,35 @@ command execution e.g. `$(cat file)`.
   
   *Default:* `15`.
 
+`HOMEBREW_FORBIDDEN_CASKS`
+
+: A space-separated list of casks. Homebrew will refuse to install a cask if it
+  or any of its dependencies is on this list.
+
+`HOMEBREW_FORBIDDEN_FORMULAE`
+
+: A space-separated list of formulae. Homebrew will refuse to install a formula
+  or cask if it or any of its dependencies is on this list.
+
 `HOMEBREW_FORBIDDEN_LICENSES`
 
 : A space-separated list of licenses. Homebrew will refuse to install a formula
   if it or any of its dependencies has a license on this list.
+
+`HOMEBREW_FORBIDDEN_OWNER`
+
+: The person who has set any `HOMEBREW_FORBIDDEN_*` variables.
+  
+  *Default:* `you`.
+
+`HOMEBREW_FORBIDDEN_OWNER_CONTACT`
+
+: How to contact the `HOMEBREW_FORBIDDEN_OWNER`, if set and necessary.
+
+`HOMEBREW_FORBIDDEN_TAPS`
+
+: A space-separated list of taps. Homebrew will refuse to install a formula if
+  it or any of its dependencies is in a tap on this list.
 
 `HOMEBREW_FORCE_BREWED_CA_CERTIFICATES`
 
@@ -3668,21 +3701,6 @@ command execution e.g. `$(cat file)`.
 : If set, always use Homebrew's vendored, relocatable Ruby version even if the
   system version of Ruby is new enough.
 
-`HOMEBREW_GIT_EMAIL`
-
-: Set the Git author and committer email to this value.
-
-`HOMEBREW_GIT_NAME`
-
-: Set the Git author and committer name to this value.
-
-`HOMEBREW_GIT_PATH`
-
-: Linux only: Set this value to a new enough `git` executable for Homebrew to
-  use.
-  
-  *Default:* `git`.
-
 `HOMEBREW_GITHUB_API_TOKEN`
 
 : Use this personal access token for the GitHub API, for features such as `brew
@@ -3702,6 +3720,21 @@ command execution e.g. `$(cat file)`.
 
 : Use this username when accessing the GitHub Packages Registry (where bottles
   may be stored).
+
+`HOMEBREW_GIT_EMAIL`
+
+: Set the Git author and committer email to this value.
+
+`HOMEBREW_GIT_NAME`
+
+: Set the Git author and committer name to this value.
+
+`HOMEBREW_GIT_PATH`
+
+: Linux only: Set this value to a new enough `git` executable for Homebrew to
+  use.
+  
+  *Default:* `git`.
 
 `HOMEBREW_INSTALL_BADGE`
 
@@ -3783,6 +3816,14 @@ command execution e.g. `$(cat file)`.
   cause from-source SourceForge, some GNU & GNOME-hosted formulae to fail to
   download.
 
+`HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK`
+
+: If set, do not check for broken linkage of dependents or outdated dependents
+  after installing, upgrading or reinstalling formulae. This will result in
+  fewer dependents (and their dependencies) being upgraded or reinstalled but
+  may result in more breakage from running `brew install` *`formula`* or `brew
+  upgrade` *`formula`*.
+
 `HOMEBREW_NO_INSTALL_CLEANUP`
 
 : If set, `brew install`, `brew upgrade` and `brew reinstall` will never
@@ -3802,14 +3843,6 @@ command execution e.g. `$(cat file)`.
 : If set, `brew install` *`formula|cask`* will not upgrade *`formula|cask`* if
   it is installed but outdated.
 
-`HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK`
-
-: If set, do not check for broken linkage of dependents or outdated dependents
-  after installing, upgrading or reinstalling formulae. This will result in
-  fewer dependents (and their dependencies) being upgraded or reinstalled but
-  may result in more breakage from running `brew install` *`formula`* or `brew
-  upgrade` *`formula`*.
-
 `HOMEBREW_NO_UPDATE_REPORT_NEW`
 
 : If set, `brew update` will not show the list of newly added formulae/casks.
@@ -3824,10 +3857,6 @@ command execution e.g. `$(cat file)`.
 `HOMEBREW_PRY`
 
 : If set, use Pry for the `brew irb` command.
-
-`HOMEBREW_UPGRADE_GREEDY`
-
-: If set, pass `--greedy` to all cask upgrade commands.
 
 `HOMEBREW_SIMULATE_MACOS_ON_LINUX`
 
@@ -3851,6 +3880,11 @@ command execution e.g. `$(cat file)`.
   
   *Default:* `$HOME/.ssh/config`
 
+`HOMEBREW_SUDO_THROUGH_SUDO_USER`
+
+: If set, Homebrew will use the `SUDO_USER` environment variable to define the
+  user to `sudo`(8) through when running `sudo`(8).
+
 `HOMEBREW_SVN`
 
 : Use this as the `svn`(1) binary.
@@ -3863,11 +3897,6 @@ command execution e.g. `$(cat file)`.
 : If set in Homebrew's system-wide environment file (`/etc/homebrew/brew.env`),
   the system-wide environment file will be loaded last to override any prefix or
   user settings.
-
-`HOMEBREW_SUDO_THROUGH_SUDO_USER`
-
-: If set, Homebrew will use the `SUDO_USER` environment variable to define the
-  user to `sudo`(8) through when running `sudo`(8).
 
 `HOMEBREW_TEMP`
 
@@ -3884,6 +3913,10 @@ command execution e.g. `$(cat file)`.
 : If set, always use the latest stable tag (even if developer commands have been
   run).
 
+`HOMEBREW_UPGRADE_GREEDY`
+
+: If set, pass `--greedy` to all cask upgrade commands.
+
 `HOMEBREW_VERBOSE`
 
 : If set, always assume `--verbose` when running commands.
@@ -3893,6 +3926,11 @@ command execution e.g. `$(cat file)`.
 : If set, verbose output will print a `.` no more than once a minute. This can
   be useful to avoid long-running Homebrew commands being killed due to no
   output.
+
+`HOMEBREW_VERIFY_ATTESTATIONS`
+
+: If set, Homebrew will use the `gh` tool to verify cryptographic attestations
+  of build provenance for bottles from homebrew-core.
 
 `SUDO_ASKPASS`
 
@@ -3961,7 +3999,7 @@ Vincent, Caleb Xu, Carlo Cabrera, David Baumgold, Douglas Eichelberger, Dustin
 Rodrigues, Eric Knibbe, FX Coudert, Issy Long, Justin Krehel, Markus Reiter,
 Miccal Matthews, Michael Cho, Michka Popoff, Mike McQuaid, Nanda H Krishna,
 Patrick Linnane, Razvan Azamfirei, Rui Chen, Ruoyu Zhong, Rylan Polster, Sam
-Ford, Sean Molenaar and Thierry Moisan.
+Ford, Sean Molenaar, Thierry Moisan and Timothy Sutton.
 
 Former maintainers with significant contributions include Misty De Méo, Shaun
 Jackman, Vítor Galvão, Claudia Pellegrino, Seeker, William Woodruff, Jan

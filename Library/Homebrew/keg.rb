@@ -361,15 +361,6 @@ class Keg
     !Dir["#{path}/*.plist"].empty?
   end
 
-  def python_site_packages_installed?
-    (path/"lib/python2.7/site-packages").directory?
-  end
-
-  sig { returns(T::Boolean) }
-  def python_pth_files_installed?
-    !Dir["#{path}/lib/python2.7/site-packages/*.pth"].empty?
-  end
-
   sig { returns(T::Array[Pathname]) }
   def apps
     app_prefix = optlinked? ? opt_record : path
@@ -427,7 +418,7 @@ class Keg
     link_dir("sbin", verbose:, dry_run:, overwrite:) { :skip_dir }
     link_dir("include", verbose:, dry_run:, overwrite:) do |relative_path|
       case relative_path.to_s
-      when %r{^postgresql@\d+/}
+      when /^postgresql@\d+/
         :mkpath
       else
         :link
@@ -446,7 +437,7 @@ class Keg
            /^fish/,
            %r{^lua/}, #  Lua, Lua51, Lua53 all need the same handling.
            %r{^guile/},
-           %r{^postgresql@\d+/},
+           /^postgresql@\d+/,
            *SHARE_PATHS
         :mkpath
       else
@@ -470,7 +461,7 @@ class Keg
            /^ocaml/,
            /^perl5/,
            "php",
-           %r{^postgresql@\d+/},
+           /^postgresql@\d+/,
            /^python[23]\.\d+/,
            /^R/,
            /^ruby/
