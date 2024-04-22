@@ -1543,8 +1543,8 @@ Specify a committer name and email in \fBgit\fP\[u2019]s standard author format\
 \fB\-\-message\fP
 Message to include when autosquashing revision bumps, deletions and rebuilds\.
 .TP
-\fB\-\-artifact\fP
-Download artifacts with the specified name (default: \fBbottles\fP)\.
+\fB\-\-artifact\-pattern\fP
+Download artifacts with the specified pattern (default: \fBbottles{,_*}\fP)\.
 .TP
 \fB\-\-tap\fP
 Target tap repository (default: \fBhomebrew/core\fP)\.
@@ -1687,8 +1687,8 @@ Run only OS\-agnostic tests\.
 \fB\-\-online\fP
 Include tests that use the GitHub API and tests that use any of the taps for official external commands\.
 .TP
-\fB\-\-byebug\fP
-Enable debugging using byebug\.
+\fB\-\-debug\fP
+Enable debugging using ruby/debug, or surface the standard \fBodebug\fP output\.
 .TP
 \fB\-\-changed\fP
 Only runs tests on files that were changed from the master branch\.
@@ -2630,9 +2630,9 @@ Homebrew\[u2019]s Project Leadership Committee is Colin Dean, Issy Long, Mike Mc
 .P
 Homebrew\[u2019]s Technical Steering Committee is Bo Anderson, FX Coudert, Michka Popoff, Mike McQuaid and Rylan Polster\.
 .P
-Homebrew\[u2019]s maintainers are Alexander Bayandin, Bevan Kay, Bo Anderson, Branch Vincent, Caleb Xu, Carlo Cabrera, David Baumgold, Douglas Eichelberger, Dustin Rodrigues, Eric Knibbe, FX Coudert, Issy Long, Justin Krehel, Markus Reiter, Miccal Matthews, Michael Cho, Michka Popoff, Mike McQuaid, Nanda H Krishna, Patrick Linnane, Razvan Azamfirei, Rui Chen, Ruoyu Zhong, Rylan Polster, Sam Ford, Sean Molenaar, Thierry Moisan and Timothy Sutton\.
+Homebrew\[u2019]s maintainers are Alexander Bayandin, Bevan Kay, Bo Anderson, Branch Vincent, Caleb Xu, Carlo Cabrera, David Baumgold, Douglas Eichelberger, Dustin Rodrigues, Eric Knibbe, FX Coudert, Issy Long, Justin Krehel, Markus Reiter, Miccal Matthews, Michael Cho, Michka Popoff, Mike McQuaid, Nanda H Krishna, Patrick Linnane, Razvan Azamfirei, Rui Chen, Ruoyu Zhong, Rylan Polster, Sam Ford, Sean Molenaar, Thierry Moisan, Timothy Sutton and William Woodruff\.
 .P
-Former maintainers with significant contributions include Misty De Méo, Shaun Jackman, Vítor Galvão, Claudia Pellegrino, Seeker, William Woodruff, Jan Viljanen, JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs, Chongyu Zhu and Homebrew\[u2019]s creator: Max Howell\.
+Former maintainers with significant contributions include Misty De Méo, Shaun Jackman, Vítor Galvão, Claudia Pellegrino, Seeker, Jan Viljanen, JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs, Chongyu Zhu and Homebrew\[u2019]s creator: Max Howell\.
 .SH "BUGS"
 See our issues on GitHub:
 .TP
