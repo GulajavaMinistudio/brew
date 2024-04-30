@@ -6,7 +6,7 @@ require "set"
 module Homebrew
   # Helper module for querying Homebrew-specific environment variables.
   #
-  # @api private
+  # @api internal
   module EnvConfig
     module_function
 
@@ -227,6 +227,21 @@ module Homebrew
         description: "If set, always use Homebrew's vendored, relocatable Ruby version even if the system version " \
                      "of Ruby is new enough.",
         boolean:     true,
+      },
+      HOMEBREW_FORMULA_BUILD_NETWORK:            {
+        description: "If set, controls network access to the sandbox for formulae builds. Overrides any " \
+                     "controls set through DSL usage inside formulae. Must be `allow` or `deny`. If no value is " \
+                     "set through this environment variable or DSL usage, the default behavior is `allow`.",
+      },
+      HOMEBREW_FORMULA_POSTINSTALL_NETWORK:      {
+        description: "If set, controls network access to the sandbox for formulae postinstall. Overrides any " \
+                     "controls set through DSL usage inside formulae. Must be `allow` or `deny`. If no value is " \
+                     "set through this environment variable or DSL usage, the default behavior is `allow`.",
+      },
+      HOMEBREW_FORMULA_TEST_NETWORK:             {
+        description: "If set, controls network access to the sandbox for formulae test. Overrides any " \
+                     "controls set through DSL usage inside formulae. Must be `allow` or `deny`. If no value is " \
+                     "set through this environment variable or DSL usage, the default behavior is `allow`.",
       },
       HOMEBREW_GITHUB_API_TOKEN:                 {
         description: "Use this personal access token for the GitHub API, for features such as " \

@@ -205,6 +205,7 @@ __brew_internal_commands() {
     'release:Create a new draft Homebrew/brew release with the appropriate version number and release notes'
     'rubocop:Installs, configures and runs Homebrew'\''s `rubocop`'
     'ruby:Run a Ruby instance with Homebrew'\''s libraries loaded'
+    'rubydoc:Generate Homebrew'\''s RubyDoc documentation'
     'search:Perform a substring search of cask tokens and formula names for text'
     'setup-ruby:Installs and configures Homebrew'\''s Ruby'
     'sh:Enter an interactive shell for Homebrew'\''s build environment'
@@ -721,6 +722,7 @@ _brew_deps() {
   _arguments \
     '--HEAD[Show dependencies for HEAD version instead of stable version]' \
     '--annotate[Mark any build, test, implicit, optional, or recommended dependencies as such in the output]' \
+    '--arch[Show dependencies for the given CPU architecture]' \
     '--debug[Display any debugging information]' \
     '--direct[Show only the direct dependencies declared in the formula]' \
     '--dot[Show text-based graph description in DOT format]' \
@@ -735,6 +737,7 @@ _brew_deps() {
     '--include-test[Include `:test` dependencies for formula (non-recursive)]' \
     '(--missing --eval-all)--installed[List dependencies for formulae that are currently installed. If formula is specified, list only its dependencies that are currently installed]' \
     '(--installed)--missing[Show only missing dependencies]' \
+    '--os[Show dependencies for the given operating system]' \
     '--quiet[Make some output more quiet]' \
     '--skip-recommended[Skip `:recommended` dependencies for formula]' \
     '--topological[Sort dependencies in topological order]' \
@@ -1232,13 +1235,15 @@ _brew_linkage() {
 _brew_list() {
   _arguments \
     '--debug[Display any debugging information]' \
-    '(--versions --pinned --l --r --t)--full-name[Print formulae with fully-qualified names. Unless `--full-name`, `--versions` or `--pinned` are passed, other options (i.e. `-1`, `-l`, `-r` and `-t`) are passed to `ls`(1) which produces the actual output]' \
+    '(--versions --pinned ---installed-on-request --installed-as-dependency --l --r --t)--full-name[Print formulae with fully-qualified names. Unless `--full-name`, `--versions` or `--pinned` are passed, other options (i.e. `-1`, `-l`, `-r` and `-t`) are passed to `ls`(1) which produces the actual output]' \
     '--help[Show this message]' \
+    '(--cask --versions --pinned --full-name)--installed-as-dependency[List the formulae installed as dependencies]' \
+    '(--cask --versions --pinned)--installed-on-request[List the formulae installed on request]' \
     '(--cask --pinned)--multiple[Only show formulae with multiple versions installed]' \
-    '(--cask --multiple --1 --l --r --t --full-name)--pinned[List only pinned formulae, or only the specified (pinned) formulae if formula are provided. See also `pin`, `unpin`]' \
+    '(--cask --multiple --installed-on-request --installed-as-dependency --1 --l --r --t --full-name)--pinned[List only pinned formulae, or only the specified (pinned) formulae if formula are provided. See also `pin`, `unpin`]' \
     '--quiet[Make some output more quiet]' \
     '--verbose[Make some output more verbose]' \
-    '(--1 --l --r --t --full-name)--versions[Show the version number for installed formulae, or only the specified formulae if formula are provided]' \
+    '(--installed-on-request --installed-as-dependency --1 --l --r --t --full-name)--versions[Show the version number for installed formulae, or only the specified formulae if formula are provided]' \
     '-1[Force output to be one entry per line. This is the default when output is not to a terminal]' \
     '-l[List formulae and/or casks in long format. Has no effect when a formula or cask name is passed as an argument]' \
     '-r[Reverse the order of the formulae and/or casks sort to list the oldest entries first. Has no effect when a formula or cask name is passed as an argument]' \
@@ -1247,7 +1252,7 @@ _brew_list() {
     '(--cask)--formula[List only formulae, or treat all named arguments as formulae]' \
     '*::installed_formula:__brew_installed_formulae' \
     - installed_cask \
-    '(--formula --pinned --multiple)--cask[List only casks, or treat all named arguments as casks]' \
+    '(--formula --pinned --multiple --installed-on-request --installed-as-dependency)--cask[List only casks, or treat all named arguments as casks]' \
     '*::installed_cask:__brew_installed_casks'
 }
 
@@ -1313,13 +1318,15 @@ _brew_log() {
 _brew_ls() {
   _arguments \
     '--debug[Display any debugging information]' \
-    '(--versions --pinned --l --r --t)--full-name[Print formulae with fully-qualified names. Unless `--full-name`, `--versions` or `--pinned` are passed, other options (i.e. `-1`, `-l`, `-r` and `-t`) are passed to `ls`(1) which produces the actual output]' \
+    '(--versions --pinned ---installed-on-request --installed-as-dependency --l --r --t)--full-name[Print formulae with fully-qualified names. Unless `--full-name`, `--versions` or `--pinned` are passed, other options (i.e. `-1`, `-l`, `-r` and `-t`) are passed to `ls`(1) which produces the actual output]' \
     '--help[Show this message]' \
+    '(--cask --versions --pinned --full-name)--installed-as-dependency[List the formulae installed as dependencies]' \
+    '(--cask --versions --pinned)--installed-on-request[List the formulae installed on request]' \
     '(--cask --pinned)--multiple[Only show formulae with multiple versions installed]' \
-    '(--cask --multiple --1 --l --r --t --full-name)--pinned[List only pinned formulae, or only the specified (pinned) formulae if formula are provided. See also `pin`, `unpin`]' \
+    '(--cask --multiple --installed-on-request --installed-as-dependency --1 --l --r --t --full-name)--pinned[List only pinned formulae, or only the specified (pinned) formulae if formula are provided. See also `pin`, `unpin`]' \
     '--quiet[Make some output more quiet]' \
     '--verbose[Make some output more verbose]' \
-    '(--1 --l --r --t --full-name)--versions[Show the version number for installed formulae, or only the specified formulae if formula are provided]' \
+    '(--installed-on-request --installed-as-dependency --1 --l --r --t --full-name)--versions[Show the version number for installed formulae, or only the specified formulae if formula are provided]' \
     '-1[Force output to be one entry per line. This is the default when output is not to a terminal]' \
     '-l[List formulae and/or casks in long format. Has no effect when a formula or cask name is passed as an argument]' \
     '-r[Reverse the order of the formulae and/or casks sort to list the oldest entries first. Has no effect when a formula or cask name is passed as an argument]' \
@@ -1328,7 +1335,7 @@ _brew_ls() {
     '(--cask)--formula[List only formulae, or treat all named arguments as formulae]' \
     '*::installed_formula:__brew_installed_formulae' \
     - installed_cask \
-    '(--formula --pinned --multiple)--cask[List only casks, or treat all named arguments as casks]' \
+    '(--formula --pinned --multiple --installed-on-request --installed-as-dependency)--cask[List only casks, or treat all named arguments as casks]' \
     '*::installed_cask:__brew_installed_casks'
 }
 
@@ -1676,6 +1683,17 @@ _brew_ruby() {
     '-r[Load a library using `require`]' \
     - file \
     '*::file:__brew_formulae_or_ruby_files'
+}
+
+# brew rubydoc
+_brew_rubydoc() {
+  _arguments \
+    '--debug[Display any debugging information]' \
+    '--help[Show this message]' \
+    '--only-public[Only generate public API documentation]' \
+    '--open[Open generated documentation in a browser]' \
+    '--quiet[Make some output more quiet]' \
+    '--verbose[Make some output more verbose]'
 }
 
 # brew search

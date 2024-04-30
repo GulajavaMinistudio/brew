@@ -741,6 +741,7 @@ _brew_deps() {
       __brewcomp "
       --HEAD
       --annotate
+      --arch
       --cask
       --debug
       --direct
@@ -757,6 +758,7 @@ _brew_deps() {
       --include-test
       --installed
       --missing
+      --os
       --quiet
       --skip-recommended
       --topological
@@ -1420,6 +1422,8 @@ _brew_list() {
       --formula
       --full-name
       --help
+      --installed-as-dependency
+      --installed-on-request
       --multiple
       --pinned
       --quiet
@@ -1522,6 +1526,8 @@ _brew_ls() {
       --formula
       --full-name
       --help
+      --installed-as-dependency
+      --installed-on-request
       --multiple
       --pinned
       --quiet
@@ -2020,6 +2026,24 @@ _brew_ruby() {
     *) ;;
   esac
   __brew_complete_files
+}
+
+_brew_rubydoc() {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  case "${cur}" in
+    -*)
+      __brewcomp "
+      --debug
+      --help
+      --only-public
+      --open
+      --quiet
+      --verbose
+      "
+      return
+      ;;
+    *) ;;
+  esac
 }
 
 _brew_search() {
@@ -2753,6 +2777,7 @@ _brew() {
     remove) _brew_remove ;;
     rm) _brew_rm ;;
     ruby) _brew_ruby ;;
+    rubydoc) _brew_rubydoc ;;
     search) _brew_search ;;
     sh) _brew_sh ;;
     style) _brew_style ;;

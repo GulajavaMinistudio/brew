@@ -4,8 +4,6 @@
 require "env_config"
 
 # Various helper functions for interacting with TTYs.
-#
-# @api private
 module Tty
   @stream = $stdout
 
@@ -100,6 +98,7 @@ module Tty
       end
     end
 
+    # @!visibility private
     sig { returns(String) }
     def to_s
       return "" unless color?

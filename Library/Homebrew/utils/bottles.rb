@@ -6,10 +6,12 @@ require "tab"
 module Utils
   # Helper functions for bottles.
   #
-  # @api private
+  # @api internal
   module Bottles
     class << self
       # Gets the tag for the running OS.
+      #
+      # @api internal
       sig { params(tag: T.nilable(T.any(Symbol, Tag))).returns(Tag) }
       def tag(tag = nil)
         case tag
@@ -28,7 +30,7 @@ module Utils
       def built_as?(formula)
         return false unless formula.latest_version_installed?
 
-        tab = Tab.for_keg(formula.latest_installed_prefix)
+        tab = Keg.new(formula.latest_installed_prefix).tab
         tab.built_as_bottle
       end
 
@@ -115,7 +117,7 @@ module Utils
           tab_json = bottle_hash[formula.full_name]["bottle"]["tags"][tag]["tab"].to_json
           Tab.from_file_content(tab_json, tabfile)
         else
-          tab = Tab.for_keg(keg)
+          tab = keg.tab
 
           tab.runtime_dependencies = begin
             f_runtime_deps = formula.runtime_dependencies(read_from_tab: false)
@@ -200,6 +202,7 @@ module Utils
         end
       end
 
+      # @!visibility private
       sig { returns(String) }
       def to_s
         to_sym.to_s

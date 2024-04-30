@@ -8,8 +8,6 @@ require "api"
 
 module Utils
   # Helper module for fetching and reporting analytics data.
-  #
-  # @api private
   module Analytics
     INFLUX_BUCKET = "analytics"
     INFLUX_TOKEN = "iVdsgJ_OjvTYGAA79gOfWlA_fX0QCuj4eYUNdb-qVUTrC3tp3JTWCADVNE9HxV0kp2ZjIK9tuthy_teX4szr9A=="
@@ -99,8 +97,63 @@ module Utils
         return unless tap
         return unless tap.should_report_analytics?
 
-        options = exception.options.to_a.map(&:to_s).join(" ")
+        options = exception.options.to_a.compact.map(&:to_s).sort.uniq.join(" ")
         report_package_event(:build_error, package_name: formula.name, tap_name: tap.name, options:)
+      end
+
+      sig { params(command_instance: Homebrew::AbstractCommand).void }
+      def report_command_run(command_instance)
+        return if not_this_run? || disabled?
+
+        command = command_instance.class.command_name
+
+        options_array = command_instance.args.options_only.to_a.compact
+
+        # Strip out any flag values to reduce cardinality and preserve privacy.
+        options_array.map! { |option| option.sub(/=.*/, "=") }
+        options = options_array.sort.uniq.join(" ")
+
+        # Tags must have low cardinality.
+        tags = {
+          command:,
+          ci:        ENV["CI"].present?,
+          devcmdrun: config_true?(:devcmdrun),
+          developer: Homebrew::EnvConfig.developer?,
+        }
+
+        # Fields can have high cardinality.
+        fields = { options: }
+
+        report_influx(:command_run, tags, fields)
+      end
+
+      sig { params(step_command_short: String, passed: T::Boolean).void }
+      def report_test_bot_test(step_command_short, passed)
+        return if not_this_run? || disabled?
+        return if ENV["HOMEBREW_TEST_BOT_ANALYTICS"].blank?
+
+        # ensure passed is a boolean
+        passed = passed ? true : false
+
+        # Tags must have low cardinality.
+        tags = {
+          passed:,
+          arch:   HOMEBREW_PHYSICAL_PROCESSOR,
+          os:     HOMEBREW_SYSTEM,
+        }
+
+        # Strip out any flag values to reduce cardinality and preserve privacy.
+        # Sort options to ensure consistent ordering and improve readability.
+        command_and_package, options =
+          step_command_short.split
+                            .map { |arg| arg.sub(/=.*/, "=") }
+                            .partition { |arg| !arg.start_with?("-") }
+        command = (command_and_package + options.sort).join(" ")
+
+        # Fields can have high cardinality.
+        fields = { command: }
+
+        report_influx(:test_bot_test, tags, fields)
       end
 
       def influx_message_displayed?

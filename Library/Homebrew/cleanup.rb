@@ -10,8 +10,6 @@ require "set"
 
 module Homebrew
   # Helper class for cleaning up the Homebrew cache.
-  #
-  # @api private
   class Cleanup
     CLEANUP_DEFAULT_DAYS = Homebrew::EnvConfig.cleanup_periodic_full_days.to_i.freeze
     private_constant :CLEANUP_DEFAULT_DAYS
@@ -705,7 +703,7 @@ module Homebrew
 
       require "uninstall"
 
-      kegs_by_rack = removable_formulae.map(&:any_installed_keg).group_by(&:rack)
+      kegs_by_rack = removable_formulae.filter_map(&:any_installed_keg).group_by(&:rack)
       Uninstall.uninstall_kegs(kegs_by_rack)
 
       # The installed formula cache will be invalid after uninstalling.

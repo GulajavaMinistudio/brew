@@ -275,6 +275,14 @@ if the installed versions are outdated.
 
 : Show dependencies for HEAD version instead of stable version.
 
+`--os`
+
+: Show dependencies for the given operating system.
+
+`--arch`
+
+: Show dependencies for the given CPU architecture.
+
 `--formula`
 
 : Treat all named arguments as formulae.
@@ -740,6 +748,14 @@ paths within its current keg. If *`cask`* is provided, list its artifacts.
 
 : List only pinned formulae, or only the specified (pinned) formulae if
   *`formula`* are provided. See also `pin`, `unpin`.
+
+`--installed-on-request`
+
+: List the formulae installed on request.
+
+`--installed-as-dependency`
+
+: List the formulae installed as dependencies.
 
 `-1`
 
@@ -2538,6 +2554,18 @@ Run e.g. `brew ruby -- --version` to pass arbitrary arguments to `ruby`.
 
 : Execute the given text string as a script.
 
+### `rubydoc` \[`--only-public`\] \[`--open`\]
+
+Generate Homebrew's RubyDoc documentation.
+
+`--only-public`
+
+: Only generate public API documentation.
+
+`--open`
+
+: Open generated documentation in a browser.
+
 ### `sh` \[`--env=`\] \[`--cmd=`\] \[*`file`*\]
 
 Enter an interactive shell for Homebrew's build environment. Use
@@ -3255,6 +3283,14 @@ and Linux workers.
 
 : Don't pass `--online` to `brew audit` and skip `brew livecheck`.
 
+`--skip-new`
+
+: Don't pass `--new` to `brew audit` for new formulae.
+
+`--skip-new-strict`
+
+: Don't pass `--strict` to `brew audit` for new formulae.
+
 `--skip-dependents`
 
 : Don't test any dependents.
@@ -3266,10 +3302,6 @@ and Linux workers.
 `--skip-recursive-dependents`
 
 : Only test the direct dependents.
-
-`--skip-repository-audit`
-
-: Don't audit the repository.
 
 `--skip-checksum-only-audit`
 
@@ -3700,6 +3732,27 @@ command execution e.g. `$(cat file)`.
 
 : If set, always use Homebrew's vendored, relocatable Ruby version even if the
   system version of Ruby is new enough.
+
+`HOMEBREW_FORMULA_BUILD_NETWORK`
+
+: If set, controls network access to the sandbox for formulae builds. Overrides
+  any controls set through DSL usage inside formulae. Must be `allow` or `deny`.
+  If no value is set through this environment variable or DSL usage, the default
+  behavior is `allow`.
+
+`HOMEBREW_FORMULA_POSTINSTALL_NETWORK`
+
+: If set, controls network access to the sandbox for formulae postinstall.
+  Overrides any controls set through DSL usage inside formulae. Must be `allow`
+  or `deny`. If no value is set through this environment variable or DSL usage,
+  the default behavior is `allow`.
+
+`HOMEBREW_FORMULA_TEST_NETWORK`
+
+: If set, controls network access to the sandbox for formulae test. Overrides
+  any controls set through DSL usage inside formulae. Must be `allow` or `deny`.
+  If no value is set through this environment variable or DSL usage, the default
+  behavior is `allow`.
 
 `HOMEBREW_GITHUB_API_TOKEN`
 

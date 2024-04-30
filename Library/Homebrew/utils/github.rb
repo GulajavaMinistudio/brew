@@ -7,9 +7,9 @@ require "utils/github/api"
 
 require "system_command"
 
-# Wrapper functions for the GitHub API.
+# A module that interfaces with GitHub, code like PAT scopes, credential handling and API errors.
 #
-# @api private
+# @api internal
 module GitHub
   extend SystemCommand::Mixin
 
@@ -355,10 +355,17 @@ module GitHub
     end
 
     run_id = check_suite.last["workflowRun"]["databaseId"]
-    artifacts = API.open_rest("#{API_URL}/repos/#{user}/#{repo}/actions/runs/#{run_id}/artifacts", scopes:)
+    artifacts = []
+    per_page = 50
+    API.paginate_rest("#{API_URL}/repos/#{user}/#{repo}/actions/runs/#{run_id}/artifacts",
+                      per_page:, scopes:) do |result|
+      result = result["artifacts"]
+      artifacts.concat(result)
+      break if result.length < per_page
+    end
 
     matching_artifacts =
-      artifacts["artifacts"]
+      artifacts
       .group_by { |art| art["name"] }
       .select { |name| File.fnmatch?(artifact_pattern, name, File::FNM_EXTGLOB) }
       .map { |_, arts| arts.last }

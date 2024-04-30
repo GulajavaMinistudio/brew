@@ -4,10 +4,8 @@
 require "version"
 
 # Helper functions for querying operating system information.
-#
-# @api private
 module OS
-  # Check if the operating system is macOS.
+  # Check whether the operating system is macOS.
   #
   # @api public
   sig { returns(T::Boolean) }
@@ -17,7 +15,7 @@ module OS
     RbConfig::CONFIG["host_os"].include? "darwin"
   end
 
-  # Check if the operating system is Linux.
+  # Check whether the operating system is Linux.
   #
   # @api public
   sig { returns(T::Boolean) }

@@ -10,8 +10,6 @@ require "utils/topological_hash"
 
 module Homebrew
   # Helper functions for upgrading formulae.
-  #
-  # @api private
   module Upgrade
     module_function
 
@@ -163,7 +161,7 @@ module Homebrew
 
       if formula.opt_prefix.directory?
         keg = Keg.new(formula.opt_prefix.resolved_path)
-        tab = Tab.for_keg(keg)
+        tab = keg.tab
       end
 
       build_options = BuildOptions.new(Options.create(flags), formula.options)

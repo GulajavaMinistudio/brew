@@ -2,8 +2,6 @@
 # frozen_string_literal: true
 
 # A formula option.
-#
-# @api private
 class Option
   attr_reader :name, :description, :flag
 
@@ -13,9 +11,9 @@ class Option
     @description = description
   end
 
-  def to_s
-    flag
-  end
+  # @!visibility private
+  sig { returns(String) }
+  def to_s = flag
 
   def <=>(other)
     return unless other.is_a?(Option)
@@ -32,6 +30,7 @@ class Option
     name.hash
   end
 
+  # @!visibility private
   sig { returns(String) }
   def inspect
     "#<#{self.class.name}: #{flag.inspect}>"
@@ -39,8 +38,6 @@ class Option
 end
 
 # A deprecated formula option.
-#
-# @api private
 class DeprecatedOption
   attr_reader :old, :current
 
@@ -66,8 +63,6 @@ class DeprecatedOption
 end
 
 # A collection of formula options.
-#
-# @api private
 class Options
   include Enumerable
 
@@ -139,11 +134,13 @@ class Options
 
   alias to_ary to_a
 
+  # @!visibility private
   sig { returns(String) }
   def to_s
     @options.map(&:to_s).join(" ")
   end
 
+  # @!visibility private
   sig { returns(String) }
   def inspect
     "#<#{self.class.name}: #{to_a.inspect}>"

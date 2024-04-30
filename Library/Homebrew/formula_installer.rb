@@ -25,8 +25,6 @@ require "service"
 require "attestation"
 
 # Installer for a formula.
-#
-# @api private
 class FormulaInstaller
   include FormulaCellarChecks
   extend Attrable
@@ -473,7 +471,7 @@ on_request: installed_on_request?, options:)
       Pathname(brew_prefix/"#{formula.name}.rb").atomic_write(s)
 
       keg = Keg.new(formula.prefix)
-      tab = Tab.for_keg(keg)
+      tab = keg.tab
       tab.installed_as_dependency = installed_as_dependency?
       tab.installed_on_request = installed_on_request?
       tab.write
@@ -709,7 +707,7 @@ on_request: installed_on_request?, options:)
 
     if df.linked_keg.directory?
       linked_keg = Keg.new(df.linked_keg.resolved_path)
-      tab = Tab.for_keg(linked_keg)
+      tab = linked_keg.tab
       keg_had_linked_keg = true
       keg_was_linked = linked_keg.linked?
       linked_keg.unlink
@@ -717,7 +715,7 @@ on_request: installed_on_request?, options:)
 
     if df.latest_version_installed?
       installed_keg = Keg.new(df.prefix)
-      tab ||= Tab.for_keg(installed_keg)
+      tab ||= installed_keg.tab
       tmp_keg = Pathname.new("#{installed_keg}.tmp")
       installed_keg.rename(tmp_keg)
     end
@@ -824,7 +822,7 @@ on_request: installed_on_request?, options:)
     end
 
     # Update tab with actual runtime dependencies
-    tab = Tab.for_keg(keg)
+    tab = keg.tab
     Tab.clear_cache
     f_runtime_deps = formula.runtime_dependencies(read_from_tab: false)
     tab.runtime_dependencies = Tab.runtime_deps_hash(formula, f_runtime_deps)
@@ -925,7 +923,7 @@ on_request: installed_on_request?, options:)
       formula.specified_path,
     ].concat(build_argv)
 
-    Utils.safe_fork do
+    Utils.safe_fork do |error_pipe|
       if Sandbox.available?
         sandbox = Sandbox.new
         formula.logs.mkpath
@@ -937,6 +935,7 @@ on_request: installed_on_request?, options:)
         sandbox.allow_fossil
         sandbox.allow_write_xcode
         sandbox.allow_write_cellar(formula)
+        sandbox.deny_all_network_except_pipe(error_pipe) unless formula.network_access_allowed?(:build)
         sandbox.exec(*args)
       else
         exec(*args)
@@ -1151,7 +1150,7 @@ on_request: installed_on_request?, options:)
 
     args << post_install_formula_path
 
-    Utils.safe_fork do
+    Utils.safe_fork do |error_pipe|
       if Sandbox.available?
         sandbox = Sandbox.new
         formula.logs.mkpath
@@ -1161,6 +1160,7 @@ on_request: installed_on_request?, options:)
         sandbox.allow_write_xcode
         sandbox.deny_write_homebrew_repository
         sandbox.allow_write_cellar(formula)
+        sandbox.deny_all_network_except_pipe(error_pipe) unless formula.network_access_allowed?(:postinstall)
         Keg::KEG_LINK_DIRECTORIES.each do |dir|
           sandbox.allow_write_path "#{HOMEBREW_PREFIX}/#{dir}"
         end

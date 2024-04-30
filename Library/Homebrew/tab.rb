@@ -13,10 +13,22 @@ class Tab
 
   FILENAME = "INSTALL_RECEIPT.json"
 
-  attr_accessor :homebrew_version, :tabfile, :built_as_bottle, :installed_as_dependency, :installed_on_request,
-                :changed_files, :poured_from_bottle, :loaded_from_api, :time, :stdlib, :aliases, :arch, :source,
+  # @api internal
+  attr_accessor :installed_as_dependency
+
+  # @api internal
+  attr_accessor :installed_on_request
+
+  # @api internal
+  attr_accessor :poured_from_bottle
+
+  attr_accessor :homebrew_version, :tabfile, :built_as_bottle,
+                :changed_files, :loaded_from_api, :time, :stdlib, :aliases, :arch, :source,
                 :built_on
-  attr_writer :used_options, :unused_options, :compiler, :runtime_dependencies, :source_modified_time
+  attr_writer :used_options, :unused_options, :compiler, :source_modified_time
+
+  # @api internal
+  attr_writer :runtime_dependencies
 
   # Instantiates a {Tab} for a new installation of a formula.
   def self.create(formula, compiler, stdlib)
@@ -116,6 +128,11 @@ class Tab
     new(attributes)
   end
 
+  # Get the {Tab} for the given {Keg},
+  # or a fake one if the formula is not installed.
+  #
+  # @api internal
+  sig { params(keg: T.any(Keg, Pathname)).returns(T.attached_class) }
   def self.for_keg(keg)
     path = keg/FILENAME
 
@@ -265,6 +282,7 @@ class Tab
     spec == :stable
   end
 
+  # @api internal
   def used_options
     Options.create(@used_options)
   end
@@ -389,6 +407,7 @@ class Tab
     tabfile.atomic_write(to_json)
   end
 
+  # @!visibility private
   sig { returns(String) }
   def to_s
     s = []

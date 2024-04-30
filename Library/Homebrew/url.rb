@@ -4,7 +4,6 @@
 require "download_strategy"
 require "version"
 
-# @api private
 class URL
   attr_reader :specs, :using
 
@@ -16,6 +15,7 @@ class URL
     @specs.freeze
   end
 
+  # @!visibility private
   sig { returns(String) }
   def to_s
     @url

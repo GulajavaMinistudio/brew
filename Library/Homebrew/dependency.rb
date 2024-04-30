@@ -4,14 +4,16 @@
 require "dependable"
 
 # A dependency on another Homebrew formula.
-#
-# @api private
 class Dependency
   extend Forwardable
   include Dependable
   extend Cachable
 
-  attr_reader :name, :tap
+  sig { returns(String) }
+  attr_reader :name
+
+  sig { returns(T.nilable(Tap)) }
+  attr_reader :tap
 
   def initialize(name, tags = [])
     raise ArgumentError, "Dependency must have a name!" unless name
@@ -22,10 +24,6 @@ class Dependency
     return unless (tap_with_name = Tap.with_formula_name(name))
 
     @tap, = tap_with_name
-  end
-
-  def to_s
-    name
   end
 
   def ==(other)
@@ -96,6 +94,11 @@ class Dependency
     false
   end
 
+  # @!visibility private
+  sig { returns(String) }
+  def to_s = name
+
+  # @!visibility private
   sig { returns(String) }
   def inspect
     "#<#{self.class.name}: #{name.inspect} #{tags.inspect}>"
@@ -279,6 +282,7 @@ class UsesFromMacOSDependency < Dependency
     self.class.new(formula.full_name.to_s, tags, bounds:)
   end
 
+  # @!visibility private
   sig { returns(String) }
   def inspect
     "#<#{self.class.name}: #{name.inspect} #{tags.inspect} #{bounds.inspect}>"

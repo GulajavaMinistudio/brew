@@ -5,6 +5,8 @@ require "shellwords"
 require "utils"
 
 # Raised when a command is used wrong.
+#
+# @api internal
 class UsageError < RuntimeError
   attr_reader :reason
 
@@ -14,6 +16,7 @@ class UsageError < RuntimeError
     @reason = reason
   end
 
+  # @!visibility private
   sig { returns(String) }
   def to_s
     s = "Invalid usage"
@@ -47,6 +50,9 @@ class UnsupportedInstallationMethod < RuntimeError; end
 
 class MultipleVersionsInstalledError < RuntimeError; end
 
+# Raised when a path is not a keg.
+#
+# @api internal
 class NotAKegError < RuntimeError; end
 
 # Raised when a keg doesn't exist.
@@ -73,8 +79,6 @@ end
 class FormulaSpecificationError < StandardError; end
 
 # Raised when a deprecated method is used.
-#
-# @api private
 class MethodDeprecatedError < StandardError
   attr_accessor :issues_url
 end
@@ -105,6 +109,7 @@ class FormulaOrCaskUnavailableError < RuntimeError
     "Did you mean #{similar_formula_names.to_sentence two_words_connector: " or ", last_word_connector: " or "}?"
   end
 
+  # @!visibility private
   sig { returns(String) }
   def to_s
     s = "No available formula or cask with the name \"#{name}\". #{did_you_mean}".strip
@@ -124,6 +129,7 @@ class TapFormulaOrCaskUnavailableError < FormulaOrCaskUnavailableError
     @tap = tap
   end
 
+  # @!visibility private
   sig { returns(String) }
   def to_s
     s = super
@@ -133,6 +139,8 @@ class TapFormulaOrCaskUnavailableError < FormulaOrCaskUnavailableError
 end
 
 # Raised when a formula is not available.
+#
+# @api internal
 class FormulaUnavailableError < FormulaOrCaskUnavailableError
   attr_accessor :dependent
 
@@ -141,6 +149,7 @@ class FormulaUnavailableError < FormulaOrCaskUnavailableError
     " (dependency of #{dependent})" if dependent && dependent != name
   end
 
+  # @!visibility private
   sig { returns(String) }
   def to_s
     "No available formula with the name \"#{name}\"#{dependent_s}. #{did_you_mean}".strip
@@ -148,11 +157,11 @@ class FormulaUnavailableError < FormulaOrCaskUnavailableError
 end
 
 # Shared methods for formula class errors.
-#
-# @api private
 module FormulaClassUnavailableErrorModule
   attr_reader :path, :class_name, :class_list
 
+  # @!visibility private
+  sig { returns(String) }
   def to_s
     s = super
     s += "\nIn formula file: #{path}"
@@ -192,11 +201,10 @@ class FormulaClassUnavailableError < FormulaUnavailableError
 end
 
 # Shared methods for formula unreadable errors.
-#
-# @api private
 module FormulaUnreadableErrorModule
   attr_reader :formula_error
 
+  # @!visibility private
   sig { returns(String) }
   def to_s
     "#{name}: " + formula_error.to_s
@@ -225,6 +233,8 @@ class TapFormulaUnavailableError < FormulaUnavailableError
     super "#{tap}/#{name}"
   end
 
+  # @!visibility private
+  sig { returns(String) }
   def to_s
     s = super
     s += "\nPlease tap it and then try again: brew tap #{tap}" unless tap.installed?

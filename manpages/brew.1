@@ -174,6 +174,12 @@ Switch into the mode used by the \fB\-\-eval\-all\fP option, but only list depen
 \fB\-\-HEAD\fP
 Show dependencies for HEAD version instead of stable version\.
 .TP
+\fB\-\-os\fP
+Show dependencies for the given operating system\.
+.TP
+\fB\-\-arch\fP
+Show dependencies for the given CPU architecture\.
+.TP
 \fB\-\-formula\fP
 Treat all named arguments as formulae\.
 .TP
@@ -463,6 +469,12 @@ Only show formulae with multiple versions installed\.
 .TP
 \fB\-\-pinned\fP
 List only pinned formulae, or only the specified (pinned) formulae if \fIformula\fP are provided\. See also \fBpin\fP, \fBunpin\fP\&\.
+.TP
+\fB\-\-installed\-on\-request\fP
+List the formulae installed on request\.
+.TP
+\fB\-\-installed\-as\-dependency\fP
+List the formulae installed as dependencies\.
 .TP
 \fB\-1\fP
 Force output to be one entry per line\. This is the default when output is not to a terminal\.
@@ -1615,6 +1627,14 @@ Load a library using \fBrequire\fP\&\.
 .TP
 \fB\-e\fP
 Execute the given text string as a script\.
+.SS "\fBrubydoc\fP \fR[\fB\-\-only\-public\fP] \fR[\fB\-\-open\fP]"
+Generate Homebrew\[u2019]s RubyDoc documentation\.
+.TP
+\fB\-\-only\-public\fP
+Only generate public API documentation\.
+.TP
+\fB\-\-open\fP
+Open generated documentation in a browser\.
 .SS "\fBsh\fP \fR[\fB\-\-env=\fP] \fR[\fB\-\-cmd=\fP] \fR[\fIfile\fP]"
 Enter an interactive shell for Homebrew\[u2019]s build environment\. Use years\-battle\-hardened build logic to help your \fB\&\./configure && make && make install\fP and even your \fBgem install\fP succeed\. Especially handy if you run Homebrew in an Xcode\-only configuration since it adds tools like \fBmake\fP to your \fBPATH\fP which build systems would not find otherwise\.
 .TP
@@ -2077,6 +2097,12 @@ Publish the uploaded bottles\.
 \fB\-\-skip\-online\-checks\fP
 Don\[u2019]t pass \fB\-\-online\fP to \fBbrew audit\fP and skip \fBbrew livecheck\fP\&\.
 .TP
+\fB\-\-skip\-new\fP
+Don\[u2019]t pass \fB\-\-new\fP to \fBbrew audit\fP for new formulae\.
+.TP
+\fB\-\-skip\-new\-strict\fP
+Don\[u2019]t pass \fB\-\-strict\fP to \fBbrew audit\fP for new formulae\.
+.TP
 \fB\-\-skip\-dependents\fP
 Don\[u2019]t test any dependents\.
 .TP
@@ -2085,9 +2111,6 @@ Don\[u2019]t test livecheck\.
 .TP
 \fB\-\-skip\-recursive\-dependents\fP
 Only test the direct dependents\.
-.TP
-\fB\-\-skip\-repository\-audit\fP
-Don\[u2019]t audit the repository\.
 .TP
 \fB\-\-skip\-checksum\-only\-audit\fP
 Don\[u2019]t audit checksum\-only changes\.
@@ -2404,6 +2427,15 @@ If set, always use a Homebrew\-installed \fBgit\fP(1) rather than the system ver
 .TP
 \fBHOMEBREW_FORCE_VENDOR_RUBY\fP
 If set, always use Homebrew\[u2019]s vendored, relocatable Ruby version even if the system version of Ruby is new enough\.
+.TP
+\fBHOMEBREW_FORMULA_BUILD_NETWORK\fP
+If set, controls network access to the sandbox for formulae builds\. Overrides any controls set through DSL usage inside formulae\. Must be \fBallow\fP or \fBdeny\fP\&\. If no value is set through this environment variable or DSL usage, the default behavior is \fBallow\fP\&\.
+.TP
+\fBHOMEBREW_FORMULA_POSTINSTALL_NETWORK\fP
+If set, controls network access to the sandbox for formulae postinstall\. Overrides any controls set through DSL usage inside formulae\. Must be \fBallow\fP or \fBdeny\fP\&\. If no value is set through this environment variable or DSL usage, the default behavior is \fBallow\fP\&\.
+.TP
+\fBHOMEBREW_FORMULA_TEST_NETWORK\fP
+If set, controls network access to the sandbox for formulae test\. Overrides any controls set through DSL usage inside formulae\. Must be \fBallow\fP or \fBdeny\fP\&\. If no value is set through this environment variable or DSL usage, the default behavior is \fBallow\fP\&\.
 .TP
 \fBHOMEBREW_GITHUB_API_TOKEN\fP
 Use this personal access token for the GitHub API, for features such as \fBbrew search\fP\&\. You can create one at 

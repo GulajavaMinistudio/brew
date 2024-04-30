@@ -6,7 +6,6 @@ require "tempfile"
 require "utils/shell"
 require "utils/formatter"
 
-# A module that interfaces with GitHub, code like PAT scopes, credential handling and API errors.
 module GitHub
   def self.pat_blurb(scopes = ALL_SCOPES)
     <<~EOS
@@ -20,18 +19,23 @@ module GitHub
 
   API_URL = "https://api.github.com"
   API_MAX_PAGES = 50
+  private_constant :API_MAX_PAGES
   API_MAX_ITEMS = 5000
+  private_constant :API_MAX_ITEMS
   PAGINATE_RETRY_COUNT = 3
+  private_constant :PAGINATE_RETRY_COUNT
 
   CREATE_GIST_SCOPES = ["gist"].freeze
   CREATE_ISSUE_FORK_OR_PR_SCOPES = ["repo"].freeze
   CREATE_WORKFLOW_SCOPES = ["workflow"].freeze
   ALL_SCOPES = (CREATE_GIST_SCOPES + CREATE_ISSUE_FORK_OR_PR_SCOPES + CREATE_WORKFLOW_SCOPES).freeze
+  private_constant :ALL_SCOPES
   GITHUB_PERSONAL_ACCESS_TOKEN_REGEX = /^(?:[a-f0-9]{40}|(?:gh[pousr]|github_pat)_\w{36,251})$/
+  private_constant :GITHUB_PERSONAL_ACCESS_TOKEN_REGEX
 
-  # Helper functions to access the GitHub API.
+  # Helper functions for accessing the GitHub API.
   #
-  # @api private
+  # @api internal
   module API
     extend SystemCommand::Mixin
 
@@ -284,11 +288,11 @@ module GitHub
       end
     end
 
-    def self.paginate_rest(url, additional_query_params: nil, per_page: 100)
+    def self.paginate_rest(url, additional_query_params: nil, per_page: 100, scopes: [].freeze)
       (1..API_MAX_PAGES).each do |page|
         retry_count = 1
         result = begin
-          API.open_rest("#{url}?per_page=#{per_page}&page=#{page}&#{additional_query_params}")
+          API.open_rest("#{url}?per_page=#{per_page}&page=#{page}&#{additional_query_params}", scopes:)
         rescue Error
           if retry_count < PAGINATE_RETRY_COUNT
             retry_count += 1

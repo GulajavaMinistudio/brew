@@ -4,8 +4,6 @@
 # Representation of a system locale.
 #
 # Used to compare the system language and languages defined using the cask `language` stanza.
-#
-# @api private
 class Locale
   # Error when a string cannot be parsed to a `Locale`.
   class ParserError < StandardError
@@ -108,6 +106,7 @@ class Locale
       locale_groups.find { |locales| locales.any? { |locale| include?(locale) } }
   end
 
+  # @!visibility private
   sig { returns(String) }
   def to_s
     [@language, @script, @region].compact.join("-")

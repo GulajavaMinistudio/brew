@@ -4,8 +4,6 @@
 module OS
   module Mac
     # Helper module for querying Xcode information.
-    #
-    # @api private
     module Xcode
       DEFAULT_BUNDLE_PATH = Pathname("/Applications/Xcode.app").freeze
       BUNDLE_ID = "com.apple.dt.Xcode"
@@ -172,6 +170,9 @@ module OS
         end
       end
 
+      # Get the Xcode version.
+      #
+      # @api internal
       sig { returns(::Version) }
       def self.version
         odeprecated "`MacOS::Xcode.version` on Linux" if Homebrew::SimulateSystem.simulating_or_running_on_linux?
@@ -264,8 +265,6 @@ module OS
     end
 
     # Helper module for querying macOS Command Line Tools information.
-    #
-    # @api private
     module CLT
       # The original Mavericks CLT package ID
       EXECUTABLE_PKG_ID = "com.apple.pkg.CLTools_Executables"
@@ -406,6 +405,8 @@ module OS
       # Version string (a pretty long one) of the CLT package.
       # Note that the different ways of installing the CLTs lead to different
       # version numbers.
+      #
+      # @api internal
       sig { returns(::Version) }
       def self.version
         odeprecated "`MacOS::CLT.version` on Linux" if Homebrew::SimulateSystem.simulating_or_running_on_linux?

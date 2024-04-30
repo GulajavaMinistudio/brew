@@ -14,8 +14,6 @@ module Cask
     # The return value of the last method in the block is also sent
     # to the output by the caller, but that feature is only for the
     # convenience of cask authors.
-    #
-    # @api private
     class Caveats < Base
       extend Attrable
 
@@ -39,6 +37,8 @@ module Cask
 
       private_class_method :caveat
 
+      # @!visibility private
+      sig { returns(String) }
       def to_s
         (@custom_caveats + @built_in_caveats.values).join("\n")
       end

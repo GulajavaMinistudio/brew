@@ -5,8 +5,6 @@ require "pkg_version"
 require "version/parser"
 
 # A formula's version.
-#
-# @api private
 class Version
   include Comparable
 
@@ -59,6 +57,7 @@ class Version
     sig { abstract.params(other: T.untyped).returns(T.nilable(Integer)) }
     def <=>(other); end
 
+    # @!visibility private
     sig { returns(String) }
     def inspect
       "#<#{self.class.name} #{value.inspect}>"
@@ -80,10 +79,13 @@ class Version
     end
 
     sig { returns(String) }
-    def to_s
+    def to_str
       value.to_s
     end
-    alias to_str to_s
+
+    # @!visibility private
+    sig { returns(String) }
+    def to_s = to_str
 
     sig { returns(T::Boolean) }
     def numeric?
@@ -133,7 +135,8 @@ class Version
     sig { returns(T::Boolean) }
     def blank? = true
 
-    sig { override.returns(String) }
+    # @!visibility private
+    sig { returns(String) }
     def inspect
       "#<#{self.class.name}>"
     end
@@ -703,16 +706,15 @@ class Version
   end
 
   sig { returns(String) }
-  def to_s
-    version.to_s
-  end
-
-  sig { returns(String) }
   def to_str
     raise NoMethodError, "undefined method `to_str' for #{self.class}:NULL" if null?
 
     T.must(version).to_str
   end
+
+  # @!visibility private
+  sig { returns(String) }
+  def to_s = version.to_s
 
   sig { params(options: T.untyped).returns(String) }
   def to_json(*options)
@@ -726,6 +728,7 @@ class Version
     super
   end
 
+  # @!visibility private
   sig { returns(String) }
   def inspect
     return "#<Version::NULL>" if null?

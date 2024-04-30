@@ -4,8 +4,6 @@
 require "requirement"
 
 # A requirement on Xcode.
-#
-# @api private
 class XcodeRequirement < Requirement
   fatal true
 
@@ -50,6 +48,7 @@ class XcodeRequirement < Requirement
     end
   end
 
+  # @!visibility private
   sig { returns(String) }
   def inspect
     "#<#{self.class.name}: version>=#{@version.inspect} #{tags.inspect}>"

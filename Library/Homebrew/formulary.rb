@@ -13,17 +13,20 @@ require "extend/hash/keys"
 
 # The {Formulary} is responsible for creating instances of {Formula}.
 # It is not meant to be used directly from formulae.
-#
-# @api private
 module Formulary
   extend Context
   extend Cachable
 
   URL_START_REGEX = %r{(https?|ftp|file)://}
+  private_constant :URL_START_REGEX
 
-  # :codesign and custom requirement classes are not supported
+  # `:codesign` and custom requirement classes are not supported.
   API_SUPPORTED_REQUIREMENTS = [:arch, :linux, :macos, :maximum_macos, :xcode].freeze
+  private_constant :API_SUPPORTED_REQUIREMENTS
 
+  # Enable the factory cache.
+  #
+  # @api internal
   sig { void }
   def self.enable_factory_cache!
     @factory_cache = true
@@ -73,7 +76,6 @@ module Formulary
     super
   end
 
-  # @private
   module PathnameWriteMkpath
     refine Pathname do
       def write(content, offset = nil, **open_args)
@@ -927,6 +929,8 @@ module Formulary
   # * a formula pathname
   # * a formula URL
   # * a local bottle reference
+  #
+  # @api internal
   sig {
     params(
       ref:           T.any(Pathname, String),
@@ -1034,7 +1038,7 @@ module Formulary
     force_bottle: T.unsafe(nil),
     flags: T.unsafe(nil)
   )
-    tab = Tab.for_keg(keg)
+    tab = keg.tab
     tap = tab.tap
     spec ||= tab.spec
 

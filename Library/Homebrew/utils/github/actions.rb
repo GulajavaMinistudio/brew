@@ -7,7 +7,7 @@ require "utils/tty"
 module GitHub
   # Helper functions for interacting with GitHub Actions.
   #
-  # @api private
+  # @api internal
   module Actions
     sig { params(string: String).returns(String) }
     def self.escape(string)
@@ -73,6 +73,7 @@ module GitHub
         @end_column = Integer(end_column) if end_column
       end
 
+      # @!visibility private
       sig { returns(String) }
       def to_s
         metadata = @type.to_s

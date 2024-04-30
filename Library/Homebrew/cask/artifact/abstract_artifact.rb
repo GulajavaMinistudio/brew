@@ -7,8 +7,6 @@ require "extend/object/deep_dup"
 module Cask
   module Artifact
     # Abstract superclass for all artifacts.
-    #
-    # @api private
     class AbstractArtifact
       extend T::Helpers
       abstract!
@@ -149,6 +147,7 @@ module Cask
         cask.config
       end
 
+      # @!visibility private
       sig { returns(String) }
       def to_s
         "#{summarize} (#{self.class.english_name})"
