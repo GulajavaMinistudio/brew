@@ -82,7 +82,34 @@ HOMEBREW_TEMP="${HOMEBREW_TEMP:-${HOMEBREW_DEFAULT_TEMP}}"
 # Don't need to handle a default case.
 # HOMEBREW_LIBRARY set by bin/brew
 # shellcheck disable=SC2249,SC2154
-case "$*" in
+#
+# commands that take a single or no arguments.
+case "$1" in
+  formulae)
+    source "${HOMEBREW_LIBRARY}/Homebrew/cmd/formulae.sh"
+    homebrew-formulae
+    exit 0
+    ;;
+  casks)
+    source "${HOMEBREW_LIBRARY}/Homebrew/cmd/casks.sh"
+    homebrew-casks
+    exit 0
+    ;;
+  shellenv)
+    source "${HOMEBREW_LIBRARY}/Homebrew/cmd/shellenv.sh"
+    shift
+    homebrew-shellenv "$1"
+    exit 0
+    ;;
+  setup-ruby)
+    source "${HOMEBREW_LIBRARY}/Homebrew/cmd/setup-ruby.sh"
+    shift
+    homebrew-setup-ruby "$1"
+    exit 0
+    ;;
+esac
+# functions that take multiple arguments or handle multiple commands.
+case "$@" in
   --cellar)
     echo "${HOMEBREW_CELLAR}"
     exit 0
@@ -99,26 +126,15 @@ case "$*" in
     echo "${HOMEBREW_CACHE}"
     exit 0
     ;;
-  shellenv)
-    source "${HOMEBREW_LIBRARY}/Homebrew/cmd/shellenv.sh"
-    shift
-    homebrew-shellenv "$1"
-    exit 0
-    ;;
-  formulae)
-    source "${HOMEBREW_LIBRARY}/Homebrew/cmd/formulae.sh"
-    homebrew-formulae
-    exit 0
-    ;;
-  casks)
-    source "${HOMEBREW_LIBRARY}/Homebrew/cmd/casks.sh"
-    homebrew-casks
-    exit 0
-    ;;
   # falls back to cmd/--prefix.rb and cmd/--cellar.rb on a non-zero return
   --prefix* | --cellar*)
     source "${HOMEBREW_LIBRARY}/Homebrew/formula_path.sh"
     homebrew-formula-path "$@" && exit 0
+    ;;
+  # falls back to cmd/command.rb on a non-zero return
+  command*)
+    source "${HOMEBREW_LIBRARY}/Homebrew/command_path.sh"
+    homebrew-command-path "$@" && exit 0
     ;;
 esac
 
@@ -249,7 +265,7 @@ EOS
   fi
 }
 
-# NOTE: the members of the array in the second arg must not have spaces!
+# NOTE: The members of the array in the second arg must not have spaces!
 check-array-membership() {
   local item=$1
   shift
@@ -278,9 +294,30 @@ auto-update() {
   then
     export HOMEBREW_AUTO_UPDATING="1"
 
+    # Look for commands that may be referring to a formula/cask in a specific
+    # 3rd-party tap so they can be auto-updated more often (as they do not get
+    # their data from the API).
+    AUTO_UPDATE_TAP_COMMANDS=(
+      install
+      outdated
+      upgrade
+    )
+    if check-array-membership "${HOMEBREW_COMMAND}" "${AUTO_UPDATE_TAP_COMMANDS[@]}"
+    then
+      for arg in "$@"
+      do
+        if [[ "${arg}" == */*/* ]] && [[ "${arg}" != Homebrew/* ]] && [[ "${arg}" != homebrew/* ]]
+        then
+
+          HOMEBREW_AUTO_UPDATE_TAP="1"
+          break
+        fi
+      done
+    fi
+
     if [[ -z "${HOMEBREW_AUTO_UPDATE_SECS}" ]]
     then
-      if [[ -n "${HOMEBREW_NO_INSTALL_FROM_API}" ]]
+      if [[ -n "${HOMEBREW_NO_INSTALL_FROM_API}" || -n "${HOMEBREW_AUTO_UPDATE_TAP}" ]]
       then
         # 5 minutes
         HOMEBREW_AUTO_UPDATE_SECS="300"
@@ -326,6 +363,7 @@ auto-update() {
     brew update --auto-update
 
     unset HOMEBREW_AUTO_UPDATING
+    unset HOMEBREW_AUTO_UPDATE_TAP
 
     # Restore user path as it'll be refiltered by HOMEBREW_BREW_FILE (bin/brew)
     export PATH=${HOMEBREW_PATH}
@@ -470,7 +508,8 @@ HOMEBREW_CORE_REPOSITORY="${HOMEBREW_LIBRARY}/Taps/homebrew/homebrew-core"
 # shellcheck disable=SC2034
 HOMEBREW_CASK_REPOSITORY="${HOMEBREW_LIBRARY}/Taps/homebrew/homebrew-cask"
 
-case "$*" in
+# commands that take a single or no arguments.
+case "$1" in
   --version | -v)
     source "${HOMEBREW_LIBRARY}/Homebrew/cmd/--version.sh"
     homebrew-version
@@ -857,9 +896,6 @@ elif [[ -z "${HOMEBREW_AUTO_UPDATING}" ]]
 then
   unset HOMEBREW_AUTO_UPDATE_CASK_TAP
 fi
-
-# Disable Ruby options we don't need.
-export HOMEBREW_RUBY_DISABLE_OPTIONS="--disable=gems,rubyopt"
 
 if [[ -z "${HOMEBREW_RUBY_WARNINGS}" ]]
 then

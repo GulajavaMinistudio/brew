@@ -83,8 +83,6 @@ module Homebrew
     def self.run_rubocop(files, output_type,
                          fix: false, except_cops: nil, only_cops: nil, display_cop_names: false, reset_cache: false,
                          debug: false, verbose: false)
-      Homebrew.install_bundler_gems!(groups: ["style"])
-
       require "warnings"
 
       Warnings.ignore :parser_syntax do
@@ -181,7 +179,7 @@ module Homebrew
         #   -f   (--force)       : we know what we are doing, force apply patches
         #   -d / (--directory=/) : change to root directory, since we use absolute file paths
         #   -p0  (--strip=0)     : do not strip path prefixes, since we are at root directory
-        # NOTE: we use short flags where for compatibility
+        # NOTE: We use short flags for compatibility.
         patch_command = %w[patch -g 0 -f -d / -p0]
         patches = system_command(shellcheck, args: ["--format=diff", *args]).stdout
         Utils.safe_popen_write(*patch_command) { |p| p.write(patches) } if patches.present?

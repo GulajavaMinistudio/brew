@@ -37,7 +37,6 @@ module Cask
 
       private_class_method :caveat
 
-      # @!visibility private
       sig { returns(String) }
       def to_s
         (@custom_caveats + @built_in_caveats.values).join("\n")
@@ -136,7 +135,7 @@ module Cask
         else
           <<~EOS
             #{@cask} requires Java #{java_version}. You can install it with:
-              brew install --cask homebrew/cask-versions/temurin#{java_version}
+              brew install --cask temurin@#{java_version}
           EOS
         end
       end

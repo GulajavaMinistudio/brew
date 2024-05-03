@@ -430,7 +430,7 @@ module Cask
       add_error "cask token contains .app" if token.end_with? ".app"
 
       match_data = /-(?<designation>alpha|beta|rc|release-candidate)$/.match(cask.token)
-      if match_data && cask.tap&.official? && cask.tap != "homebrew/cask-versions"
+      if match_data && cask.tap&.official?
         add_error "cask token contains version designation '#{match_data[:designation]}'"
       end
 
@@ -656,8 +656,6 @@ module Cask
 
     sig { void }
     def audit_github_prerelease_version
-      return if cask.tap == "homebrew/cask-versions"
-
       odebug "Auditing GitHub prerelease"
       user, repo = get_repo_data(%r{https?://github\.com/([^/]+)/([^/]+)/?.*}) if online?
       return if user.nil?
@@ -670,8 +668,6 @@ module Cask
 
     sig { void }
     def audit_gitlab_prerelease_version
-      return if cask.tap == "homebrew/cask-versions"
-
       user, repo = get_repo_data(%r{https?://gitlab\.com/([^/]+)/([^/]+)/?.*}) if online?
       return if user.nil?
 
@@ -685,7 +681,7 @@ module Cask
 
     sig { void }
     def audit_github_repository_archived
-      # Deprecated/disabled casks may have an archived repo.
+      # Deprecated/disabled casks may have an archived repository.
       return if cask.discontinued? || cask.deprecated? || cask.disabled?
 
       user, repo = get_repo_data(%r{https?://github\.com/([^/]+)/([^/]+)/?.*}) if online?
@@ -699,7 +695,7 @@ module Cask
 
     sig { void }
     def audit_gitlab_repository_archived
-      # Deprecated/disabled casks may have an archived repo.
+      # Deprecated/disabled casks may have an archived repository.
       return if cask.discontinued? || cask.deprecated? || cask.disabled?
 
       user, repo = get_repo_data(%r{https?://gitlab\.com/([^/]+)/([^/]+)/?.*}) if online?
