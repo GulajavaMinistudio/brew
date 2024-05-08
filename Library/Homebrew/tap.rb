@@ -118,20 +118,6 @@ class Tap
     [tap, token.downcase]
   end
 
-  sig { returns(CoreCaskTap) }
-  def self.default_cask_tap
-    odisabled "`Tap.default_cask_tap`", "`CoreCaskTap.instance`"
-
-    CoreCaskTap.instance
-  end
-
-  sig { params(force: T::Boolean).returns(T::Boolean) }
-  def self.install_default_cask_tap_if_necessary(force: false)
-    odisabled "`Tap.install_default_cask_tap_if_necessary`", "`CoreCaskTap.instance.ensure_installed!`"
-
-    false
-  end
-
   sig { returns(T::Set[Tap]) }
   def self.allowed_taps
     cache_key = :"allowed_taps_#{Homebrew::EnvConfig.allowed_taps.to_s.tr(" ", "_")}"
@@ -445,6 +431,21 @@ class Tap
       raise TapAlreadyTappedError, name unless shallow?
     end
 
+    if !allowed_by_env? || forbidden_by_env?
+      owner = Homebrew::EnvConfig.forbidden_owner
+      owner_contact = if (contact = Homebrew::EnvConfig.forbidden_owner_contact.presence)
+        "\n#{contact}"
+      end
+
+      error_message = +"The installation of the #{full_name} was requested but #{owner}\n"
+      error_message << "has not allowed this tap in `HOMEBREW_ALLOWED_TAPS`" unless allowed_by_env?
+      error_message << " and\n" if !allowed_by_env? && forbidden_by_env?
+      error_message << "has forbidden this tap in `HOMEBREW_FORBIDDEN_TAPS`" if forbidden_by_env?
+      error_message << ".#{owner_contact}"
+
+      odie error_message
+    end
+
     # ensure git is installed
     Utils::Git.ensure_installed!
 
@@ -464,7 +465,7 @@ class Tap
       return
     elsif (core_tap? || core_cask_tap?) && !Homebrew::EnvConfig.no_install_from_api? && !force
       odie "Tapping #{name} is no longer typically necessary.\n" \
-           "Add #{Formatter.option("--force")} if you are sure you need it for local development."
+           "Add #{Formatter.option("--force")} if you are sure you need it for contributing to Homebrew."
     end
 
     clear_cache
@@ -1042,7 +1043,7 @@ class Tap
   # An array of all installed {Tap} names.
   sig { returns(T::Array[String]) }
   def self.names
-    # odeprecated "`#{self}.names`"
+    odeprecated "`#{self}.names`"
 
     map(&:name).sort
   end
@@ -1154,7 +1155,7 @@ class AbstractCoreTap < Tap
 
   sig { void }
   def self.ensure_installed!
-    # odeprecated "`#{self}.ensure_installed!`", "`#{self}.instance.ensure_installed!`"
+    odeprecated "`#{self}.ensure_installed!`", "`#{self}.instance.ensure_installed!`"
 
     instance.ensure_installed!
   end
