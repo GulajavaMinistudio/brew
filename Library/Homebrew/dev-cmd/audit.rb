@@ -153,7 +153,7 @@ module Homebrew
                         "brew audit [name ...]"
             end
 
-            args.named.to_formulae_and_casks
+            args.named.to_formulae_and_casks_with_taps
                 .partition { |formula_or_cask| formula_or_cask.is_a?(Formula) }
           end
         end
@@ -308,7 +308,7 @@ module Homebrew
           ofail "#{errors_summary}."
         end
 
-        return unless ENV["GITHUB_ACTIONS"]
+        return unless GitHub::Actions.env_set?
 
         annotations = formula_problems.merge(cask_problems).flat_map do |(_, path), problems|
           problems.map do |problem|

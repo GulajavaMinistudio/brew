@@ -129,6 +129,7 @@ class GitHubRunnerMatrix
 
     ephemeral_suffix = +"-#{github_run_id}"
     ephemeral_suffix << "-deps" if @dependent_matrix
+    ephemeral_suffix << "-long" if runner_timeout == GITHUB_ACTIONS_LONG_TIMEOUT
     ephemeral_suffix.freeze
 
     MacOSVersion::SYMBOLS.each_value do |version|
@@ -141,7 +142,7 @@ class GitHubRunnerMatrix
       runner, timeout = if use_github_runner && github_runner_available
         ["macos-#{version}", GITHUB_ACTIONS_RUNNER_TIMEOUT]
       else
-        ["#{version}#{ephemeral_suffix}", runner_timeout]
+        ["#{version}-x86_64#{ephemeral_suffix}", runner_timeout]
       end
 
       # macOS 12-x86_64 is usually slower.

@@ -96,12 +96,12 @@ module Homebrew
 
       sig { override.void }
       def run
-        Homebrew.install_bundler_gems!(groups: ["bottle"])
-
         if args.merge?
           Homebrew.install_bundler_gems!(groups: ["ast"])
           return merge
         end
+
+        Homebrew.install_bundler_gems!(groups: ["bottle"])
 
         gnu_tar_formula_ensure_installed_if_needed!
 
@@ -494,7 +494,6 @@ module Homebrew
             Tab.clear_cache
             Dependency.clear_cache
             Requirement.clear_cache
-            SBOM.clear_cache
 
             tab = keg.tab
             original_tab = tab.dup
@@ -508,8 +507,8 @@ module Homebrew
               tab.write
             end
 
-            sbom = SBOM.create(formula)
-            sbom.write
+            sbom = SBOM.create(formula, tab)
+            sbom.write(bottling: true)
 
             keg.consistent_reproducible_symlink_permissions!
 

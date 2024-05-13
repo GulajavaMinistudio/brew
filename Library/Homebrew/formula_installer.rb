@@ -23,6 +23,7 @@ require "deprecate_disable"
 require "unlink"
 require "service"
 require "attestation"
+require "sbom"
 
 # Installer for a formula.
 class FormulaInstaller
@@ -205,10 +206,9 @@ class FormulaInstaller
 
       case deprecate_disable_type
       when :deprecated
-        puts "::warning::#{message}" if ENV["GITHUB_ACTIONS"]
         opoo message
       when :disabled
-        puts "::error::#{message}" if ENV["GITHUB_ACTIONS"]
+        GitHub::Actions.puts_annotation_if_env_set(:error, message)
         raise CannotInstallFormulaError, message
       end
     end
@@ -504,7 +504,8 @@ on_request: installed_on_request?, options:)
 
       raise if Homebrew::EnvConfig.developer?
 
-      $stderr.puts "Please report this issue to the #{formula.tap} tap (not Homebrew/brew or Homebrew/homebrew-core)!"
+      $stderr.puts "Please report this issue to the #{formula.tap&.full_name} tap".squeeze(" ")
+      $stderr.puts " (not Homebrew/brew or Homebrew/homebrew-core)!" unless formula.core_formula?
       false
     else
       f.linked_keg.exist? && f.opt_prefix.exist?
@@ -828,6 +829,12 @@ on_request: installed_on_request?, options:)
     tab.runtime_dependencies = Tab.runtime_deps_hash(formula, f_runtime_deps)
     tab.write
 
+    # write/update a SBOM file (if we aren't bottling)
+    unless build_bottle?
+      sbom = SBOM.create(formula, tab)
+      sbom.write(validate: Homebrew::EnvConfig.developer?)
+    end
+
     # let's reset Utils::Git.available? if we just installed git
     Utils::Git.clear_available_cache if formula.name == "git"
 
@@ -976,7 +983,7 @@ on_request: installed_on_request?, options:)
     end
 
     cask_installed_with_formula_name = begin
-      Cask::CaskLoader.load(formula.name).installed?
+      Cask::CaskLoader.load(formula.name, warn: false).installed?
     rescue Cask::CaskUnavailableError, Cask::CaskInvalidError
       false
     end
@@ -1215,6 +1222,8 @@ on_request: installed_on_request?, options:)
   sig { void }
   def fetch
     return if previously_fetched_formula
+
+    SBOM.fetch_schema! if Homebrew::EnvConfig.developer?
 
     fetch_dependencies
 
