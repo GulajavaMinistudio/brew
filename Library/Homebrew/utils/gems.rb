@@ -224,6 +224,7 @@ module Homebrew
     old_path = ENV.fetch("PATH", nil)
     old_gem_path = ENV.fetch("GEM_PATH", nil)
     old_gem_home = ENV.fetch("GEM_HOME", nil)
+    old_bundle_cache_path = ENV.fetch("BUNDLE_CACHE_PATH", nil)
     old_bundle_gemfile = ENV.fetch("BUNDLE_GEMFILE", nil)
     old_bundle_with = ENV.fetch("BUNDLE_WITH", nil)
     old_bundle_frozen = ENV.fetch("BUNDLE_FROZEN", nil)
@@ -243,6 +244,12 @@ module Homebrew
     groups |= (user_gem_groups & valid_gem_groups)
     groups.sort!
 
+    homebrew_cache = if defined?(HOMEBREW_CACHE)
+      HOMEBREW_CACHE.to_s
+    else
+      ENV.fetch("HOMEBREW_CACHE")
+    end
+    ENV["BUNDLE_CACHE_PATH"] = "#{homebrew_cache}/bundler_cache"
     ENV["BUNDLE_GEMFILE"] = gemfile
     ENV["BUNDLE_WITH"] = groups.join(" ")
     ENV["BUNDLE_FROZEN"] = "true"
@@ -339,6 +346,7 @@ module Homebrew
       ENV["BUNDLE_GEMFILE"] = old_bundle_gemfile
       ENV["BUNDLE_WITH"] = old_bundle_with
       ENV["BUNDLE_FROZEN"] = old_bundle_frozen
+      ENV["BUNDLE_CACHE_PATH"] = old_bundle_cache_path
     end
   end
 end
