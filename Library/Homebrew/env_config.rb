@@ -1,8 +1,6 @@
 # typed: true
 # frozen_string_literal: true
 
-require "set"
-
 module Homebrew
   # Helper module for querying Homebrew-specific environment variables.
   #
@@ -92,6 +90,9 @@ module Homebrew
       HOMEBREW_BROWSER:                          {
         description:  "Use this as the browser when opening project homepages.",
         default_text: "`$BROWSER` or the OS's default browser.",
+      },
+      HOMEBREW_BUNDLE_USER_CACHE:                {
+        description: "If set, use this directory as the `bundle`(1) user cache.",
       },
       HOMEBREW_CACHE:                            {
         description:  "Use this directory as the download cache.",
