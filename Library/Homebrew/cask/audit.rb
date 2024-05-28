@@ -318,13 +318,18 @@ module Cask
       return if block_url_offline?
 
       odebug "Auditing URL format"
-      if bad_sourceforge_url?
-        add_error "SourceForge URL format incorrect. See #{Formatter.url(SOURCEFORGE_OSDN_REFERENCE_URL)}",
-                  location: cask.url.location
-      elsif bad_osdn_url?
-        add_error "OSDN URL format incorrect. See #{Formatter.url(SOURCEFORGE_OSDN_REFERENCE_URL)}",
-                  location: cask.url.location
-      end
+      return unless bad_sourceforge_url?
+
+      add_error "SourceForge URL format incorrect. See #{Formatter.url(SOURCEFORGE_OSDN_REFERENCE_URL)}",
+                location: cask.url.location
+    end
+
+    def audit_download_url_is_osdn
+      return unless cask.url
+      return if block_url_offline?
+      return unless bad_osdn_url?
+
+      add_error "OSDN download urls are disabled.", location: cask.url.location, strict_only: true
     end
 
     VERIFIED_URL_REFERENCE_URL = "https://docs.brew.sh/Cask-Cookbook#when-url-and-homepage-domains-differ-add-verified"
@@ -480,13 +485,25 @@ module Cask
       odebug "Auditing signing"
 
       extract_artifacts do |artifacts, tmpdir|
+        is_container = artifacts.any? { |a| a.is_a?(Artifact::App) || a.is_a?(Artifact::Pkg) }
+
         artifacts.each do |artifact|
+          next if artifact.is_a?(Artifact::Binary) && is_container == true
+
           artifact_path = artifact.is_a?(Artifact::Pkg) ? artifact.path : artifact.source
+
           path = tmpdir/artifact_path.relative_path_from(cask.staged_path)
 
-          next unless path.exist?
-
-          result = system_command("spctl", args: ["--assess", "--type", "install", path], print_stderr: false)
+          result = case artifact
+          when Artifact::Pkg
+            system_command("spctl", args: ["--assess", "--type", "install", path], print_stderr: false)
+          when Artifact::App
+            system_command("spctl", args: ["--assess", "--type", "execute", path], print_stderr: false)
+          when Artifact::Binary
+            system_command("codesign",  args: ["--verify", path], print_stderr: false)
+          else
+            add_error "Unknown artifact type: #{artifact.class}", location: cask.url.location
+          end
 
           next if result.success?
 
@@ -516,6 +533,12 @@ module Cask
       return if artifacts.empty?
 
       @tmpdir ||= Pathname(Dir.mktmpdir("cask-audit", HOMEBREW_TEMP))
+
+      # Clean up tmp dir when @tmpdir object is destroyed
+      ObjectSpace.define_finalizer(
+        @tmpdir,
+        proc { FileUtils.remove_entry(@tmpdir) },
+      )
 
       ohai "Downloading and extracting artifacts"
 
@@ -877,7 +900,7 @@ module Cask
 
     sig { returns(T::Boolean) }
     def bad_osdn_url?
-      bad_url_format?(/osd/, [%r{\Ahttps?://([^/]+.)?dl\.osdn\.jp/}])
+      domain.match?(%r{^(?:\w+\.)*osdn\.jp(?=/|$)})
     end
 
     # sig { returns(String) }
