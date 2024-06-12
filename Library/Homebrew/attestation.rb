@@ -55,8 +55,8 @@ module Homebrew
 
     # Verifies the given bottle against a cryptographic attestation of build provenance.
     #
-    # The provenance is verified as originating from `signing_repo`, which is a `String`
-    # that should be formatted as a GitHub `owner/repo`.
+    # The provenance is verified as originating from `signing_repository`, which is a `String`
+    # that should be formatted as a GitHub `owner/repository`.
     #
     # Callers may additionally pass in `signing_workflow`, which will scope the attestation
     # down to an exact GitHub Actions workflow, in
@@ -103,8 +103,22 @@ module Homebrew
       # for all attestations that match the input's digest. We want to additionally
       # filter these down to just the attestation whose subject matches the bottle's name.
       subject = bottle.filename.to_s if subject.blank?
-      attestation = attestations.find do |a|
-        a.dig("verificationResult", "statement", "subject", 0, "name") == subject
+
+      attestation = if bottle.tag.to_sym == :all
+        # :all-tagged bottles are created by `brew bottle --merge`, and are not directly
+        # bound to their own filename (since they're created by deduplicating other filenames).
+        # To verify these, we parse each attestation subject and look for one with a matching
+        # formula (name, version), but not an exact tag match.
+        # This is sound insofar as the signature has already been verified. However,
+        # longer term, we should also directly attest to `:all`-tagged bottles.
+        attestations.find do |a|
+          actual_subject = a.dig("verificationResult", "statement", "subject", 0, "name")
+          actual_subject.start_with? "#{bottle.filename.name}--#{bottle.filename.version}"
+        end
+      else
+        attestations.find do |a|
+          a.dig("verificationResult", "statement", "subject", 0, "name") == subject
+        end
       end
 
       raise InvalidAttestationError, "no attestation matches subject" if attestation.blank?

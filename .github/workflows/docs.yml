@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pages: read
 
 env:
   HOMEBREW_DEVELOPER: 1
@@ -17,8 +18,7 @@ env:
   HOMEBREW_NO_INSTALL_CLEANUP: 1
 
 jobs:
-  linting:
-    if: github.repository == 'Homebrew/brew'
+  docs:
     runs-on: ubuntu-22.04
     steps:
       - name: Set up Homebrew
@@ -29,13 +29,16 @@ jobs:
           cask: false
           test-bot: false
 
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Install vale
         run: brew install vale
 
-      - name: Lint docs
-        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
+      - name: Cleanup Homebrew/brew docs
+        if: github.repository == 'Homebrew/brew'
         run: |
-          set -euo pipefail
+          set -xeuo pipefail
 
           # Avoid failing on broken symlinks.
           rm Library/Homebrew/os/mac/pkgconfig/fuse/fuse.pc
@@ -44,56 +47,29 @@ jobs:
           # No ignore support (https://github.com/errata-ai/vale/issues/131).
           rm -r Library/Homebrew/vendor
 
-          vale .
-
-          # Restore removed files.
-          git reset --hard
+      - name: Run Vale
+        run: vale docs/
 
       - name: Install Ruby
-        uses: ruby/setup-ruby@d5fb7a202fc07872cb44f00ba8e6197b70cb0c55 # v1.179.0
+        uses: ruby/setup-ruby@78c01b705fd9d5ad960d432d3a0cfa341d50e410 # v1.179.1
         with:
           bundler-cache: true
-          working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}/docs
+          working-directory: docs
 
       - name: Check Markdown syntax
-        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}/docs
+        working-directory: docs
         run: bundle exec rake lint
 
       - name: Check code blocks conform to our Ruby style guide
-        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}/docs
-        run: brew style .
+        run: brew style docs
+
+      - name: Generate formulae.brew.sh API samples
+        if: github.repository == 'Homebrew/formulae.brew.sh'
+        working-directory: docs
+        run: ../script/generate-api-samples.rb
 
       - name: Build the site and check for broken links
-        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}/docs
-        run: |
-          bundle exec rake test
-
-  rubydoc:
-    if: github.repository == 'Homebrew/brew'
-    runs-on: ubuntu-22.04
-    env:
-      BUNDLE_GEMFILE: ${{ github.workspace }}/rubydoc/Gemfile
-    steps:
-      - name: Set up Homebrew
-        id: set-up-homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-        with:
-          core: false
-          cask: false
-          test-bot: false
-
-      - name: Checkout Homebrew/rubydoc.brew.sh
-        uses: actions/checkout@v4
-        with:
-          repository: Homebrew/rubydoc.brew.sh
-          path: rubydoc
-
-      - name: Install Ruby
-        uses: ruby/setup-ruby@d5fb7a202fc07872cb44f00ba8e6197b70cb0c55 # v1.179.0
-        with:
-          bundler-cache: true
-          working-directory: rubydoc
-
-      - name: Process rubydoc comments
-        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}/Library/Homebrew
-        run: bundle exec yard doc --no-output --fail-on-warning
+        working-directory: docs
+        run: bundle exec rake test
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
